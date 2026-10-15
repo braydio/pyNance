@@ -83,8 +83,9 @@
     <!-- SUMMARY TAB -->
     <template #Summary>
       <section class="accounts-tab-panel">
+        <RetryError v-if="accountsError" message="Failed to load accounts" @retry="retryAccounts" />
         <Card
-          v-if="!hasAccounts"
+          v-else-if="!hasAccounts"
           class="accounts-card accounts-card--secondary rounded-2xl p-6 shadow-xl"
         >
           <h2 class="accounts-panel-title">No accounts linked</h2>
@@ -114,89 +115,160 @@
             />
           </Card>
 
-          <header
-            v-if="selectedAccount"
-            id="account-details"
-            ref="detailsRef"
-            class="accounts-details-header"
-            data-testid="account-details-header"
-          >
-            <h2 class="accounts-subpanel-title">
-              {{ selectedAccount.display_name || selectedAccount.name }}
-            </h2>
-            <UiButton variant="outline" class="btn-sm" @click="clearSelectedAccount">
-              Back to all accounts
-            </UiButton>
-          </header>
+          <div class="accounts-period-bar" data-testid="accounts-period-bar">
+            <label class="accounts-period-bar__label" for="accounts-period">Period</label>
+            <select
+              id="accounts-period"
+              v-model="selectedRange"
+              class="input w-32"
+              data-testid="history-range-select"
+            >
+              <option v-for="range in ranges" :key="range" :value="range">
+                {{ rangeLabels[range] }}
+              </option>
+            </select>
+            <span class="accounts-period-bar__dates" data-testid="accounts-period-dates">
+              {{ periodDates.start }} – {{ periodDates.end }}
+            </span>
+          </div>
 
-          <Card
-            v-if="selectedAccount"
-            class="accounts-card accounts-card--secondary space-y-6 rounded-2xl p-6 shadow-xl"
-          >
-            <header class="flex justify-between items-center">
-              <div>
-                <h2 class="accounts-subpanel-title">Net Change Summary</h2>
-                <p class="text-sm text-muted">Performance for the selected date range.</p>
-              </div>
+          <template v-if="selectedAccount">
+            <header
+              id="account-details"
+              ref="detailsRef"
+              class="accounts-details-header"
+              data-testid="account-details-header"
+            >
+              <h2 class="accounts-subpanel-title">
+                {{ selectedAccount.display_name || selectedAccount.name }}
+              </h2>
+              <UiButton variant="outline" class="btn-sm" @click="clearSelectedAccount">
+                Back to all accounts
+              </UiButton>
             </header>
 
-            <SkeletonCard v-if="loadingSummary" />
-            <RetryError
-              v-else-if="summaryError"
-              message="Failed to load summary"
-              @retry="retrySummary"
-            />
+            <Card
+              class="accounts-card accounts-card--secondary space-y-4 rounded-2xl p-5 shadow-xl"
+              data-testid="account-focus"
+            >
+              <p class="text-sm text-muted" data-testid="account-focus-identity">
+                {{ focus.identity }}
+              </p>
+              <dl class="accounts-facts">
+                <div v-for="fact in focus.facts" :key="fact.label" class="accounts-fact">
+                  <dt>{{ fact.label }}</dt>
+                  <dd :class="fact.valueClass">{{ fact.value }}</dd>
+                  <dd v-if="fact.note" class="accounts-fact__note">{{ fact.note }}</dd>
+                </div>
+              </dl>
+              <router-link v-if="focus.link" :to="focus.link.to" class="accounts-link">
+                {{ focus.link.label }}
+              </router-link>
+            </Card>
 
-            <div v-else class="grid gap-4 md:grid-cols-3">
-              <article
-                v-for="stat in netSummaryStats"
-                :key="stat.key"
-                class="accounts-kpi-card rounded-xl p-4"
-              >
-                <p class="text-xs uppercase text-muted">
-                  {{ stat.label }}
+            <Card
+              class="accounts-card accounts-card--secondary space-y-4 rounded-2xl p-5 shadow-xl"
+            >
+              <header>
+                <h2 class="accounts-subpanel-title">Balance History</h2>
+                <p class="text-sm text-muted">{{ periodDates.start }} – {{ periodDates.end }}</p>
+              </header>
+
+              <SkeletonCard v-if="loadingHistory" />
+              <RetryError
+                v-else-if="historyError"
+                message="Failed to load history"
+                @retry="retryHistory"
+              />
+
+              <AccountBalanceHistoryChart
+                v-else
+                :history-data="accountHistory"
+                :selected-range="selectedRange"
+              />
+            </Card>
+
+            <Card
+              class="accounts-card accounts-card--secondary space-y-4 rounded-2xl p-5 shadow-xl"
+            >
+              <header>
+                <h2 class="accounts-subpanel-title">Money movement in selected period</h2>
+                <p class="text-sm text-muted">
+                  Posted transactions {{ periodDates.start }} – {{ periodDates.end }}. Card payments
+                  and transfers count as movement, and pending items are not included.
                 </p>
-                <p class="mt-3 text-3xl font-bold" :class="stat.valueClass">
-                  {{ stat.value }}
+              </header>
+
+              <SkeletonCard v-if="loadingSummary" />
+              <RetryError
+                v-else-if="summaryError"
+                message="Failed to load summary"
+                @retry="retrySummary"
+              />
+
+              <template v-else>
+                <div class="grid gap-3 md:grid-cols-3">
+                  <article
+                    v-for="stat in netSummaryStats"
+                    :key="stat.key"
+                    class="accounts-kpi-card rounded-xl p-3"
+                  >
+                    <p class="text-xs uppercase text-muted">{{ stat.label }}</p>
+                    <p class="mt-2 text-2xl font-bold" :class="stat.valueClass">
+                      {{ stat.value }}
+                    </p>
+                  </article>
+                </div>
+                <p
+                  v-if="balanceChangeLabel"
+                  class="text-xs text-muted"
+                  data-testid="balance-change"
+                >
+                  Balance change over the period: {{ balanceChangeLabel }} (differs from movement
+                  when balances move without matching transactions).
                 </p>
-              </article>
-            </div>
-          </Card>
+              </template>
+            </Card>
 
-          <Card
-            v-if="selectedAccount"
-            class="accounts-card accounts-card--secondary space-y-6 rounded-2xl p-6 shadow-xl"
-          >
-            <div class="flex items-center justify-between">
-              <h2 class="accounts-subpanel-title">Balance History</h2>
+            <Card
+              class="accounts-card accounts-card--secondary space-y-4 rounded-2xl p-5 shadow-xl"
+            >
+              <header class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h2 class="accounts-subpanel-title">Latest transactions</h2>
+                  <p class="text-sm text-muted" data-testid="recent-transactions-caption">
+                    {{ recentTransactionsCaption }}
+                  </p>
+                </div>
+                <router-link
+                  :to="{ path: '/transactions', query: { account_id: String(accountId) } }"
+                  class="accounts-link"
+                  data-testid="view-account-transactions"
+                >
+                  View all in Transactions
+                </router-link>
+              </header>
 
-              <select v-model="selectedRange" class="input w-32" :disabled="!canFetchAccountData">
-                <option v-for="range in ranges" :key="range" :value="range">
-                  {{ range }}
-                </option>
-              </select>
-            </div>
-
-            <SkeletonCard v-if="loadingHistory" />
-            <RetryError
-              v-else-if="historyError"
-              message="Failed to load history"
-              @retry="retryHistory"
-            />
-
-            <AccountBalanceHistoryChart
-              v-else
-              :history-data="accountHistory"
-              :selected-range="selectedRange"
-            />
-          </Card>
+              <SkeletonCard v-if="loadingTransactions" />
+              <RetryError
+                v-else-if="transactionsError"
+                message="Failed to load transactions"
+                @retry="retryTransactions"
+              />
+              <p v-else-if="!recentTransactions.length" class="text-sm text-muted">
+                No transactions in this period.
+              </p>
+              <TransactionsTable v-else :transactions="recentTransactions" />
+            </Card>
+          </template>
 
           <Card class="accounts-card accounts-card--tertiary space-y-6 rounded-2xl p-6 shadow-xl">
             <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 class="accounts-subpanel-title">Most Active Accounts</h3>
                 <p class="text-sm text-muted">
-                  Ranked by recent transaction activity in the selected date range.
+                  All posted transactions {{ periodDates.start }} – {{ periodDates.end }}
+                  (pending excluded; internal transfers included).
                 </p>
               </div>
 
@@ -331,13 +403,22 @@ import { useRoute } from 'vue-router'
 import { Wallet } from 'lucide-vue-next'
 
 import api from '@/services/api'
-import { fetchNetChanges, fetchRecentTransactions, rangeToDates } from '@/api/accounts'
+import { fetchAccountActivityBreakdown, fetchNetChanges, rangeToDates } from '@/api/accounts'
+import { fetchTransactions } from '@/api/transactions'
 import { useAccountHistory } from '@/composables/useAccountHistory'
 import { useRefreshNotification } from '@/composables/useRefreshNotification'
 import { usePlaidReconnect } from '@/composables/usePlaidReconnect'
 import { uniqueReconnectConnections } from '@/utils/plaidConnectionStatus'
 
 import { formatAmount } from '@/utils/format'
+import {
+  accountUtilization,
+  amountOwed,
+  aprInfo,
+  classifyAccount,
+  creditLimit,
+  syncStatus,
+} from '@/utils/accountPortfolio'
 import UiButton from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
@@ -365,10 +446,16 @@ const { reconnect } = usePlaidReconnect()
 const accountsLoading = ref(false)
 const accountId = ref(route.query.accountId?.toString() || null)
 
-const netSummary = ref({ income: 0, expense: 0, net: 0 })
+const netSummary = ref({ income: 0, expense: 0, net: 0, balanceChange: null })
 const recentTransactions = ref([])
 
 const ranges = ['7d', '30d', '90d', '365d']
+const rangeLabels = {
+  '7d': 'Last 7 days',
+  '30d': 'Last 30 days',
+  '90d': 'Last 90 days',
+  '365d': 'Last 365 days',
+}
 const selectedRange = ref('30d')
 const activityMode = ref('count')
 
@@ -387,6 +474,10 @@ const summaryError = ref(null)
 const transactionsError = ref(null)
 const activityBreakdownError = ref(null)
 const accountActivityBreakdown = ref([])
+const accountsError = ref(null)
+const recentTransactionsTotal = ref(null)
+let loadDataToken = 0
+let activityToken = 0
 
 const activeTab = ref('Summary')
 
@@ -472,37 +563,153 @@ const selectedAccountStatus = computed(() => {
   }
 })
 
+const periodDates = computed(() => rangeToDates(selectedRange.value))
+
 const netSummaryStats = computed(() => [
   {
     key: 'income',
-    label: 'Income',
+    label: 'Money in',
     value: formatAmount(netSummary.value.income),
     valueClass: 'text-green-500',
   },
   {
     key: 'expense',
-    label: 'Expense',
+    label: 'Money out',
     value: formatAmount(netSummary.value.expense),
     valueClass: 'text-red-500',
   },
   {
     key: 'net',
-    label: 'Net',
+    label: 'Net movement',
     value: formatAmount(netSummary.value.net),
     valueClass: 'text-yellow-500',
   },
 ])
 
-/**
- * Resolves a numeric amount from supported transaction response fields.
- * @param {Record<string, any>} transaction
- * @returns {number}
- */
-function transactionAmount(transaction) {
-  const raw = transaction?.amount ?? transaction?.signed_amount ?? transaction?.value ?? 0
-  const normalized = Number(raw)
-  return Number.isFinite(normalized) ? normalized : 0
-}
+const balanceChangeLabel = computed(() =>
+  netSummary.value.balanceChange == null ? '' : formatAmount(netSummary.value.balanceChange),
+)
+
+const recentTransactionsCaption = computed(() => {
+  const shown = recentTransactions.value.length
+  const total = recentTransactionsTotal.value
+  const range = `${periodDates.value.start} – ${periodDates.value.end}`
+  return total != null && total > shown
+    ? `Showing ${shown} of ${total} in ${range}`
+    : `${shown} in ${range}`
+})
+
+/** Facts for the selected account, tailored to its type; unknown stays "Not reported". */
+const focus = computed(() => {
+  const account = selectedAccount.value
+  if (!account) return { identity: '', facts: [], link: null }
+  const group = classifyAccount(account)
+  const fact = (label, value, extra = {}) => ({ label, value, ...extra })
+  const money = (value) => (value == null ? 'Not reported' : formatAmount(value))
+  const facts = []
+  let link = null
+
+  const balance = account.current_balance ?? account.balance
+  if (group === 'credit' || group === 'loan') {
+    const owed = amountOwed(account)
+    facts.push(fact('Amount owed', owed == null ? 'Unknown' : formatAmount(owed)))
+  } else {
+    facts.push(
+      fact(
+        group === 'investment' ? 'Value' : 'Current balance',
+        money(balance == null ? null : balance),
+      ),
+    )
+  }
+
+  if (group === 'depository') {
+    facts.push(
+      fact('Available', money(account.available_balance), {
+        note: account.available_balance == null ? '' : 'As reported by the institution',
+      }),
+    )
+  }
+
+  if (group === 'credit') {
+    const limit = creditLimit(account)
+    const util = accountUtilization(account)
+    facts.push(fact('Credit limit', limit == null ? 'Unknown' : formatAmount(limit)))
+    facts.push(
+      fact(
+        'Utilization',
+        util ? `${util.percent}%${util.overlimit ? ' (over limit)' : ''}` : 'N/A (limit unknown)',
+      ),
+    )
+    if (account.available_balance != null) {
+      facts.push(
+        fact('Available credit', formatAmount(account.available_balance), {
+          note: 'Reported by the issuer',
+        }),
+      )
+    } else if (limit != null && amountOwed(account) != null) {
+      facts.push(
+        fact('Remaining credit', formatAmount(Math.max(limit - amountOwed(account), 0)), {
+          note: 'Calculated from limit and balance, not issuer-reported',
+        }),
+      )
+    }
+  }
+
+  if (group === 'credit' || group === 'loan') {
+    const apr = aprInfo(account)
+    const breakdown = account.interest_rate_breakdown || {}
+    const loanRate = breakdown.loan_interest_rate?.percentage
+    const buckets = Object.entries(breakdown)
+      .filter(([key]) => key !== 'loan_interest_rate')
+      .map(
+        ([key, entries]) =>
+          `${key.replace(/_/g, ' ')} ${(entries || []).map((e) => `${e.apr_percentage}%`).join(', ')}`,
+      )
+    if (group === 'loan' && loanRate != null) {
+      facts.push(fact('Interest rate', `${loanRate}%`, { note: 'Reported by the provider' }))
+    } else {
+      facts.push(
+        fact('APR', apr.value == null ? 'Unknown' : `${apr.value}%`, {
+          note: buckets.length
+            ? `${apr.label} · ${buckets.join(' · ')}`
+            : apr.label || 'No verified rate',
+        }),
+      )
+    }
+    if (group === 'credit' && account.interest_paid_recent) {
+      facts.push(
+        fact('Interest charged', formatAmount(account.interest_paid_recent.total), {
+          note: `Last ${account.interest_paid_recent.window_days} days, from posted transactions`,
+        }),
+      )
+    }
+    if (account.minimum_payment_amount != null) {
+      facts.push(fact('Minimum payment', formatAmount(account.minimum_payment_amount)))
+    }
+    if (account.next_payment_due_date) {
+      facts.push(fact('Next payment due', account.next_payment_due_date))
+    }
+    if (account.statement_balance != null) {
+      facts.push(fact('Statement balance', formatAmount(account.statement_balance)))
+    }
+  }
+
+  if (group === 'investment') {
+    link = { to: '/investments', label: 'Open Investments' }
+  }
+
+  const connection = account.connection_status?.requires_reauth ? 'Needs reconnect' : 'Connected'
+  const identity = [
+    account.institution_name,
+    account.subtype || account.type,
+    account.mask ? `•••• ${account.mask}` : '',
+    syncStatus(account),
+    connection,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+  return { identity, facts, link }
+})
 
 const mostActiveAccounts = computed(() => {
   const metric = activityMode.value === 'value' ? 'totalValue' : 'transactionCount'
@@ -525,12 +732,20 @@ function handleAccountSelection(e) {
 
 async function loadAccounts() {
   accountsLoading.value = true
+  accountsError.value = null
   try {
     const resp = await api.getAccounts({ include_hidden: true })
     accounts.value = resp?.accounts || []
+  } catch (error) {
+    accountsError.value = error
   } finally {
     accountsLoading.value = false
   }
+}
+
+async function retryAccounts() {
+  await loadAccounts()
+  if (!accountsError.value) await Promise.all([loadData(), loadActivityBreakdown()])
 }
 
 async function reconnectConnection(connection) {
@@ -568,7 +783,8 @@ async function reconnectConnection(connection) {
 }
 
 /**
- * Loads account-level transaction activity and computes breakdown metrics for ranking.
+ * Load per-account activity for the selected period with one grouped request (no row cap).
+ * Stale responses from a superseded period are ignored.
  * @returns {Promise<void>}
  */
 async function loadActivityBreakdown() {
@@ -577,37 +793,41 @@ async function loadActivityBreakdown() {
     return
   }
 
+  const token = ++activityToken
+  const { start, end } = rangeToDates(selectedRange.value)
   loadingActivityBreakdown.value = true
   activityBreakdownError.value = null
 
   try {
-    const results = await Promise.allSettled(
-      accounts.value.map(async (account) => {
-        const response = await fetchRecentTransactions(account.account_id, 100)
-        const transactions = response?.transactions ?? []
-        return {
-          accountId: account.account_id,
-          name: account.display_name || account.name || 'Unnamed account',
-          transactionCount: transactions.length,
-          totalValue: transactions.reduce((sum, tx) => sum + Math.abs(transactionAmount(tx)), 0),
-        }
-      }),
-    )
-
-    accountActivityBreakdown.value = results
-      .filter((result) => result.status === 'fulfilled')
-      .map((result) => result.value)
+    const response = await fetchAccountActivityBreakdown({ start_date: start, end_date: end })
+    if (token !== activityToken) return
+    const byId = new Map(accounts.value.map((account) => [String(account.account_id), account]))
+    accountActivityBreakdown.value = (response?.accounts ?? [])
+      .map((row) => ({
+        accountId: row.account_id,
+        name: byId.get(String(row.account_id))?.display_name || row.name || 'Unnamed account',
+        transactionCount: Number(row.transaction_count ?? 0),
+        totalValue: Number(row.transaction_value_abs ?? 0),
+      }))
       .filter((row) => row.transactionCount > 0 || row.totalValue > 0)
   } catch (error) {
+    if (token !== activityToken) return
     activityBreakdownError.value = error
   } finally {
-    loadingActivityBreakdown.value = false
+    if (token === activityToken) loadingActivityBreakdown.value = false
   }
 }
 
+/**
+ * Load the selected account's period data. Sections fail independently and a newer
+ * selection or period supersedes any in-flight response.
+ * @returns {Promise<boolean>} True when every section loaded.
+ */
 async function loadData() {
   if (!canFetchAccountData.value) return false
 
+  const token = ++loadDataToken
+  const id = accountId.value
   const { start, end } = rangeToDates(selectedRange.value)
 
   loadingSummary.value = true
@@ -615,31 +835,46 @@ async function loadData() {
   summaryError.value = null
   transactionsError.value = null
 
-  try {
-    const [summary, transactions] = await Promise.all([
-      fetchNetChanges(accountId.value, { start_date: start, end_date: end }),
-      fetchRecentTransactions(accountId.value, 10),
-      loadHistory(),
-    ])
+  const [summary, transactions, history] = await Promise.allSettled([
+    fetchNetChanges(id, { start_date: start, end_date: end }),
+    fetchTransactions({
+      account_ids: [id],
+      start_date: start,
+      end_date: end,
+      page: 1,
+      page_size: 10,
+    }),
+    loadHistory(),
+  ])
+  if (token !== loadDataToken) return false
 
-    const summaryData = summary?.data ?? summary ?? {}
-
+  if (summary.status === 'fulfilled') {
+    const summaryData = summary.value?.data ?? summary.value ?? {}
     netSummary.value = {
-      income: Number(summaryData?.income ?? 0),
-      expense: Number(summaryData?.expense ?? 0),
-      net: Number(summaryData?.net ?? 0),
+      income: Number(summaryData?.money_in ?? summaryData?.income ?? 0),
+      expense: Number(summaryData?.money_out ?? summaryData?.expense ?? 0),
+      net: Number(summaryData?.net_movement ?? summaryData?.net ?? 0),
+      balanceChange:
+        summaryData?.balance_change == null ? null : Number(summaryData.balance_change),
     }
-
-    recentTransactions.value = transactions?.transactions ?? []
-    return true
-  } catch (err) {
-    summaryError.value = err
-    transactionsError.value = err
-    return false
-  } finally {
-    loadingSummary.value = false
-    loadingTransactions.value = false
+  } else {
+    summaryError.value = summary.reason
   }
+
+  if (transactions.status === 'fulfilled') {
+    recentTransactions.value = transactions.value?.transactions ?? []
+    recentTransactionsTotal.value = transactions.value?.total ?? null
+  } else {
+    transactionsError.value = transactions.reason
+  }
+
+  loadingSummary.value = false
+  loadingTransactions.value = false
+  return (
+    summary.status === 'fulfilled' &&
+    transactions.status === 'fulfilled' &&
+    history.status === 'fulfilled'
+  )
 }
 
 async function refreshSelectedAccountData() {
@@ -674,8 +909,10 @@ onMounted(async () => {
 })
 
 watch(accountId, loadData)
-watch(selectedRange, loadData)
-watch(selectedRange, loadActivityBreakdown)
+watch(selectedRange, () => {
+  loadData()
+  loadActivityBreakdown()
+})
 </script>
 <style scoped>
 .accounts-context {
@@ -751,6 +988,54 @@ watch(selectedRange, loadActivityBreakdown)
 .accounts-card--tertiary {
   background: var(--table-surface-strong);
   border-color: var(--table-border);
+}
+
+.accounts-period-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.accounts-period-bar__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.accounts-period-bar__dates {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.accounts-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.75rem 1.25rem;
+  margin: 0;
+}
+
+.accounts-fact dt {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
+.accounts-fact dd {
+  margin: 0.1rem 0 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.accounts-fact dd.accounts-fact__note {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.accounts-link {
+  font-size: 0.85rem;
+  color: var(--color-accent-cyan);
+  text-decoration: underline;
 }
 
 .accounts-details-header {

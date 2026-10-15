@@ -5,7 +5,8 @@ import { vi } from 'vitest'
 import { ref } from 'vue'
 import Accounts from '../Accounts.vue'
 import api from '@/services/api'
-import { fetchNetChanges } from '@/api/accounts'
+import { fetchAccountActivityBreakdown, fetchNetChanges, rangeToDates } from '@/api/accounts'
+import { fetchTransactions } from '@/api/transactions'
 import AccountPortfolioOverview from '@/components/accounts/AccountPortfolioOverview.vue'
 import AccountPortfolioList from '@/components/accounts/AccountPortfolioList.vue'
 
@@ -47,6 +48,13 @@ vi.mock('@/services/api', () => ({
   },
 }))
 
+vi.mock('@/api/transactions', () => ({
+  fetchTransactions: vi.fn(async () => ({
+    transactions: [{ transaction_id: 't1', amount: -12, name: 'Coffee' }],
+    total: 25,
+  })),
+}))
+
 vi.mock('@/composables/useAccountHistory', () => ({
   useAccountHistory: (...args) => useAccountHistoryMock(...args),
 }))
@@ -55,12 +63,13 @@ vi.mock('@/api/accounts', () => ({
   fetchNetChanges: vi
     .fn()
     .mockResolvedValue({ status: 'success', data: { income: 0, expense: 0, net: 0 } }),
-  fetchRecentTransactions: vi.fn(async (accountId) => {
-    if (accountId === 'acc-2') {
-      return { transactions: [{ amount: 500 }, { amount: -250 }] }
-    }
-    return { transactions: [{ amount: 100 }, { amount: -20 }, { amount: 10 }] }
-  }),
+  fetchAccountActivityBreakdown: vi.fn(async () => ({
+    status: 'success',
+    accounts: [
+      { account_id: 'acc-1', name: 'Checking', transaction_count: 3, transaction_value_abs: 130 },
+      { account_id: 'acc-2', name: 'Savings', transaction_count: 2, transaction_value_abs: 750 },
+    ],
+  })),
   rangeToDates: vi.fn().mockReturnValue({ start: '2024-01-01', end: '2024-01-30' }),
 }))
 
@@ -500,8 +509,12 @@ describe('Accounts.vue', () => {
     expect(status.text()).toContain('•••• 1234')
     expect(status.text()).toContain('Connected')
     const html = wrapper.html()
-    expect(html.indexOf('account-status')).toBeLessThan(html.indexOf('Net Change Summary'))
-    expect(html.indexOf('Net Change Summary')).toBeLessThan(html.indexOf('Most Active Accounts'))
+    expect(html.indexOf('account-status')).toBeLessThan(
+      html.indexOf('Money movement in selected period'),
+    )
+    expect(html.indexOf('Money movement in selected period')).toBeLessThan(
+      html.indexOf('Most Active Accounts'),
+    )
     expect(wrapper.findAll('[data-testid="accounts-refresh"]')).toHaveLength(1)
   })
 
@@ -579,7 +592,7 @@ describe('Accounts.vue', () => {
         html.indexOf('account-details-header'),
       )
       expect(html.indexOf('account-details-header')).toBeLessThan(
-        html.indexOf('Net Change Summary'),
+        html.indexOf('Money movement in selected period'),
       )
       expect(fetchNetChanges).toHaveBeenCalledWith('cc', expect.any(Object))
     })
@@ -619,6 +632,226 @@ describe('Accounts.vue', () => {
       wrapper.findComponent(AccountPortfolioList).vm.$emit('reset')
       await flushPromises()
       expect(wrapper.findComponent(AccountPortfolioList).props('filters').query).toBe('')
+    })
+  })
+
+  describe('account drill-in and period integrity', () => {
+    const stubs = {
+      TabbedPageLayout: {
+        template:
+          '<div><slot name="header" /><slot name="Summary" /><slot name="Transactions" /></div>',
+      },
+      AccountActionsSidebar: true,
+      LinkedAccountsSection: true,
+      Card: { template: '<div><slot /></div>' },
+      PageHeader: { template: '<div />' },
+      UiButton: { inheritAttrs: true, template: '<button v-bind="$attrs"><slot /></button>' },
+      SkeletonCard: true,
+      RetryError: {
+        props: ['message'],
+        template:
+          '<button data-testid="retry-error" @click="$emit(\'retry\')">{{ message }}</button>',
+      },
+      AccountBalanceHistoryChart: true,
+      TransactionsTable: {
+        props: ['transactions'],
+        template: '<div data-testid="tx-table">{{ transactions.length }}</div>',
+      },
+      AccountPortfolioOverview: true,
+      AccountPortfolioList: true,
+      RouterLink: { props: ['to'], template: '<a :data-to="JSON.stringify(to)"><slot /></a>' },
+    }
+    const mountSummary = (accountList) => {
+      api.getAccounts.mockResolvedValueOnce({ accounts: accountList })
+      return shallowMount(Accounts, { global: { stubs } })
+    }
+    const card = {
+      account_id: 'acc-1',
+      name: 'Travel Card',
+      type: 'credit',
+      balance: -250,
+      credit_limit: 1000,
+      apr: 24.99,
+      apr_source: 'provider',
+      institution_name: 'Bank',
+      mask: '4242',
+      interest_paid_recent: { total: 12.5, window_days: 90 },
+    }
+
+    it('uses one breakdown request for the selected period instead of per-account calls', async () => {
+      const wrapper = mountSummary([card, { ...card, account_id: 'acc-2', name: 'Other' }])
+      await flushPromises()
+      expect(fetchAccountActivityBreakdown).toHaveBeenCalledTimes(1)
+      expect(fetchAccountActivityBreakdown).toHaveBeenCalledWith({
+        start_date: '2024-01-01',
+        end_date: '2024-01-30',
+      })
+      expect(wrapper.text()).toContain('2024-01-01 – 2024-01-30')
+    })
+
+    it('requests the selected account list for the same period, not a fixed recent list', async () => {
+      mountSummary([card])
+      await flushPromises()
+      expect(fetchTransactions).toHaveBeenCalledWith({
+        account_ids: ['acc-1'],
+        start_date: '2024-01-01',
+        end_date: '2024-01-30',
+        page: 1,
+        page_size: 10,
+      })
+    })
+
+    it('changing the period reloads movement, activity ranking and the account list together', async () => {
+      const wrapper = mountSummary([card])
+      await flushPromises()
+      rangeToDates.mockReturnValue({ start: '2023-10-03', end: '2024-01-30' })
+      fetchNetChanges.mockClear()
+      fetchTransactions.mockClear()
+      fetchAccountActivityBreakdown.mockClear()
+      await wrapper.get('[data-testid="history-range-select"]').setValue('90d')
+      await flushPromises()
+      expect(fetchNetChanges).toHaveBeenCalledWith('acc-1', {
+        start_date: '2023-10-03',
+        end_date: '2024-01-30',
+      })
+      expect(fetchTransactions).toHaveBeenCalledWith(
+        expect.objectContaining({ start_date: '2023-10-03' }),
+      )
+      expect(fetchAccountActivityBreakdown).toHaveBeenCalledWith({
+        start_date: '2023-10-03',
+        end_date: '2024-01-30',
+      })
+      rangeToDates.mockReturnValue({ start: '2024-01-01', end: '2024-01-30' })
+    })
+
+    it('labels money movement honestly and keeps balance change separate', async () => {
+      fetchNetChanges.mockResolvedValue({
+        status: 'success',
+        data: {
+          money_in: 500,
+          money_out: 200,
+          net_movement: 300,
+          balance_change: 120,
+          income: 500,
+          expense: 200,
+          net: 300,
+        },
+      })
+      const wrapper = mountSummary([card])
+      await flushPromises()
+      const text = wrapper.text()
+      expect(text).toContain('Money movement in selected period')
+      expect(text).toContain('Money in')
+      expect(text).toContain('Net movement')
+      expect(text).not.toMatch(/Net Change Summary|Income|Expense/)
+      expect(wrapper.get('[data-testid="balance-change"]').text()).toContain('$120.00')
+    })
+
+    it('shows card facts with sources and unknowns, plus a transactions link for the account', async () => {
+      const wrapper = mountSummary([card])
+      await flushPromises()
+      const focus = wrapper.get('[data-testid="account-focus"]').text()
+      expect(focus).toContain('Amount owed')
+      expect(focus).toContain('$250.00')
+      expect(focus).toContain('25%')
+      expect(focus).toContain('Calculated from limit and balance, not issuer-reported')
+      expect(focus).toContain('24.99%')
+      expect(focus).toContain('Provider-reported')
+      expect(focus).toContain('Interest charged')
+      expect(focus).not.toContain('Minimum payment')
+      expect(
+        wrapper.get('[data-testid="view-account-transactions"]').attributes('data-to'),
+      ).toContain('account_id')
+      expect(wrapper.get('[data-testid="recent-transactions-caption"]').text()).toContain(
+        'Showing 1 of 25',
+      )
+    })
+
+    it('shows deposits current vs available, loans without utilization, and an investments link', async () => {
+      const deposit = mountSummary([
+        {
+          account_id: 'acc-1',
+          name: 'Chk',
+          type: 'depository',
+          balance: 900,
+          available_balance: 850,
+        },
+      ])
+      await flushPromises()
+      const depositText = deposit.get('[data-testid="account-focus"]').text()
+      expect(depositText).toContain('Current balance')
+      expect(depositText).toContain('Available')
+      expect(depositText).toContain('$850.00')
+      expect(depositText).not.toContain('Utilization')
+
+      const loan = mountSummary([
+        {
+          account_id: 'acc-1',
+          name: 'Loan',
+          type: 'loan',
+          balance: -9000,
+          interest_rate_breakdown: { loan_interest_rate: { percentage: 5.5 } },
+        },
+      ])
+      await flushPromises()
+      const loanText = loan.get('[data-testid="account-focus"]').text()
+      expect(loanText).toContain('Interest rate')
+      expect(loanText).toContain('5.5%')
+      expect(loanText).not.toContain('Utilization')
+
+      const inv = mountSummary([
+        {
+          account_id: 'acc-1',
+          name: 'Brokerage',
+          type: 'brokerage',
+          is_investment: true,
+          balance: 5000,
+        },
+      ])
+      await flushPromises()
+      expect(inv.get('[data-testid="account-focus"] a').attributes('data-to')).toContain(
+        '/investments',
+      )
+    })
+
+    it('fails sections independently', async () => {
+      fetchNetChanges.mockRejectedValueOnce(new Error('summary down'))
+      const wrapper = mountSummary([card])
+      await flushPromises()
+      expect(wrapper.text()).toContain('Failed to load summary')
+      expect(wrapper.get('[data-testid="tx-table"]').exists()).toBe(true)
+      expect(wrapper.text()).toContain('1. ')
+    })
+
+    it('offers a retry when accounts fail to load', async () => {
+      api.getAccounts.mockRejectedValueOnce(new Error('offline'))
+      const wrapper = shallowMount(Accounts, { global: { stubs } })
+      await flushPromises()
+      const retry = wrapper.get('[data-testid="retry-error"]')
+      expect(retry.text()).toContain('Failed to load accounts')
+      api.getAccounts.mockResolvedValueOnce({ accounts: [card] })
+      await retry.trigger('click')
+      await flushPromises()
+      expect(wrapper.find('[data-testid="account-focus"]').exists()).toBe(true)
+    })
+
+    it('ignores a stale response when the selection changes mid-flight', async () => {
+      let resolveFirst
+      fetchNetChanges.mockImplementationOnce(
+        () => new Promise((resolve) => (resolveFirst = resolve)),
+      )
+      const wrapper = mountSummary([card, { ...card, account_id: 'acc-2', name: 'Other' }])
+      await flushPromises()
+      wrapper.vm.accountId = 'acc-2'
+      fetchNetChanges.mockResolvedValueOnce({
+        status: 'success',
+        data: { money_in: 7, money_out: 1, net_movement: 6 },
+      })
+      await flushPromises()
+      resolveFirst({ status: 'success', data: { money_in: 999, money_out: 0, net_movement: 999 } })
+      await flushPromises()
+      expect(wrapper.text()).toContain('$7.00')
+      expect(wrapper.text()).not.toContain('$999.00')
     })
   })
 })

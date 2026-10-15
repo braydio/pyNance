@@ -1,12 +1,12 @@
 # TP-20261014-009: Account drill-in, truthful activity and range integrity
 
 **Packet ID:** TP-20261014-009  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-14  
 **Last updated:** 2026-10-14  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261014-009-accounts-account-detail-activity.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261014-009-accounts-account-detail-activity.md`  
 **Workstream size:** One independently testable implementation packet  
 **Depends on:** TP-20261014-008  
 **Priority:** High  
@@ -44,3 +44,10 @@ Account drill-in, truthful activity and range integrity. Implement against curre
 
 ## Do not rediscover
 Avoid broad repo archaeology. Only inspect explicitly named paths, directly imported helpers/tests, and exact migrations/route registrations needed to implement this packet.
+
+## Completion report
+
+- Backend: new `GET /api/accounts/activity_breakdown` (strict inclusive `YYYY-MM-DD`, single grouped SQL query with no 100-row cap, `count` + `SUM(ABS(amount))` as `transaction_value_abs`, optional `account_ids`/`user_id`/`include_hidden`/`include_pending`, pending excluded by default, internal transfers included and reported separately, coverage + treatment in the response, unknown/other-owner IDs indistinguishable from nonexistent). `net_changes` now excludes pending and adds `money_in`/`money_out`/`net_movement`/`transaction_count`/`balance_change` while keeping `income`/`expense`/`net` aliases. API reference and routes docs updated.
+- Frontend: `api/accounts.js` `rangeToDates` now returns exactly N inclusive local calendar days (no UTC shift) and `fetchAccountActivityBreakdown` replaces the N-request fan-out. `Accounts.vue`: one Period control governs money movement, balance chart, latest-transactions list (`fetchTransactions({account_ids, start_date, end_date, page_size: 10})` with "Showing X of Y"), and the ranked activity list; per-section loading/error with request tokens so stale responses are dropped; Net Change Summary relabelled "Money movement in selected period" with balance change shown separately; type-specific account facts (deposits current vs available, cards owed/limit/utilization/available vs calculated remaining/APR with source/observed interest/payment data only when provided, loans interest rate without utilization, investments link to /investments); link to `/transactions?account_id=` (supported by the Transactions page); accounts-load retry; single fetch cycle on mount.
+- Tests: new `tests/test_accounts_activity_breakdown.py` (17), `frontend/src/api/__tests__/accounts.spec.js`, extended `Accounts.spec.js`; full vitest 56 files / 353 tests pass, lint 0 errors, build OK; backend accounts tests pass.
+- Not run: Cypress (`AccountsRetry.cy.js` not modified; its selectors predate the current layout), live-DB/browser verification. `user_id` scoping is an opt-in query filter because the API has no authenticated user context yet.

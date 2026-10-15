@@ -195,9 +195,40 @@ Precedence and window resolution rules (`start_date`/`end_date` take precedence 
 
 `balances` is the canonical field. `history` is a legacy alias (when present) and mirrors the same array for backward compatibility.
 
+**GET /api/accounts/activity_breakdown**
+
+Per-account transaction count and absolute value for an inclusive date range, from one grouped query with no per-account row cap.
+
+Query Parameters
+
+- `start_date`, `end_date` – strict `YYYY-MM-DD`, inclusive (required, `start_date <= end_date`, max about ten years); anything else returns `400`.
+- `account_ids` – optional comma-separated filter; `user_id` – optional owner scope; unknown or other-owner IDs are simply absent.
+- `include_hidden` (default `false`), `include_pending` (default `false`).
+
+Response Body
+
+```json
+{
+  "status": "success",
+  "period": { "start_date": "2026-09-01", "end_date": "2026-09-30", "inclusive": true },
+  "treatment": { "pending": "excluded", "internal_transfers": "included_and_reported_separately" },
+  "coverage": { "accounts_considered": 3, "accounts_with_activity": 2, "include_hidden": false },
+  "accounts": [
+    {
+      "account_id": "acc_1",
+      "name": "Checking",
+      "transaction_count": 150,
+      "transaction_value_abs": 1500.0,
+      "internal_transfer_count": 4,
+      "internal_transfer_value_abs": 800.0
+    }
+  ]
+}
+```
+
 **GET /api/accounts/<account_id>/net_changes**
 
-Returns income, expense, and net balance change for the specified account over a date range.
+Returns posted money movement (money in, money out, net movement) for the specified account over an inclusive date range. These are transaction movements, not salary or spending: card payments and transfers appear on both sides.
 
 Query Parameters
 
@@ -209,7 +240,17 @@ Response Body
 ```json
 {
   "status": "success",
-  "data": { "income": 1250.0, "expense": 980.5, "net": 269.5 },
+  "data": {
+    "income": 1250.0,
+    "expense": 980.5,
+    "net": 269.5,
+    "money_in": 1250.0,
+    "money_out": 980.5,
+    "net_movement": 269.5,
+    "transaction_count": 42,
+    "balance_change": 269.5,
+    "pending_excluded": true
+  },
   "account_id": "uuid",
   "net_change": 269.5,
   "period": { "start": "YYYY-MM-DD", "end": "YYYY-MM-DD" }
@@ -218,7 +259,8 @@ Response Body
 
 Notes:
 
-- `income` and `expense` are magnitudes; `net = income - expense`.
+- `income` and `expense` are legacy aliases of `money_in` and `money_out` (magnitudes); `net = net_movement = money_in - money_out`.
+- Pending transactions are excluded. `balance_change` is the balance-history delta and can differ from transaction movement.
 - Legacy fields (`account_id`, `net_change`, `period`) are preserved for backward compatibility.
 
 **GET /api/accounts/<account_id>/transaction_history**

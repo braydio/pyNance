@@ -19,7 +19,8 @@ Manages account lifecycle operations including institution linking, metadata upd
 - `PATCH /accounts/<account_id>` – Update stored account metadata.
 - `DELETE /accounts/<account_id>` – Remove a linked account.
 - `GET /accounts/<account_id>/history` – Return daily reverse-mapped balances for an account/date window.
-- `GET /accounts/<account_id>/net_changes` – Compute income, expense, and net movement between two dates.
+- `GET /accounts/activity_breakdown` – Per-account transaction count/absolute value for an inclusive range (strict dates, owner/hidden scoping, pending excluded by default).
+- `GET /accounts/<account_id>/net_changes` – Posted money in/out and net movement between two dates (`income`/`expense` kept as aliases).
 
 ### Inputs/Outputs
 

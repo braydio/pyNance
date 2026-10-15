@@ -1,6 +1,7 @@
 """Account management and refresh routes."""
 
 import logging
+import re
 import time
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional
@@ -1029,6 +1030,116 @@ def match_account_by_fields():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+_ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+MAX_ACTIVITY_SPAN_DAYS = 3660
+
+
+def _strict_iso_date(value):
+    """Parse a strict ``YYYY-MM-DD`` string or raise ``ValueError``."""
+
+    if not value or not _ISO_DATE_RE.match(value):
+        raise ValueError("dates must use YYYY-MM-DD")
+    return datetime.strptime(value, "%Y-%m-%d").date()
+
+
+@accounts.route("/activity_breakdown", methods=["GET"])
+def activity_breakdown():
+    """Per-account transaction count and absolute value for an inclusive date range.
+
+    Query: ``start_date`` and ``end_date`` (strict ``YYYY-MM-DD``, inclusive),
+    optional ``account_ids`` (comma separated), ``user_id`` (limits to that owner's
+    accounts), ``include_hidden`` (default false) and ``include_pending`` (default false).
+
+    One grouped SQL query, no per-account row cap. Treatment: pending transactions are
+    excluded unless requested; internal transfers are included in the totals and also
+    reported separately so clients can explain them.
+    """
+
+    from sqlalchemy import and_, case, func
+
+    try:
+        start_date = _strict_iso_date(request.args.get("start_date"))
+        end_date = _strict_iso_date(request.args.get("end_date"))
+    except ValueError as exc:
+        return jsonify({"status": "error", "message": str(exc)}), 400
+    if start_date > end_date:
+        return jsonify({"status": "error", "message": "start_date must not be after end_date"}), 400
+    if (end_date - start_date).days >= MAX_ACTIVITY_SPAN_DAYS:
+        return jsonify({"status": "error", "message": "date range is too large"}), 400
+
+    include_hidden = request.args.get("include_hidden", "false").lower() == "true"
+    include_pending = request.args.get("include_pending", "false").lower() == "true"
+    user_id = (request.args.get("user_id") or "").strip() or None
+    requested_ids = [part.strip() for part in (request.args.get("account_ids") or "").split(",") if part.strip()]
+
+    join_conditions = [
+        Transaction.account_id == Account.account_id,
+        Transaction.date >= start_date,
+        Transaction.date <= end_date,
+    ]
+    if not include_pending:
+        join_conditions.append(or_(Transaction.pending.is_(False), Transaction.pending.is_(None)))
+    is_internal = Transaction.is_internal.is_(True)
+    value = func.abs(Transaction.amount)
+
+    query = (
+        db.session.query(
+            Account.account_id,
+            Account.name,
+            func.count(Transaction.id).label("tx_count"),
+            func.coalesce(func.sum(value), 0).label("value_abs"),
+            func.coalesce(func.sum(case((is_internal, 1), else_=0)), 0).label("internal_count"),
+            func.coalesce(func.sum(case((is_internal, value), else_=0)), 0).label("internal_value"),
+        )
+        .outerjoin(Transaction, and_(*join_conditions))
+        .group_by(Account.account_id, Account.name)
+        .order_by(Account.account_id)
+    )
+    if not include_hidden:
+        query = query.filter(or_(Account.is_hidden.is_(False), Account.is_hidden.is_(None)))
+    if user_id:
+        query = query.filter(Account.user_id == user_id)
+    if requested_ids:
+        # Unknown or other-owner IDs are silently absent: nothing reveals whether they exist.
+        query = query.filter(Account.account_id.in_(requested_ids))
+
+    rows = query.all()
+    results = [
+        {
+            "account_id": row.account_id,
+            "name": row.name,
+            "transaction_count": int(row.tx_count or 0),
+            "transaction_value_abs": round(float(row.value_abs or 0), 2),
+            "internal_transfer_count": int(row.internal_count or 0),
+            "internal_transfer_value_abs": round(float(row.internal_value or 0), 2),
+        }
+        for row in rows
+    ]
+    return (
+        jsonify(
+            {
+                "status": "success",
+                "period": {
+                    "start_date": start_date.isoformat(),
+                    "end_date": end_date.isoformat(),
+                    "inclusive": True,
+                },
+                "treatment": {
+                    "pending": "included" if include_pending else "excluded",
+                    "internal_transfers": "included_and_reported_separately",
+                },
+                "coverage": {
+                    "accounts_considered": len(results),
+                    "accounts_with_activity": sum(1 for r in results if r["transaction_count"]),
+                    "include_hidden": include_hidden,
+                },
+                "accounts": results,
+            }
+        ),
+        200,
+    )
+
+
 @accounts.route("/<account_id>/net_changes", methods=["GET"])
 def account_net_changes(account_id):
     """Return net balance change and breakdown for an account.
@@ -1056,21 +1167,28 @@ def account_net_changes(account_id):
         start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
         end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
 
-        # Compute income/expense breakdown from transactions in the range
-        # Use external account_id consistently
+        # Money movement from posted transactions in the (inclusive) range. Positive amounts
+        # are money in, negative are money out. These are movements, not salary or spending:
+        # card payments and transfers appear on both sides. Pending rows are excluded.
         income_sum = func.sum(case((Transaction.amount > 0, Transaction.amount), else_=0))
         expense_sum = func.sum(case((Transaction.amount < 0, func.abs(Transaction.amount)), else_=0))
 
         q = (
-            db.session.query(income_sum.label("income"), expense_sum.label("expenses"))
+            db.session.query(
+                income_sum.label("income"),
+                expense_sum.label("expenses"),
+                func.count(Transaction.id).label("tx_count"),
+            )
             .filter(Transaction.account_id == account_id)
             .filter(Transaction.date >= start_date)
             .filter(Transaction.date <= end_date)
+            .filter(or_(Transaction.pending.is_(False), Transaction.pending.is_(None)))
         )
         row = q.first()
         income = float(getattr(row, "income", 0) or 0)
         expense = float(getattr(row, "expenses", 0) or 0)
-        # Net as income - expense (expense is positive magnitude)
+        tx_count = int(getattr(row, "tx_count", 0) or 0)
+        # Net movement as money in - money out (expense is a positive magnitude)
         net = round(income - expense, 2)
 
         # Legacy net change value based on AccountHistory snapshots
@@ -1091,9 +1209,17 @@ def account_net_changes(account_id):
         payload = {
             "status": "success",
             "data": {
+                # Legacy names kept for existing consumers.
                 "income": round(income, 2),
                 "expense": round(expense, 2),
                 "net": net,
+                # Honest names: transaction movement, distinct from the balance delta below.
+                "money_in": round(income, 2),
+                "money_out": round(expense, 2),
+                "net_movement": net,
+                "transaction_count": tx_count,
+                "balance_change": legacy.get("net_change", net),
+                "pending_excluded": True,
             },
             # Backward-compat legacy fields
             "account_id": legacy.get("account_id", account_id),
