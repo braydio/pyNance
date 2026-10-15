@@ -6,8 +6,13 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 
 | Packet ID | Title | Status | Priority | Depends on | Target | Last updated | Packet |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| TP-20261014-001 | Financial Detail: Decision Hierarchy and Honest Metrics | Ready | High | None | main | 2026-10-14 | [packet](active/TP-20261014-001-financial-detail-decision-hierarchy.md) |
+| TP-20261014-002 | Upcoming Recurring: Due-First and Coverage-Aware | Ready | High | TP-20261014-001 | main | 2026-10-14 | [packet](active/TP-20261014-002-upcoming-recurring-action-order.md) |
+| TP-20261014-003 | Dashboard Date Controls: One Visible Period | Ready | High | None | main | 2026-10-14 | [packet](active/TP-20261014-003-dashboard-shared-period-truth.md) |
+| TP-20261014-004 | Dashboard Landing: Truthful Action Priority and Calm Copy | Ready | High | TP-20261014-003 | main | 2026-10-14 | [packet](active/TP-20261014-004-dashboard-landing-truthful-actions.md) |
 | TP-20261012-001 | Link Account Modal Visibility + Overlay Readability | Complete | High | None | main | 2026-10-13 | [packet](completed/TP-20261012-001-link-account-modal-visibility.md) |
-| TP-20261007-002 | UI Hierarchy Foundation + App Shell | Complete | High | TP-20261007-003 | Dashboard Decision-First Recomposition | Complete | High | TP-20261007-001, TP-20261007-002 | main | 2026-10-13 | [packet](completed/TP-20261007-003-dashboard-decision-first-recomposition.md) |
+| TP-20261007-002 | UI Hierarchy Foundation + App Shell | Complete | High | TP-20261007-001 | main | 2026-10-13 | [packet](completed/TP-20261007-002-ui-hierarchy-foundation-app-shell.md) |
+| TP-20261007-003 | Dashboard Decision-First Recomposition | Complete | High | TP-20261007-001, TP-20261007-002 | main | 2026-10-13 | [packet](completed/TP-20261007-003-dashboard-decision-first-recomposition.md) |
 | TP-20261007-004 | Transactions Action Workbench | Complete | High | TP-20261007-002 | main | 2026-10-13 | [packet](completed/TP-20261007-004-transactions-action-workbench.md) |
 | TP-20261007-005 | Accounts Portfolio + Connection Hierarchy | Complete | High | TP-20261007-002 | main | 2026-10-13 | [packet](completed/TP-20261007-005-accounts-portfolio-connection-hierarchy.md) |
 | TP-20261007-007 | Planning Workflow Reauthor | Complete | High | TP-20261007-002 | main | 2026-10-13 | [packet](completed/TP-20261007-007-planning-workflow-reauthor.md) |
@@ -19,7 +24,6 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 | TP-20261013-003 | Forecast V2 Spending Intelligence: Recurrence + Residuals | Complete | High | TP-20261013-002 | main | 2026-10-13 | [packet](completed/TP-20261013-003-forecast-v2-recurring-residual-spending.md) |
 | TP-20261013-004 | Forecast V2 Probabilities + Rolling Backtesting | Complete | Normal | TP-20261013-003 | main | 2026-10-13 | [packet](completed/TP-20261013-004-forecast-v2-uncertainty-backtesting.md) |
 | TP-20261013-005 | Forecast V2 API + Scenarios + Frontend Integration | Complete | Normal | TP-20261013-004 | main | 2026-10-13 | [packet](completed/TP-20261013-005-forecast-v2-api-scenarios-frontend.md) |
-| TP-20261007-001 | main | 2026-10-13 | [packet](completed/TP-20261007-002-ui-hierarchy-foundation-app-shell.md) |
 | TP-20261007-001 | Local Schema Head Activation + Safe-to-Spend Migration Guard | Complete | High | TP-20261002-001 | main | 2026-10-09 | [packet](completed/TP-20261007-001-local-schema-head-activation.md) |
 | TP-20261002-001 | Safe-to-Spend Reliability + Correct Cashflow Semantics | Complete | High | None | main | 2026-10-07 | [packet](completed/TP-20261002-001-safe-to-spend-reliability.md) |
 | TP-20261001-001 | Plaid Item Connection Health + Reconnect UI | Complete | Normal | None | main | 2026-10-08 | [packet](completed/TP-20261001-001-plaid-connection-health-reconnect.md) |
