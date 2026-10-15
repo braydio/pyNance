@@ -17,7 +17,7 @@ describe('RefreshPlaidControls', () => {
 
     mount(RefreshPlaidControls, { global: { directives: { 'click-outside': clickOutside } } })
     cy.wait('@getAccounts')
-    cy.contains('button', 'All Linked Accounts').click()
+    cy.contains('button', 'All linked accounts').click()
     cy.get('.dropdown-menu label').should('have.length', 2)
     cy.get('.dropdown-menu').contains('Checking')
     cy.get('.dropdown-menu').contains('Savings')

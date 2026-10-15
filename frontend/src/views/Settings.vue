@@ -33,6 +33,13 @@
     </section>
 
     <section class="settings-panel">
+      <div class="settings-panel-header">
+        <h2 class="settings-panel-title">Connected Accounts</h2>
+        <p class="settings-panel-copy">Refresh Plaid activity without leaving settings.</p>
+      </div>
+      <RefreshPlaidControls />
+    </section>
+    <section class="settings-panel">
       <h2 class="settings-panel-title">Dashboard AI message</h2>
       <p class="settings-panel-copy">
         Control the LLM-generated dashboard header and optionally use an Ollama-compatible server.
@@ -55,12 +62,13 @@
           data-testid="llm-base-url"
           :disabled="llmSettingsLoading || llmSettingsSaving"
           placeholder="http://localhost:11434"
-          class="settings-input"
+          class="settings-input settings-input--wide"
           size="md"
           radius="md"
+          :describedby="'llm-base-url-help'"
           @enter="saveLlmSettings"
         />
-        <p class="settings-field-help">
+        <p id="llm-base-url-help" class="settings-field-help">
           Leave blank for OpenAI, or enter an Ollama host, /v1 base URL, or full chat-completions
           URL.
         </p>
@@ -80,20 +88,14 @@
             'settings-command-feedback',
             `settings-command-feedback--${llmSettingsFeedback.type}`,
           ]"
-          role="status"
+          :role="llmSettingsFeedback.type === 'error' ? 'alert' : 'status'"
+          aria-live="polite"
         >
           {{ llmSettingsFeedback.message }}
         </p>
       </div>
     </section>
 
-    <section class="settings-panel">
-      <div class="settings-panel-header">
-        <h2 class="settings-panel-title">Connected Accounts</h2>
-        <p class="settings-panel-copy">Refresh Plaid activity without leaving settings.</p>
-      </div>
-      <RefreshPlaidControls />
-    </section>
     <details class="settings-panel settings-advanced" data-testid="advanced-settings">
       <summary class="settings-advanced__summary">Advanced: local commands</summary>
       <p class="settings-panel-copy">
@@ -144,13 +146,35 @@
             'settings-command-feedback',
             `settings-command-feedback--${commandFeedback.type}`,
           ]"
-          role="status"
+          :role="commandFeedback.type === 'error' ? 'alert' : 'status'"
+          aria-live="polite"
         >
           {{ commandFeedback.message }}
         </p>
-        <pre v-if="commandOutput" data-testid="command-output" class="settings-command-output">{{
-          commandOutput
-        }}</pre>
+        <div v-if="commandOutput" class="settings-command-output-wrap">
+          <pre
+            data-testid="command-output"
+            class="settings-command-output"
+            tabindex="0"
+            aria-label="Command output"
+            >{{ commandOutput }}</pre
+          >
+          <BaseButton
+            data-testid="command-copy"
+            variant="outline"
+            size="sm"
+            type="button"
+            @click="copyCommandOutput"
+          >
+            {{
+              copyState === 'copied'
+                ? 'Copied'
+                : copyState === 'failed'
+                  ? 'Copy failed'
+                  : 'Copy output'
+            }}
+          </BaseButton>
+        </div>
       </div>
     </details>
   </BasePageLayout>
@@ -167,7 +191,8 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import RefreshPlaidControls from '@/components/widgets/RefreshPlaidControls.vue'
 import { useTheme } from '@/composables/useTheme'
 import api from '@/services/api'
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
+import axios from 'axios'
 import { Settings as SettingsIcon } from 'lucide-vue-next'
 
 const { activeTheme, setTheme, themes } = useTheme()
@@ -178,6 +203,52 @@ const commandTemplates = [
 ]
 const selectedCommandTemplate = ref('refresh-balances')
 const commandArgument = ref('')
+const commandLoading = ref(false)
+const commandFeedback = ref(null)
+const commandOutput = ref('')
+const copyState = ref('idle')
+
+/** Require a template and a non-blank argument, and block duplicate submissions. */
+const commandCanSubmit = computed(
+  () =>
+    Boolean(selectedCommandTemplate.value && commandArgument.value.trim()) && !commandLoading.value,
+)
+
+/** Submit the validated command form and expose the result inline. */
+async function executeCommand() {
+  if (!commandCanSubmit.value) return
+
+  commandLoading.value = true
+  commandFeedback.value = null
+  commandOutput.value = ''
+  copyState.value = 'idle'
+
+  try {
+    const response = await axios.post('/api/codex/exec', {
+      preset: selectedCommandTemplate.value,
+      task: commandArgument.value.trim(),
+    })
+    commandFeedback.value = { type: 'success', message: 'Command completed successfully.' }
+    commandOutput.value = response.data.stdout || ''
+  } catch (error) {
+    commandFeedback.value = {
+      type: 'error',
+      message: error.response?.data?.error || 'Unable to run command. Please try again.',
+    }
+  } finally {
+    commandLoading.value = false
+  }
+}
+
+/** Copy the command output where the Clipboard API is available. */
+async function copyCommandOutput() {
+  try {
+    await navigator.clipboard.writeText(commandOutput.value)
+    copyState.value = 'copied'
+  } catch {
+    copyState.value = 'failed'
+  }
+}
 const llmSettings = reactive({ custom_message_enabled: true, base_url: '' })
 const llmSettingsLoading = ref(true)
 const llmSettingsSaving = ref(false)
@@ -270,7 +341,7 @@ onMounted(loadLlmSettings)
 
 .settings-field-help {
   max-width: 38rem;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   color: var(--color-text-muted);
 }
 
@@ -278,6 +349,58 @@ onMounted(loadLlmSettings)
 .settings-input,
 .settings-command-fields > button {
   max-width: 18rem;
+}
+
+/* A URL needs more room than a short argument. */
+.settings-input--wide {
+  max-width: min(100%, 32rem);
+}
+
+.settings-command-feedback {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.settings-command-feedback--success {
+  color: var(--text-positive);
+}
+
+.settings-command-feedback--error {
+  color: var(--text-negative);
+}
+
+.settings-command-output-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.settings-command-output {
+  width: 100%;
+  max-height: 18rem;
+  margin: 0;
+  padding: 0.75rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--font-data);
+  font-size: 0.875rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2);
+  background: var(--surface-2);
+  color: var(--text-primary);
+}
+
+.settings-command-output:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.settings-advanced__summary:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
 }
 
 .theme-options {

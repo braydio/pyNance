@@ -6,22 +6,41 @@
         {{ generatedLabel }}
       </template>
       <template #actions>
-        <button class="refresh-button" type="button" :disabled="loading" @click="loadStatus">
+        <button
+          class="refresh-button"
+          type="button"
+          :disabled="loading"
+          :aria-busy="loading ? 'true' : 'false'"
+          data-testid="rsa-refresh"
+          @click="loadStatus"
+        >
           <RefreshCw class="refresh-icon" :class="{ spinning: loading }" aria-hidden="true" />
-          <span>Refresh</span>
+          <span>{{ loading ? 'Refreshing…' : 'Refresh' }}</span>
         </button>
       </template>
     </PageHeader>
 
-    <div v-if="errorMessage" class="status-banner error">
+    <div v-if="errorMessage" class="status-banner error" role="alert" data-testid="rsa-error">
       <AlertTriangle aria-hidden="true" />
       <span>{{ errorMessage }}</span>
+      <span v-if="monitorData" class="status-banner__stale">
+        Showing the last successful check ({{ generatedLabel }}).
+      </span>
     </div>
+    <p v-else-if="!monitorData && loading" class="empty-text" role="status">
+      Loading RSA monitor status…
+    </p>
+    <p v-else-if="!monitorData" class="empty-text" role="status" data-testid="rsa-empty">
+      No monitor data yet. Use Refresh to try again.
+    </p>
 
     <section v-if="monitorData" class="summary-grid">
       <article class="metric-panel">
         <span class="metric-label">Overall</span>
-        <strong :class="['status-pill', statusClass(monitorData.overall_status)]">
+        <strong
+          :class="['status-pill', statusClass(monitorData.overall_status)]"
+          :aria-label="`Overall status: ${monitorData.overall_status}`"
+        >
           {{ monitorData.overall_status }}
         </strong>
       </article>
@@ -65,15 +84,15 @@
           <CheckCircle2 aria-hidden="true" />
           <h2>Sent Orders</h2>
         </div>
-        <div class="table-wrap">
+        <div class="table-wrap" role="region" aria-label="Sent orders" tabindex="0">
           <table>
             <thead>
               <tr>
-                <th>Time</th>
-                <th>Ticker</th>
-                <th>Action</th>
-                <th>Qty</th>
-                <th>Broker</th>
+                <th scope="col">Time</th>
+                <th scope="col">Ticker</th>
+                <th scope="col">Action</th>
+                <th scope="col" class="num">Qty</th>
+                <th scope="col">Broker</th>
               </tr>
             </thead>
             <tbody>
@@ -81,7 +100,7 @@
                 <td>{{ formatDateTime(order.sent_at) }}</td>
                 <td>{{ order.ticker || '-' }}</td>
                 <td>{{ order.action || '-' }}</td>
-                <td>{{ order.quantity ?? '-' }}</td>
+                <td class="num">{{ order.quantity ?? '-' }}</td>
                 <td>{{ order.broker || '-' }}</td>
               </tr>
               <tr v-if="recentOrders.length === 0">
@@ -114,7 +133,9 @@
           <h2>{{ log.name }}</h2>
           <span :class="['status-pill', statusClass(log.status)]">{{ log.status }}</span>
         </div>
-        <pre>{{ log.recent_lines.join('\n') || 'No recent lines found.' }}</pre>
+        <pre role="region" tabindex="0" :aria-label="`${log.name} log, recent lines`">{{
+          log.recent_lines.join('\n') || 'No recent lines found.'
+        }}</pre>
       </article>
     </section>
   </BasePageLayout>
@@ -208,12 +229,17 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  min-height: 2.25rem;
+  min-height: var(--control-height);
   padding: 0.45rem 0.8rem;
-  border: 1px solid var(--divider);
+  border: 1px solid var(--control-border);
   border-radius: 8px;
   color: var(--color-text-light);
   background: var(--themed-bg, var(--color-bg-sec));
+}
+
+.refresh-button:focus-visible {
+  outline: none;
+  box-shadow: var(--control-focus-ring);
 }
 
 .refresh-button:disabled {
@@ -240,8 +266,18 @@ onBeforeUnmount(() => {
   background: var(--themed-bg, var(--color-bg-sec));
 }
 
+.status-banner {
+  flex-wrap: wrap;
+}
+
 .status-banner.error {
-  color: var(--color-error, #f87171);
+  color: var(--text-negative);
+}
+
+.status-banner__stale {
+  flex-basis: 100%;
+  font-size: 0.875rem;
+  color: var(--text-muted);
 }
 
 .summary-grid,
@@ -333,7 +369,7 @@ onBeforeUnmount(() => {
   max-width: 100%;
   margin: 0.15rem 0 0;
   overflow-wrap: anywhere;
-  font-size: 0.82rem;
+  font-size: 0.875rem;
 }
 
 .status-pill {
@@ -343,24 +379,26 @@ onBeforeUnmount(() => {
   min-height: 1.7rem;
   padding: 0.25rem 0.55rem;
   border-radius: 999px;
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
   font-weight: 700;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
 }
 
+/* Status colors come from the contrast-verified text roles in both themes. */
 .status-pill.ok {
-  color: #86efac;
-  background: rgb(22 101 52 / 0.24);
+  color: var(--text-positive);
+  background: color-mix(in srgb, var(--text-positive) 16%, transparent);
 }
 
 .status-pill.warning {
-  color: #fde68a;
-  background: rgb(180 83 9 / 0.24);
+  color: var(--text-warning);
+  background: color-mix(in srgb, var(--text-warning) 16%, transparent);
 }
 
 .status-pill.error {
-  color: #fecaca;
-  background: rgb(185 28 28 / 0.24);
+  color: var(--text-negative);
+  background: color-mix(in srgb, var(--text-negative) 16%, transparent);
 }
 
 .status-pill.unknown {
@@ -370,6 +408,19 @@ onBeforeUnmount(() => {
 
 .table-wrap {
   overflow-x: auto;
+  max-width: 100%;
+  overscroll-behavior-x: contain;
+}
+
+.table-wrap:focus-visible,
+pre:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 table {
@@ -387,7 +438,7 @@ td {
 
 th {
   color: var(--color-text-muted);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -411,10 +462,9 @@ td {
 }
 
 .broker-row span {
-  overflow: hidden;
+  min-width: 0;
   color: var(--color-text-light);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .broker-row strong {
@@ -432,8 +482,9 @@ pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   color: var(--color-text-light);
-  font-size: 0.78rem;
-  line-height: 1.45;
+  font-size: 0.875rem;
+  font-family: var(--font-data);
+  line-height: 1.5;
 }
 
 @keyframes spin {

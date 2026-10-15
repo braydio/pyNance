@@ -2,13 +2,25 @@
   <Card class="space-y-4">
     <h2 class="text-lg font-semibold text-center">Refresh Plaid</h2>
     <div class="flex flex-wrap gap-3">
-      <input type="date" v-model="startDate" class="input" />
-      <input type="date" v-model="endDate" class="input" />
-      <div class="account-select" v-click-outside="closeDropdown">
-        <UiButton type="button" variant="outline" @click="toggleDropdown"
-          >All Linked Accounts</UiButton
+      <input type="date" v-model="startDate" class="input" aria-label="Start date" />
+      <input type="date" v-model="endDate" class="input" aria-label="End date" />
+      <div class="account-select" v-click-outside="closeDropdown" @keydown.esc="closeDropdown">
+        <UiButton
+          type="button"
+          variant="outline"
+          :aria-expanded="dropdownOpen ? 'true' : 'false'"
+          aria-haspopup="true"
+          aria-controls="refresh-account-menu"
+          @click="toggleDropdown"
+          >{{ accountSelectionLabel }}</UiButton
         >
-        <div v-if="dropdownOpen" class="dropdown-menu">
+        <div
+          v-if="dropdownOpen"
+          id="refresh-account-menu"
+          class="dropdown-menu"
+          role="group"
+          aria-label="Accounts to sync"
+        >
           <label v-for="acct in accounts" :key="acct.account_id">
             <input type="checkbox" :value="acct.account_id" v-model="selectedAccounts" />
             {{ acct.name }}
@@ -308,6 +320,11 @@ export default {
     },
   },
   computed: {
+    accountSelectionLabel() {
+      const count = this.selectedAccounts.length
+      if (!count) return 'All linked accounts'
+      return `${count} ${count === 1 ? 'account' : 'accounts'} selected`
+    },
     reconnectGroups() {
       return reconnectConnectionGroups(this.accounts, this.refreshResult?.errors || [])
     },
