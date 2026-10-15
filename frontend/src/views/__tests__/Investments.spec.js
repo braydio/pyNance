@@ -1,7 +1,12 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { readFileSync } from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import Investments from '../Investments.vue'
+
+const here = path.dirname(fileURLToPath(import.meta.url))
 
 const apiMocks = vi.hoisted(() => ({
   fetchHoldings: vi.fn(),
@@ -268,5 +273,105 @@ describe('Investments.vue transaction filters', () => {
     expect(disclosure.attributes('open')).toBeUndefined()
     await wrapper.get('[data-testid="tx-filter-type"]').setValue('buy')
     expect(disclosure.get('summary').text()).toContain('(1)')
+  })
+})
+
+describe('Investments UI details', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.clearAllMocks()
+    apiMocks.fetchHoldings.mockResolvedValue({ data: [] })
+    apiMocks.fetchInvestmentAccounts.mockResolvedValue({
+      data: [{ account_id: 'acc-1', name: 'Brokerage', institution_name: 'Fidelity' }],
+    })
+    apiMocks.fetchInvestmentTransactions.mockResolvedValue(txPayload)
+    apiMocks.refreshInvestmentsAll.mockResolvedValue({ summary: {} })
+  })
+
+  it('links holding account rows to their detail panels with truthful aria state', async () => {
+    apiMocks.fetchHoldings.mockResolvedValue({
+      data: [
+        {
+          account_id: 'acc-1',
+          security_id: 's1',
+          institution_value: 150,
+          quantity: 1,
+          security: {
+            name: 'A very long security name that should wrap',
+            ticker_symbol: 'AAA',
+            price: 150,
+          },
+        },
+        {
+          account_id: 'acc-2',
+          security_id: 's2',
+          institution_value: 50,
+          quantity: 2,
+          security: { name: 'Beta', ticker_symbol: 'BBB', price: 25 },
+        },
+      ],
+    })
+    const wrapper = mountInvestments()
+    await flushPromises()
+
+    const toggle = wrapper.get('[data-testid="holding-toggle-acc-1"]')
+    expect(toggle.attributes('aria-expanded')).toBe('false')
+    await toggle.trigger('click')
+    expect(toggle.attributes('aria-expanded')).toBe('true')
+    const panel = wrapper.get(`#${toggle.attributes('aria-controls')}`)
+    expect(panel.text()).toContain('AAA')
+    expect(panel.find('.name-clip').attributes('title')).toContain('very long security name')
+  })
+
+  it('scrolls tables inside labelled regions instead of the page', async () => {
+    apiMocks.fetchHoldings.mockResolvedValue({
+      data: [{ account_id: 'acc-1', security_id: 's1', institution_value: 150, quantity: 1 }],
+    })
+    const wrapper = mountInvestments()
+    await flushPromises()
+    const region = wrapper.get('.holdings-table')
+    expect(region.attributes('role')).toBe('region')
+    expect(region.attributes('aria-label')).toBe('Holdings')
+    expect(region.attributes('tabindex')).toBe('0')
+  })
+
+  it('renders a real Link button from the launcher slot', async () => {
+    const wrapper = mount(Investments, {
+      global: {
+        stubs: {
+          BasePageLayout: { template: '<div><slot /></div>' },
+          PageHeader: { template: '<header />' },
+          PortfolioAllocationChart: { template: '<div />' },
+          LinkProviderLauncher: {
+            template:
+              '<div><slot :link-plaid="() => {}" :loading="false" :is-disabled="false" error-message="" status-message="" /></div>',
+          },
+        },
+      },
+    })
+    await flushPromises()
+    const button = wrapper.get('[data-testid="link-investments"]')
+    expect(button.text()).toBe('Link investments account')
+    expect(button.attributes('type')).toBe('button')
+  })
+
+  it('resets transaction filters from the disclosure and uses shared control classes', async () => {
+    const wrapper = mountInvestments()
+    await flushPromises()
+    const type = wrapper.get('[data-testid="tx-filter-type"]')
+    expect(type.classes()).toContain('input')
+    expect(wrapper.get('[data-testid="tx-filter-account"]').classes()).toContain('select')
+    const reset = wrapper.get('[data-testid="tx-filter-reset"]')
+    expect(reset.attributes('disabled')).toBeDefined()
+    await type.setValue('buy')
+    expect(reset.attributes('disabled')).toBeUndefined()
+    await reset.trigger('click')
+    expect(type.element.value).toBe('')
+    expect(wrapper.find('[data-testid="tx-filter-count"]').exists()).toBe(false)
+  })
+
+  it('has no hardcoded gray/white colors in the page styles', () => {
+    const source = readFileSync(path.resolve(here, '../Investments.vue'), 'utf-8')
+    expect(source).not.toMatch(/#6b7280|#94a3b8|color:\s*#fff\b/i)
   })
 })

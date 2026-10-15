@@ -20,7 +20,12 @@
       </button>
     </nav>
 
-    <section id="portfolio-overview" ref="overviewSection" class="surface-primary p-4 md:p-5">
+    <section
+      id="portfolio-overview"
+      ref="overviewSection"
+      tabindex="-1"
+      class="surface-primary p-4 md:p-5"
+    >
       <h2 class="text-xl font-semibold mb-3">Portfolio</h2>
       <div v-if="loading" class="text-muted">Loading…</div>
       <div v-else class="overview-grid" data-testid="portfolio-summary">
@@ -40,19 +45,19 @@
       </div>
     </section>
 
-    <section id="holdings" ref="holdingsSection">
+    <section id="holdings" ref="holdingsSection" tabindex="-1">
       <h2 class="text-xl font-semibold mb-2">Holdings</h2>
       <div class="filters">
         <label>
           <span>Institution</span>
-          <select v-model="selectedInstitution">
+          <select v-model="selectedInstitution" class="input select">
             <option value="">All</option>
             <option v-for="inst in institutions" :key="inst" :value="inst">{{ inst }}</option>
           </select>
         </label>
         <label>
           <span>Account</span>
-          <select v-model="selectedAccount">
+          <select v-model="selectedAccount" class="input select">
             <option value="">All</option>
             <option
               v-for="acc in accountsForInstitution"
@@ -66,7 +71,7 @@
       </div>
       <div v-if="loading" class="text-muted">Loading holdings…</div>
       <div v-else-if="filteredHoldings.length === 0" class="text-muted">No holdings yet.</div>
-      <div v-else class="holdings-table">
+      <div v-else class="holdings-table" role="region" aria-label="Holdings" tabindex="0">
         <div class="totals-bar">
           <div>
             Total (filtered): <strong>{{ formatCurrency(filteredTotal) }}</strong>
@@ -86,7 +91,11 @@
             <button
               type="button"
               class="trow holdings-summary-row"
-              :aria-expanded="expandedHoldingAccounts.includes(summary.account_id)"
+              :aria-expanded="
+                expandedHoldingAccounts.includes(summary.account_id) ? 'true' : 'false'
+              "
+              :aria-controls="`holdings-panel-${summary.account_id}`"
+              :data-testid="`holding-toggle-${summary.account_id}`"
               @click="toggleHoldingAccount(summary.account_id)"
             >
               <div class="account-cell">
@@ -108,6 +117,7 @@
             </button>
             <div
               v-if="expandedHoldingAccounts.includes(summary.account_id)"
+              :id="`holdings-panel-${summary.account_id}`"
               class="holdings-details-panel"
             >
               <div class="holdings-details-head">
@@ -123,7 +133,7 @@
                 class="holdings-details-row"
               >
                 <div>{{ holding.security?.ticker_symbol || '—' }}</div>
-                <div class="name-clip">
+                <div class="name-clip" :title="holding.security?.name || holding.security_id">
                   {{ holding.security?.name || holding.security_id }}
                 </div>
                 <div class="num">
@@ -151,7 +161,7 @@
           <div v-for="h in filteredHoldings" :key="h.account_id + ':' + h.security_id" class="trow">
             <div>{{ accountLabelById[h.account_id] || h.account_id }}</div>
             <div>{{ h.security?.ticker_symbol || '—' }}</div>
-            <div class="name-clip">
+            <div class="name-clip" :title="h.security?.name || h.security_id">
               {{ h.security?.name || h.security_id }}
             </div>
             <div class="num">
@@ -177,23 +187,29 @@
       </div>
     </section>
 
-    <section id="performance" ref="performanceSection">
+    <section id="performance" ref="performanceSection" tabindex="-1">
       <h2 class="text-xl font-semibold mb-2">Performance</h2>
       <div class="perf-grid">
         <PortfolioAllocationChart :allocations="allocationByType" />
       </div>
     </section>
 
-    <section id="investment-transactions" ref="transactionsSection">
+    <section id="investment-transactions" ref="transactionsSection" tabindex="-1">
       <h2 class="text-xl font-semibold mb-2">Recent Investment Transactions</h2>
       <details class="filters-disclosure" data-testid="tx-filters-disclosure">
         <summary>
-          Filters<span v-if="activeTxFilterCount"> ({{ activeTxFilterCount }})</span>
+          Filters<span
+            v-if="activeTxFilterCount"
+            data-testid="tx-filter-count"
+            :title="`${activeTxFilterCount} active ${activeTxFilterCount === 1 ? 'filter' : 'filters'}`"
+          >
+            ({{ activeTxFilterCount }})</span
+          >
         </summary>
-        <div class="filters">
+        <div class="filters filters--grid">
           <label>
             <span>Account</span>
-            <select v-model="txAccountId" data-testid="tx-filter-account">
+            <select v-model="txAccountId" class="input select" data-testid="tx-filter-account">
               <option value="">All</option>
               <option v-for="acc in accounts" :key="acc.account_id" :value="acc.account_id">
                 {{ accDisplay(acc) }}
@@ -202,30 +218,55 @@
           </label>
           <label>
             <span>Security ID</span>
-            <input v-model="txSecurityId" data-testid="tx-filter-security-id" type="text" />
+            <input
+              v-model="txSecurityId"
+              class="input"
+              data-testid="tx-filter-security-id"
+              type="text"
+            />
           </label>
           <label>
             <span>Type</span>
-            <input v-model="txType" data-testid="tx-filter-type" type="text" />
+            <input v-model="txType" class="input" data-testid="tx-filter-type" type="text" />
           </label>
           <label>
             <span>Subtype</span>
-            <input v-model="txSubtype" data-testid="tx-filter-subtype" type="text" />
+            <input v-model="txSubtype" class="input" data-testid="tx-filter-subtype" type="text" />
           </label>
           <label>
             <span>Start Date</span>
-            <input v-model="txStartDate" data-testid="tx-filter-start-date" type="date" />
+            <input
+              v-model="txStartDate"
+              class="input"
+              data-testid="tx-filter-start-date"
+              type="date"
+            />
           </label>
           <label>
             <span>End Date</span>
-            <input v-model="txEndDate" data-testid="tx-filter-end-date" type="date" />
+            <input v-model="txEndDate" class="input" data-testid="tx-filter-end-date" type="date" />
           </label>
+          <button
+            type="button"
+            class="btn btn-outline"
+            :disabled="!activeTxFilterCount"
+            data-testid="tx-filter-reset"
+            @click="resetTxFilters"
+          >
+            Reset filters
+          </button>
         </div>
       </details>
       <div v-if="txLoading" class="text-muted">Loading transactions…</div>
       <div v-else>
         <div v-if="txData.length === 0" class="text-muted">No transactions found.</div>
-        <div v-else class="tx-table">
+        <div
+          v-else
+          class="tx-table"
+          role="region"
+          aria-label="Investment transactions"
+          tabindex="0"
+        >
           <div class="thead">
             <div>Date</div>
             <div>Account</div>
@@ -253,11 +294,17 @@
             </div>
           </div>
           <div class="pager">
-            <button class="btn" :disabled="txPage === 1" @click="loadTransactions(txPage - 1)">
+            <button
+              type="button"
+              class="btn"
+              :disabled="txPage === 1"
+              @click="loadTransactions(txPage - 1)"
+            >
               Prev
             </button>
             <span>Page {{ txPage }} of {{ txTotalPages }}</span>
             <button
+              type="button"
               class="btn"
               :disabled="txPage === txTotalPages"
               @click="loadTransactions(txPage + 1)"
@@ -268,29 +315,47 @@
         </div>
       </div>
     </section>
-    <section id="maintenance" ref="maintenanceSection" class="surface-quiet p-4 md:p-5">
+    <section
+      id="maintenance"
+      ref="maintenanceSection"
+      tabindex="-1"
+      class="surface-quiet p-4 md:p-5"
+    >
       <h2 class="text-lg font-semibold mb-2">Manage investment connections</h2>
       <div class="controls">
         <label>
           <span>Start</span>
-          <input v-model="startDate" type="date" />
+          <input v-model="startDate" class="input" type="date" />
         </label>
         <label>
           <span>End</span>
-          <input v-model="endDate" type="date" />
+          <input v-model="endDate" class="input" type="date" />
         </label>
-        <button class="btn" :disabled="refreshing" @click="refreshAll">
+        <button type="button" class="btn" :disabled="refreshing" @click="refreshAll">
           {{ refreshing ? 'Refreshing…' : 'Refresh Investments' }}
         </button>
-        <span v-if="refreshMsg" class="msg">{{ refreshMsg }}</span>
+        <span v-if="refreshMsg" class="msg" role="status">{{ refreshMsg }}</span>
       </div>
       <div class="link-box">
         <h3 class="text-md font-medium mb-1">Link New Investments Account</h3>
         <LinkProviderLauncher
+          v-slot="{ linkPlaid, loading: linking, isDisabled, errorMessage, statusMessage }"
           :selected-products="['investments']"
           :user-id="plaidUserId"
           @refresh="onLinked"
-        />
+        >
+          <button
+            type="button"
+            class="btn"
+            :disabled="isDisabled"
+            data-testid="link-investments"
+            @click="linkPlaid"
+          >
+            {{ linking ? 'Opening Plaid…' : 'Link investments account' }}
+          </button>
+          <p v-if="statusMessage" class="msg" role="status">{{ statusMessage }}</p>
+          <p v-if="errorMessage" class="text-negative" role="alert">{{ errorMessage }}</p>
+        </LinkProviderLauncher>
       </div>
     </section>
   </BasePageLayout>
@@ -347,7 +412,19 @@ function scrollToSection(key) {
   const section = sectionRefs[key]?.value
   if (section) {
     section.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    // Move keyboard focus to the section so the next Tab continues from its content.
+    section.focus?.({ preventScroll: true })
   }
+}
+
+/** Clear every investment transaction filter and reload from page 1. */
+function resetTxFilters() {
+  txAccountId.value = ''
+  txSecurityId.value = ''
+  txType.value = ''
+  txSubtype.value = ''
+  txStartDate.value = ''
+  txEndDate.value = ''
 }
 
 function handleScroll() {
@@ -687,11 +764,22 @@ function onLinked() {
   overflow-x: auto;
   border-bottom: 1px solid var(--divider);
 }
+section[id] {
+  scroll-margin-top: 5rem;
+}
+section[id]:focus {
+  outline: none;
+}
+section[id]:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 4px;
+}
 .section-subnav__link {
   flex: 0 0 auto;
   white-space: nowrap;
+  min-height: var(--control-height-sm);
   padding: 0.5rem 0.75rem;
-  font-size: 0.9rem;
+  font-size: 0.9375rem;
   color: var(--color-text-muted);
   border-bottom: 2px solid transparent;
 }
@@ -706,7 +794,8 @@ function onLinked() {
 }
 .filters-disclosure > summary {
   cursor: pointer;
-  font-size: 0.85rem;
+  min-height: var(--control-height-sm);
+  font-size: 0.9375rem;
   color: var(--color-text-muted);
   margin-bottom: 0.5rem;
 }
@@ -737,7 +826,7 @@ function onLinked() {
   justify-content: space-between;
 }
 .metric .k {
-  color: #6b7280;
+  color: var(--text-muted);
 }
 .metric .v {
   font-weight: 700;
@@ -755,22 +844,21 @@ function onLinked() {
   align-items: center;
 }
 .controls input[type='date'] {
-  padding: 0.25rem 0.4rem;
-  border: 1px solid var(--divider);
-  background: var(--themed-bg);
-  color: inherit;
-  border-radius: 6px;
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
 }
 .controls .btn {
   padding: 0.4rem 0.7rem;
   border: 1px solid var(--divider);
   border-radius: 6px;
-  background: var(--color-accent-cyan, #06b6d4);
-  color: #fff;
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary-contrast);
   cursor: pointer;
 }
 .controls .msg {
-  color: #6b7280;
+  color: var(--text-muted);
 }
 .totals-bar {
   display: flex;
@@ -780,7 +868,7 @@ function onLinked() {
   border-bottom: 1px solid var(--divider);
 }
 .totals-bar .muted {
-  color: #6b7280;
+  color: var(--text-muted);
 }
 .filters {
   display: flex;
@@ -796,16 +884,42 @@ function onLinked() {
 }
 .filters select,
 .filters input {
-  padding: 0.25rem 0.4rem;
-  border: 1px solid var(--divider);
-  background: var(--themed-bg);
-  color: inherit;
-  border-radius: 6px;
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
 }
-.holdings-table {
+.filters--grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  align-items: end;
+}
+.filters--grid label {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.filters--grid select,
+.filters--grid input {
+  width: 100%;
+}
+/* Tables scroll inside their own region instead of overflowing the page. */
+.holdings-table,
+.tx-table {
   border: 1px solid var(--divider);
   border-radius: 8px;
-  overflow: hidden;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+.holdings-table:focus-visible,
+.tx-table:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: -2px;
+}
+.thead,
+.trow,
+.holdings-details-head,
+.holdings-details-row {
+  min-width: 40rem;
 }
 .thead,
 .trow {
@@ -862,9 +976,9 @@ function onLinked() {
   padding: 0.45rem 0.25rem;
 }
 .holdings-details-head {
-  font-size: 0.82rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 .holdings-details-row + .holdings-details-row {
   border-top: 1px solid color-mix(in srgb, var(--divider) 75%, transparent);
@@ -872,10 +986,10 @@ function onLinked() {
 .holdings-note {
   margin-top: 0.5rem;
 }
+/* Long security names wrap so the full text stays readable (also in the title tooltip). */
 .name-clip {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 .inst-summary {
   margin-top: 0.5rem;
@@ -892,11 +1006,6 @@ function onLinked() {
   display: grid;
   grid-template-columns: 1fr;
   gap: 0.75rem;
-}
-.tx-table {
-  border: 1px solid var(--divider);
-  border-radius: 8px;
-  overflow: hidden;
 }
 .pager {
   display: flex;

@@ -1,13 +1,23 @@
 <template>
   <div class="chart-container">
     <h3 class="text-lg font-medium mb-2">Allocation by Type</h3>
-    <div class="chart-wrap"><canvas ref="canvas"></canvas></div>
+    <p v-if="!hasData" class="text-muted" role="status" data-testid="allocation-empty">
+      No allocation data yet. Holdings will appear here once an investment account syncs.
+    </p>
+    <div v-show="hasData" class="chart-wrap">
+      <canvas ref="canvas" role="img" :aria-label="summaryLabel"></canvas>
+    </div>
+    <ul v-if="hasData" class="sr-only" data-testid="allocation-summary-list">
+      <li v-for="item in allocations" :key="item.label">
+        {{ item.label }}: {{ formatCurrency(item.value) }}
+      </li>
+    </ul>
   </div>
 </template>
 
 <script setup>
 import { Chart } from 'chart.js/auto'
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { computed, ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { getAccentColor } from '@/utils/colors'
 
 const props = defineProps({
@@ -16,6 +26,15 @@ const props = defineProps({
 
 const canvas = ref(null)
 let chart
+
+const hasData = computed(() => props.allocations.some((a) => Number(a.value) > 0))
+const summaryLabel = computed(() =>
+  hasData.value
+    ? `Allocation by type: ${props.allocations
+        .map((a) => `${a.label} ${formatCurrency(a.value)}`)
+        .join(', ')}`
+    : 'Allocation by type chart (no data)',
+)
 
 function build() {
   const canvasEl = canvas.value
@@ -34,6 +53,7 @@ function build() {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         legend: { display: true, labels: { color: getStyle('--color-text-muted') } },
         tooltip: {
