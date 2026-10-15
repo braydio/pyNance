@@ -52,6 +52,14 @@ class Account(db.Model, TimestampMixin):
     )
     product_provenance = db.Column(db.String(64), nullable=True)
     apr = db.Column(db.Numeric(7, 4), nullable=True)
+    # Provider-reported credit line (credit products only; never an overdraft limit).
+    credit_limit = db.Column(db.Numeric(18, 2), nullable=True)
+    # Provider "available" figure exactly as reported; distinct from the current balance.
+    available_balance = db.Column(db.Numeric(18, 2), nullable=True)
+    mask = db.Column(db.String(8), nullable=True)
+    currency_code = db.Column(db.String(8), nullable=True)
+    # When ``balance`` was last observed from the provider (null = never observed).
+    balance_as_of = db.Column(db.DateTime(timezone=True), nullable=True)
 
     plaid_account = db.relationship("PlaidAccount", backref="account", uselist=False, cascade="all, delete-orphan")
     institution = db.relationship("Institution", back_populates="accounts")

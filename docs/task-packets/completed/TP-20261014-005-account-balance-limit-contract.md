@@ -1,12 +1,12 @@
 # TP-20261014-005: Account balance, limit and freshness contract
 
 **Packet ID:** TP-20261014-005  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-14  
 **Last updated:** 2026-10-14  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261014-005-account-balance-limit-contract.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261014-005-account-balance-limit-contract.md`  
 **Workstream size:** One independently testable implementation packet  
 **Depends on:** None  
 **Priority:** High  
@@ -45,3 +45,14 @@ Account balance, limit and freshness contract. Implement against current main wi
 
 ## Do not rediscover
 Avoid broad repo archaeology. Only inspect explicitly named paths, directly imported helpers/tests, and exact migrations/route registrations needed to implement this packet.
+
+## Completion report
+
+- Added nullable `accounts.credit_limit`, `available_balance`, `mask`, `currency_code`, `balance_as_of` (migration `a1c5d7e9b3f2`, revises head `f84c6e2a91b7`, with doc).
+- `account_logic.py`: `extract_balance_fields` preserves valid zero, never invents missing values, keeps stored data when the provider omits fields, stores limit for credit products only; both `upsert_accounts` and `refresh_data_for_plaid_account` use it. `normalize_balance` no longer sign-flips liabilities (previously "credit card" was stored negated and negated again on read); idempotent; read-side flip remains in `finance_utils.normalize_account_balance`.
+- `plaid_helpers.get_accounts` records `current` (not `available or current`) in history.
+- `list_accounts` additive fields: `credit_limit`, `limit`, `available_balance`, `mask`, `currency_code`, `balance_as_of`, `apr`, `account_type`, `is_investment`, `status`.
+- New `app/services/account_portfolio_metrics.py` (+ doc).
+- Tests: new `tests/test_account_portfolio_metrics.py` (15 pass). `test_save_plaid_account.py` is skipped upstream; `test_accounts_product_scopes.py` unchanged. Other failing/erroring test files (account_history_service, refresh_dispatcher, api_institutions, investments_routes, internal_transfer_detection, model_*, routes_recurring) fail identically before my change. ruff/black clean.
+- Not run: migration against a live dev DB (none configured here); migration is idempotent and covered by model `create_all` in tests.
+- Deviations: `test_account_display_name.py` not modified (no relevant change).

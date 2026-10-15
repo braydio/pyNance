@@ -680,6 +680,12 @@ def refresh_single_account(account_id):
     return jsonify({"status": "success", "updated": updated}), 200
 
 
+def _optional_float(value):
+    """Return ``float(value)`` or ``None`` (a stored 0 stays 0)."""
+
+    return float(value) if value is not None else None
+
+
 @accounts.route("/get_accounts", methods=["GET"])
 def list_accounts():
     """Return serialized account data for the requesting client."""
@@ -723,6 +729,17 @@ def list_accounts():
                         "balance": balance_value,
                         "adjusted_balance": balance_value,
                         "subtype": a.subtype,
+                        "account_type": a.account_type,
+                        "is_investment": bool(a.is_investment),
+                        "status": a.status,
+                        "mask": a.mask,
+                        "currency_code": a.currency_code,
+                        # Nullable and additive: null means the provider never reported it.
+                        "credit_limit": _optional_float(a.credit_limit),
+                        "limit": _optional_float(a.credit_limit),
+                        "available_balance": _optional_float(a.available_balance),
+                        "balance_as_of": _to_iso(a.balance_as_of),
+                        "apr": _optional_float(a.apr),
                         "link_type": a.link_type,
                         "last_refreshed": _to_iso(last_refreshed),
                         "is_hidden": a.is_hidden,

@@ -160,7 +160,9 @@ def get_accounts(access_token: str, user_id: str):
                     "Missing user_id while syncing account_id=%s",
                     account_id or "<unknown>",
                 )
-            balance = acct.balances.available or acct.balances.current
+            # History records the observed *current* balance; ``available`` is a different
+            # figure and a valid current of 0 must not be treated as missing.
+            balance = acct.balances.current
             if account_id and balance is not None:
                 update_account_history(
                     account_id=account_id,

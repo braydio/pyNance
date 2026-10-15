@@ -8,7 +8,7 @@ See [README.md](README.md) for naming, lifecycle, execution, and authoring rules
 
 | Packet ID | Title | Status | Created | Canonical packet |
 | --- | --- | --- | --- | --- |
-| TP-20261014-005 | Account balance, limit and freshness contract | Ready | 2026-10-14 | [active/TP-20261014-005-account-balance-limit-contract.md](active/TP-20261014-005-account-balance-limit-contract.md) |
+| TP-20261014-005 | Account balance, limit and freshness contract | Complete | 2026-10-14 | [completed/TP-20261014-005-account-balance-limit-contract.md](completed/TP-20261014-005-account-balance-limit-contract.md) |
 | TP-20261014-006 | APR provenance and interest inference guardrails | Ready | 2026-10-14 | [active/TP-20261014-006-apr-provenance-interest-estimator.md](active/TP-20261014-006-apr-provenance-interest-estimator.md) |
 | TP-20261014-007 | Optional Plaid Liabilities APR and payment metadata | Ready | 2026-10-14 | [active/TP-20261014-007-plaid-liabilities-enrichment.md](active/TP-20261014-007-plaid-liabilities-enrichment.md) |
 | TP-20261014-008 | Accounts portfolio hierarchy and type breakouts | Ready | 2026-10-14 | [active/TP-20261014-008-accounts-portfolio-type-breakout.md](active/TP-20261014-008-accounts-portfolio-type-breakout.md) |

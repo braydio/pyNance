@@ -551,14 +551,83 @@ def process_transaction_amount(amount):
     return normalize_amount(amount)
 
 
+LIABILITY_ACCOUNT_TYPES = frozenset({"credit", "credit card", "credit_card", "loan", "liability"})
+CREDIT_CARD_ACCOUNT_TYPES = frozenset({"credit", "credit card", "credit_card"})
+
+
 def normalize_balance(amount, account_type):
-    """Normalize account balance sign based on account type."""
-    return normalize_amount(
-        {
-            "amount": amount,
-            "transaction_type": (account_type.lower().replace("_", " ") if account_type else None),
-        }
-    )
+    """Return the stored balance for a provider-reported ``amount``.
+
+    Liabilities keep the provider convention (positive = amount owed, negative =
+    overpaid/refund credit) and are never sign-flipped here; the single read-side
+    flip lives in ``finance_utils.normalize_account_balance``. Applying this
+    function repeatedly is therefore idempotent.
+    """
+
+    kind = account_type.lower().replace("_", " ") if account_type else None
+    if kind in LIABILITY_ACCOUNT_TYPES or (account_type or "").lower() in LIABILITY_ACCOUNT_TYPES:
+        return normalize_amount(amount)
+    return normalize_amount({"amount": amount, "transaction_type": kind})
+
+
+def _decimal_or_none(value):
+    """Return ``value`` as a two-place ``Decimal`` or ``None`` when absent/invalid.
+
+    Unlike ``value or 0`` this preserves a valid ``0`` and never invents one.
+    """
+
+    if value is None or isinstance(value, bool) or value == "":
+        return None
+    try:
+        return normalize_amount(value)
+    except (ValueError, TypeError, ArithmeticError):
+        return None
+
+
+def extract_balance_fields(account, account_type=None):
+    """Extract provider-observed balance metadata from a Plaid-style account payload.
+
+    Missing values come back as ``None`` (never ``0``). ``credit_limit`` is only
+    populated for credit-card products: a checking account's provider ``limit`` is
+    an overdraft limit, not a card credit line.
+    """
+
+    payload = account if isinstance(account, dict) else {}
+    balances = payload.get("balances") or {}
+    legacy = payload.get("balance")
+    if not isinstance(balances, dict):
+        balances = {}
+    if isinstance(legacy, dict):
+        balances = {**legacy, **balances}
+        legacy = None
+
+    current = _decimal_or_none(balances.get("current"))
+    if current is None:
+        current = _decimal_or_none(legacy)
+    kind = (account_type or payload.get("type") or "").lower()
+    limit = _decimal_or_none(balances.get("limit")) if kind in CREDIT_CARD_ACCOUNT_TYPES else None
+    mask = payload.get("mask")
+    currency = balances.get("iso_currency_code") or balances.get("currency_code")
+    return {
+        "current": current,
+        "available": _decimal_or_none(balances.get("available")),
+        "credit_limit": limit,
+        "mask": str(mask)[:8] if mask else None,
+        "currency_code": str(currency)[:8] if currency else None,
+    }
+
+
+def _apply_balance_fields(values, fields, now):
+    """Copy only observed metadata into ``values`` so absent data never erases stored data."""
+
+    if fields["current"] is not None:
+        values["balance"] = fields["current"]
+        values["balance_as_of"] = now
+    for key in ("available_balance", "credit_limit", "mask", "currency_code"):
+        source = "available" if key == "available_balance" else key
+        if fields[source] is not None:
+            values[key] = fields[source]
+    return values
 
 
 def normalize_account_status(status: Optional[str]) -> str:
@@ -873,14 +942,11 @@ def upsert_accounts(
             investment_flags = _derive_investment_flags(account, enabled_products)
             acc_type = investment_flags["effective_type"]
 
-            # ✅ Corrected Plaid balance parsing
-            balance_raw = (
-                account.get("balances", {}).get("current")
-                or account.get("balance", {}).get("current")
-                or account.get("balance")
-                or 0
-            )
-            balance = normalize_balance(balance_raw, acc_type)
+            # Explicit null handling: a valid 0 is kept, a missing value is not invented.
+            balance_fields = extract_balance_fields(account, acc_type)
+            balance_observed = balance_fields["current"] is not None
+            balance = normalize_balance(balance_fields["current"], acc_type) if balance_observed else None
+            balance_fields["current"] = balance
             logger.debug("[UPSERT] Balance parsed for %s: %s", account_id, balance)
 
             subtype = str(account.get("subtype") or "Unknown").capitalize()
@@ -916,7 +982,6 @@ def upsert_accounts(
                 "subtype": subtype,
                 "institution_name": institution_name,
                 "status": status,
-                "balance": balance,
                 # Normalize provider/link type to lowercase to match DB enum values
                 "link_type": str(provider or "").lower() or "manual",
                 "is_investment": investment_flags["is_investment"],
@@ -924,6 +989,8 @@ def upsert_accounts(
                 "investment_has_transactions": investment_flags["investment_has_transactions"],
                 "product_provenance": investment_flags["product_provenance"],
             }
+
+            _apply_balance_fields(filtered_account, balance_fields, now)
 
             existing_account = Account.query.filter_by(account_id=account_id).first()
             if existing_account:
@@ -942,45 +1009,46 @@ def upsert_accounts(
 
             # Existing AccountHistory logic follows...
 
-            # Patched: safely upsert AccountHistory with conflict resolution
-            now_utc = datetime.now(timezone.utc)
-            today = now_utc.date()
-            dt_today = datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc)
-            stmt = dialect_insert(AccountHistory).values(
-                account_id=account_id,
-                user_id=user_id,
-                date=dt_today,
-                balance=balance,
-                created_at=now_utc,
-                updated_at=now_utc,
-            )
-
-            on_conflict = getattr(stmt, "on_conflict_do_update", None)
-            if callable(on_conflict):
-                stmt = on_conflict(
-                    index_elements=["account_id", "date"],
-                    set_={
-                        "balance": balance,
-                        "updated_at": now_utc,
-                    },
+            if balance_observed:  # never record an unobserved balance as history
+                # Patched: safely upsert AccountHistory with conflict resolution
+                now_utc = datetime.now(timezone.utc)
+                today = now_utc.date()
+                dt_today = datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc)
+                stmt = dialect_insert(AccountHistory).values(
+                    account_id=account_id,
+                    user_id=user_id,
+                    date=dt_today,
+                    balance=balance,
+                    created_at=now_utc,
+                    updated_at=now_utc,
                 )
-                db.session.execute(stmt)
-            else:
-                history = AccountHistory.query.filter_by(account_id=account_id, date=dt_today).first()
-                if history:
-                    history.balance = balance
-                    history.updated_at = now_utc
-                else:
-                    db.session.add(
-                        AccountHistory(
-                            account_id=account_id,
-                            user_id=user_id,
-                            date=dt_today,
-                            balance=balance,
-                            created_at=now_utc,
-                            updated_at=now_utc,
-                        )
+
+                on_conflict = getattr(stmt, "on_conflict_do_update", None)
+                if callable(on_conflict):
+                    stmt = on_conflict(
+                        index_elements=["account_id", "date"],
+                        set_={
+                            "balance": balance,
+                            "updated_at": now_utc,
+                        },
                     )
+                    db.session.execute(stmt)
+                else:
+                    history = AccountHistory.query.filter_by(account_id=account_id, date=dt_today).first()
+                    if history:
+                        history.balance = balance
+                        history.updated_at = now_utc
+                    else:
+                        db.session.add(
+                            AccountHistory(
+                                account_id=account_id,
+                                user_id=user_id,
+                                date=dt_today,
+                                balance=balance,
+                                created_at=now_utc,
+                                updated_at=now_utc,
+                            )
+                        )
 
             count += 1
             if count % 100 == 0:
@@ -1377,13 +1445,19 @@ def refresh_data_for_plaid_account(access_token, account_or_id, accounts_data=No
         for acct in accounts_data:
             acct_dict = acct.to_dict() if hasattr(acct, "to_dict") else dict(acct)
             if acct_dict.get("account_id") == account_id:
-                raw_balance = (
-                    acct_dict.get("balances", {}).get("current")
-                    or acct_dict.get("balance", {}).get("current")
-                    or acct_dict.get("balance")
-                    or 0
-                )
-                account.balance = normalize_balance(raw_balance, account.type)
+                fields = extract_balance_fields(acct_dict, account.type)
+                refreshed_at = datetime.now(timezone.utc)
+                if fields["current"] is not None:
+                    account.balance = normalize_balance(fields["current"], account.type)
+                    account.balance_as_of = refreshed_at
+                for attr, source in (
+                    ("available_balance", "available"),
+                    ("credit_limit", "credit_limit"),
+                    ("mask", "mask"),
+                    ("currency_code", "currency_code"),
+                ):
+                    if fields[source] is not None:
+                        setattr(account, attr, fields[source])
                 account.updated_at = datetime.now(timezone.utc)
                 logger.debug(
                     "[REFRESH] Updated balance for %s: %s",
