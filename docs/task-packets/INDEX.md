@@ -8,6 +8,11 @@ See [README.md](README.md) for naming, lifecycle, execution, and authoring rules
 
 | Packet ID | Title | Status | Created | Canonical packet |
 | --- | --- | --- | --- | --- |
+| TP-20261014-005 | Account balance, limit and freshness contract | Ready | 2026-10-14 | [active/TP-20261014-005-account-balance-limit-contract.md](active/TP-20261014-005-account-balance-limit-contract.md) |
+| TP-20261014-006 | APR provenance and interest inference guardrails | Ready | 2026-10-14 | [active/TP-20261014-006-apr-provenance-interest-estimator.md](active/TP-20261014-006-apr-provenance-interest-estimator.md) |
+| TP-20261014-007 | Optional Plaid Liabilities APR and payment metadata | Ready | 2026-10-14 | [active/TP-20261014-007-plaid-liabilities-enrichment.md](active/TP-20261014-007-plaid-liabilities-enrichment.md) |
+| TP-20261014-008 | Accounts portfolio hierarchy and type breakouts | Ready | 2026-10-14 | [active/TP-20261014-008-accounts-portfolio-type-breakout.md](active/TP-20261014-008-accounts-portfolio-type-breakout.md) |
+| TP-20261014-009 | Account drill-in, truthful activity and range integrity | Ready | 2026-10-14 | [active/TP-20261014-009-accounts-account-detail-activity.md](active/TP-20261014-009-accounts-account-detail-activity.md) |
 | TP-20261014-001 | Financial Detail: Decision Hierarchy and Honest Metrics | Complete | 2026-10-14 | [completed/TP-20261014-001-financial-detail-decision-hierarchy.md](completed/TP-20261014-001-financial-detail-decision-hierarchy.md) |
 | TP-20261014-002 | Upcoming Recurring: Due-First and Coverage-Aware | Complete | 2026-10-14 | [completed/TP-20261014-002-upcoming-recurring-action-order.md](completed/TP-20261014-002-upcoming-recurring-action-order.md) |
 | TP-20261014-003 | Dashboard Date Controls: One Visible Period | Complete | 2026-10-14 | [completed/TP-20261014-003-dashboard-shared-period-truth.md](completed/TP-20261014-003-dashboard-shared-period-truth.md) |

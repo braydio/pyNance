@@ -6,10 +6,15 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 
 | Packet ID | Title | Status | Priority | Depends on | Target | Last updated | Packet |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| TP-20261014-005 | Account balance, limit and freshness contract | Ready | High | None | main | 2026-10-14 | [packet](active/TP-20261014-005-account-balance-limit-contract.md) |
+| TP-20261014-006 | APR provenance and interest inference guardrails | Ready | High | TP-20261014-005 | main | 2026-10-14 | [packet](active/TP-20261014-006-apr-provenance-interest-estimator.md) |
+| TP-20261014-007 | Optional Plaid Liabilities APR and payment metadata | Ready | Normal | TP-20261014-005, TP-20261014-006 | main | 2026-10-14 | [packet](active/TP-20261014-007-plaid-liabilities-enrichment.md) |
+| TP-20261014-008 | Accounts portfolio hierarchy and type breakouts | Ready | High | TP-20261014-005, TP-20261014-006 | main | 2026-10-14 | [packet](active/TP-20261014-008-accounts-portfolio-type-breakout.md) |
+| TP-20261014-009 | Account drill-in, truthful activity and range integrity | Ready | High | TP-20261014-008 | main | 2026-10-14 | [packet](active/TP-20261014-009-accounts-account-detail-activity.md) |
 | TP-20261014-001 | Financial Detail: Decision Hierarchy and Honest Metrics | Complete | High | None | main | 2026-10-14 | [packet](completed/TP-20261014-001-financial-detail-decision-hierarchy.md) |
-| TP-20261014-002 | Upcoming Recurring: Due-First and Coverage-Aware | Complete | High | TP-20261014-001 | main | 2026-10-14 | [packet](active/TP-20261014-002-upcoming-recurring-action-order.md) |
+| TP-20261014-002 | Upcoming Recurring: Due-First and Coverage-Aware | Complete | High | TP-20261014-001 | main | 2026-10-14 | [packet](completed/TP-20261014-002-upcoming-recurring-action-order.md) |
 | TP-20261014-003 | Dashboard Date Controls: One Visible Period | Complete | High | None | main | 2026-10-14 | [packet](completed/TP-20261014-003-dashboard-shared-period-truth.md) |
-| TP-20261014-004 | Dashboard Landing: Truthful Action Priority and Calm Copy | Complete | High | TP-20261014-003 | main | 2026-10-14 | [packet](active/TP-20261014-004-dashboard-landing-truthful-actions.md) |
+| TP-20261014-004 | Dashboard Landing: Truthful Action Priority and Calm Copy | Complete | High | TP-20261014-003 | main | 2026-10-14 | [packet](completed/TP-20261014-004-dashboard-landing-truthful-actions.md) |
 | TP-20261012-001 | Link Account Modal Visibility + Overlay Readability | Complete | High | None | main | 2026-10-13 | [packet](completed/TP-20261012-001-link-account-modal-visibility.md) |
 | TP-20261007-002 | UI Hierarchy Foundation + App Shell | Complete | High | TP-20261007-001 | main | 2026-10-13 | [packet](completed/TP-20261007-002-ui-hierarchy-foundation-app-shell.md) |
 | TP-20261007-003 | Dashboard Decision-First Recomposition | Complete | High | TP-20261007-001, TP-20261007-002 | main | 2026-10-13 | [packet](completed/TP-20261007-003-dashboard-decision-first-recomposition.md) |
