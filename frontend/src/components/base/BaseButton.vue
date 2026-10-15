@@ -94,7 +94,7 @@ const buttonClasses = computed(() => {
   const tone = toneClasses[props.tone]
   const variantClasses = props.active ? tone.active : tone[props.variant]
   return [
-    'inline-flex max-w-full items-center justify-center gap-1.5 border font-semibold uppercase tracking-wide transition focus-ring disabled:cursor-not-allowed disabled:opacity-60',
+    'inline-flex max-w-full items-center justify-center gap-1.5 whitespace-normal break-words text-center border font-semibold uppercase tracking-wide transition focus-ring disabled:cursor-not-allowed disabled:opacity-60',
     radiusClasses[props.radius],
     sizeClasses[props.size],
     variantClasses,

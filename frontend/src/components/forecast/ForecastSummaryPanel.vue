@@ -491,6 +491,7 @@ function toggleExcluded(accountId) {
 
 .summary-header-row {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-start;
   gap: 1rem;
@@ -518,7 +519,7 @@ function toggleExcluded(accountId) {
 
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11.25rem), 1fr));
   gap: 1rem;
 }
 

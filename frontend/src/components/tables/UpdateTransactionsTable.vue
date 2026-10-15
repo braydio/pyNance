@@ -1392,6 +1392,7 @@ async function loadCategoryData() {
 
 /* The grid scrolls inside this region only; no ancestor clips it. */
 .table-scroll {
+  position: relative;
   background: var(--table-surface-alt);
   border-radius: inherit;
   overscroll-behavior: contain;
@@ -1447,6 +1448,12 @@ async function loadCategoryData() {
   outline-offset: 2px;
 }
 
+.filter-chip {
+  white-space: normal;
+  max-width: 100%;
+  text-align: left;
+}
+
 .column-chooser summary {
   cursor: pointer;
   font-size: 0.875rem;
@@ -1465,7 +1472,7 @@ async function loadCategoryData() {
 
 .category-filter-select {
   width: auto;
-  min-width: 10rem;
+  min-width: min(100%, 10rem);
   max-width: 100%;
 }
 

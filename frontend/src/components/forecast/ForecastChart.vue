@@ -503,6 +503,7 @@ watch(
 }
 .chart-header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-start;
   gap: 1rem;

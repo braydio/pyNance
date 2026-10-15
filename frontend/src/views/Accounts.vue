@@ -1010,7 +1010,7 @@ watch(selectedRange, () => {
 
 .accounts-facts {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
   gap: 0.75rem 1.25rem;
   margin: 0;
 }

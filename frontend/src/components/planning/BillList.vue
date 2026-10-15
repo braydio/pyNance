@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <header class="flex items-center justify-between">
+    <header class="flex flex-wrap items-center justify-between gap-2">
       <div>
         <h3 class="text-lg font-semibold">Upcoming bills</h3>
         <p class="text-sm text-muted">Soonest due first.</p>

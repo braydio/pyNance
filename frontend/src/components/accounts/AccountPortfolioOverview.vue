@@ -128,7 +128,7 @@ const chips = computed(() => {
 
 .portfolio-kpis {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr));
   gap: 0.75rem;
   margin: 0;
 }
@@ -172,14 +172,17 @@ const chips = computed(() => {
 
 .portfolio-chip {
   display: inline-flex;
+  flex-wrap: wrap;
+  max-width: 100%;
   align-items: baseline;
-  gap: 0.4rem;
+  gap: 0.15rem 0.4rem;
+  text-align: left;
   padding: 0.3rem 0.7rem;
   border: 1px solid var(--themed-border);
   border-radius: 9999px;
   background: transparent;
   color: inherit;
-  font-size: 0.82rem;
+  font-size: 0.875rem;
   cursor: pointer;
 }
 

@@ -357,7 +357,7 @@ function aprCaption(account) {
 
 .portfolio-filters {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
   gap: 0.6rem;
   align-items: end;
 }
@@ -366,6 +366,10 @@ function aprCaption(account) {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
+}
+
+.portfolio-field {
+  min-width: 0;
 }
 
 .portfolio-field--search {
@@ -541,7 +545,12 @@ function aprCaption(account) {
   }
 
   .portfolio-row {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .portfolio-row__value,
+  .portfolio-row__sub {
+    overflow-wrap: anywhere;
   }
 
   .portfolio-row__identity {

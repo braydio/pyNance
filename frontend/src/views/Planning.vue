@@ -12,9 +12,9 @@
     />
 
     <section class="grid gap-6 xl:grid-cols-[2fr,1fr]">
-      <div class="space-y-6">
+      <div class="min-w-0 space-y-6">
         <Card v-if="formVisible" class="p-6 space-y-4" data-testid="bill-form-panel">
-          <header class="flex items-center justify-between">
+          <header class="flex flex-wrap items-center justify-between gap-2">
             <h3 class="text-lg font-semibold">{{ formHeading }}</h3>
             <UiButton variant="outline" @click="resetForm">Reset</UiButton>
           </header>
@@ -47,7 +47,7 @@
         </Card>
       </div>
 
-      <div class="space-y-6">
+      <div class="min-w-0 space-y-6">
         <Card class="p-6">
           <Allocator
             v-model="allocationModel"

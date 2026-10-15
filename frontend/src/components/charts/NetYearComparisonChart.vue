@@ -228,6 +228,7 @@ onMounted(fetchData)
 
 .toggle-group {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-bottom: 0.75rem;
 }

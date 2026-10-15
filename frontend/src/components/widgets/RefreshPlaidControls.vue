@@ -417,6 +417,13 @@ export default {
 
 .account-select {
   position: relative;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.account-select > button {
+  max-width: 100%;
+  white-space: normal;
 }
 
 .dropdown-menu {

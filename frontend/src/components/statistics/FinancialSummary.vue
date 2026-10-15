@@ -1057,6 +1057,15 @@ function clampDateString(value, min, max) {
   margin-top: 1rem;
 }
 
+.period-summary-grid .stat-item {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.period-summary-grid .stat-value {
+  overflow-wrap: anywhere;
+}
+
 .period-summary-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1187,6 +1196,8 @@ function clampDateString(value, min, max) {
 }
 
 .detail-date-input {
+  min-width: 0;
+  max-width: 100%;
   padding: 0.35rem 0.75rem;
   border-radius: 6px;
   border: 1px solid var(--divider);
@@ -1287,8 +1298,12 @@ function clampDateString(value, min, max) {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
+}
+
+.stat-group {
+  min-width: 0;
 }
 
 @media (min-width: 769px) {
@@ -1320,7 +1335,9 @@ function clampDateString(value, min, max) {
 
 .stat-group .stat-item {
   margin-bottom: 0.25rem;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
+  flex-wrap: wrap;
+  min-width: 0;
   justify-content: space-between;
 }
 

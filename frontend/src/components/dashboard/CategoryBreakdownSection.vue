@@ -12,8 +12,8 @@
     padding="md"
     shadow="md"
   >
-    <div class="flex items-center justify-between mb-2">
-      <div class="flex flex-col">
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+      <div class="flex min-w-0 flex-col">
         <h2 class="text-lg font-semibold">
           Spending by
           {{ breakdownType === 'merchant' ? 'Merchant' : 'Category' }}

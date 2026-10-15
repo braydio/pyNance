@@ -405,7 +405,7 @@ onMounted(loadLlmSettings)
 
 .theme-options {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
   gap: 0.75rem;
 }
 
@@ -433,6 +433,11 @@ onMounted(loadLlmSettings)
 
 .theme-option--active {
   box-shadow: inset 3px 0 0 var(--accent-primary);
+}
+
+.theme-option > span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .theme-option strong,

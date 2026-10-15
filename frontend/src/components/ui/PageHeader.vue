@@ -63,6 +63,8 @@ defineProps({
 }
 
 .page-header__title {
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-size: 1.5rem;
   line-height: 1.2;
   font-weight: 700;

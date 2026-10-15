@@ -717,6 +717,8 @@ export default {
 }
 
 .section-title {
+  overflow-wrap: anywhere;
+  min-width: 0;
   font-size: 1.25rem;
   font-weight: 800;
   letter-spacing: -0.01em;

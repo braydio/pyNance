@@ -256,7 +256,7 @@ export default {
 }
 
 .page-input {
-  @apply flex items-center gap-2 rounded-full border border-subtle bg-surface-2 px-3 py-2 shadow-inner;
+  @apply flex flex-wrap items-center gap-2 rounded-full border border-subtle bg-surface-2 px-3 py-2 shadow-inner;
 }
 
 .page-field {

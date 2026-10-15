@@ -420,6 +420,7 @@ function handleCancel() {
 
 .section-grid {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.25rem;
 }
 
@@ -427,6 +428,7 @@ function handleCancel() {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  min-width: 0;
 }
 
 .form-field--full {

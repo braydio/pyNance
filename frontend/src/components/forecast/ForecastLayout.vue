@@ -1006,7 +1006,7 @@ function summarizeMatchingFields(fields?: SourceTransactionMatchingFields) {
 
 .control-field__input {
   width: auto;
-  min-width: 10rem;
+  min-width: min(100%, 10rem);
   max-width: 100%;
 }
 
@@ -1020,7 +1020,7 @@ function summarizeMatchingFields(fields?: SourceTransactionMatchingFields) {
 
 .adjustments-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16.25rem), 1fr));
   gap: 1rem;
 }
 

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex justify-between items-center gap-4 flex-wrap mb-3 w-full">
+  <div class="flex justify-between items-center gap-4 flex-wrap mb-3 w-full min-w-0 max-w-full">
     <!-- Left: Icon + Title -->
     <div class="flex items-center gap-2 min-w-0">
       <slot name="icon"></slot>

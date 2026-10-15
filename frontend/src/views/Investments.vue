@@ -823,13 +823,18 @@ section[id]:focus-visible {
   border-radius: 8px;
   padding: 0.75rem;
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
   justify-content: space-between;
+  min-width: 0;
 }
 .metric .k {
   color: var(--text-muted);
 }
 .metric .v {
   font-weight: 700;
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 .controls {
   display: flex;
@@ -840,13 +845,17 @@ section[id]:focus-visible {
 }
 .controls label {
   display: inline-flex;
+  flex-wrap: wrap;
   gap: 0.25rem;
   align-items: center;
+  max-width: 100%;
+  min-width: 0;
 }
 .controls input[type='date'] {
   width: auto;
   min-width: 0;
   max-width: 100%;
+  flex: 1 1 min(100%, 10rem);
 }
 .controls .btn {
   padding: 0.4rem 0.7rem;
@@ -879,14 +888,18 @@ section[id]:focus-visible {
 }
 .filters label {
   display: inline-flex;
+  flex-wrap: wrap;
   gap: 0.25rem;
   align-items: center;
+  max-width: 100%;
+  min-width: 0;
 }
 .filters select,
 .filters input {
   width: auto;
   min-width: 0;
   max-width: 100%;
+  flex: 1 1 min(100%, 10rem);
 }
 .filters--grid {
   display: grid;

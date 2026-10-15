@@ -546,26 +546,26 @@ export default {
 
 .table-kicker {
   font-family: var(--font-display);
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--color-accent-cyan);
+  color: var(--text-link);
 }
 
 .table-title {
-  color: var(--color-accent-blue);
+  color: var(--text-primary);
   margin: 0;
 }
 
 .title-icon {
-  color: var(--color-accent-blue);
+  color: var(--text-link);
 }
 
 .table-subtitle {
   margin: 0;
-  color: color-mix(in srgb, var(--text-primary) 74%, var(--color-text-muted));
-  font-size: 0.92rem;
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
   line-height: 1.6;
 }
 
@@ -644,13 +644,13 @@ export default {
 }
 
 .input-shell {
-  @apply flex items-center gap-3 rounded-xl px-3 py-2;
+  @apply flex items-center gap-3 rounded-xl px-3 py-2 min-w-0;
   background-color: var(--table-surface);
   border: 1px solid var(--table-border);
 }
 
 .filter-input {
-  @apply flex-1 bg-transparent outline-none;
+  @apply flex-1 min-w-0 bg-transparent outline-none;
   color: var(--text-primary);
 }
 
@@ -696,7 +696,7 @@ export default {
 }
 
 .type-filter-row {
-  @apply mb-4 rounded-xl p-3 flex flex-wrap items-center gap-x-4 gap-y-2;
+  @apply mb-4 rounded-xl p-3 flex flex-wrap items-center gap-x-4 gap-y-2 min-w-0;
   background-color: var(--table-control);
   border: 1px solid var(--table-border);
 }

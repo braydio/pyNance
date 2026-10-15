@@ -589,18 +589,24 @@ onUnmounted(() => {
 
 .panel-header {
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
   justify-content: space-between;
   align-items: baseline;
 }
 
 .panel-controls {
   display: flex;
+  flex-wrap: wrap;
+  min-width: 0;
   align-items: center;
   gap: 0.5rem;
 }
 
 .average-toggle {
   display: flex;
+  flex-wrap: wrap;
+  min-width: 0;
   align-items: center;
   gap: 0.4rem;
   font-size: 0.8125rem;
@@ -614,7 +620,7 @@ onUnmounted(() => {
 .panel-title {
   margin: 0;
   font-size: 1rem;
-  color: var(--color-accent-yellow);
+  color: var(--text-warning);
 }
 
 .panel-subtitle {

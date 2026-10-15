@@ -289,12 +289,12 @@ onBeforeUnmount(() => {
 }
 
 .summary-grid {
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11.25rem), 1fr));
 }
 
 .component-grid,
 .content-grid {
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17.5rem), 1fr));
 }
 
 .metric-panel,
@@ -336,6 +336,7 @@ onBeforeUnmount(() => {
 
 .panel-heading {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
@@ -376,6 +377,7 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   width: fit-content;
+  max-width: 100%;
   min-height: 1.7rem;
   padding: 0.25rem 0.55rem;
   border-radius: 999px;
@@ -407,6 +409,7 @@ onBeforeUnmount(() => {
 }
 
 .table-wrap {
+  position: relative;
   overflow-x: auto;
   max-width: 100%;
   overscroll-behavior-x: contain;
@@ -472,7 +475,7 @@ td {
 }
 
 .log-grid {
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
 }
 
 pre {

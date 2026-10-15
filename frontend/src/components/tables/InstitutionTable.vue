@@ -163,8 +163,11 @@ td {
   @apply p-2;
 }
 
+/* position: relative keeps absolutely positioned helpers (e.g. .sr-only) inside the region
+   instead of letting them extend the document's scrollable width. */
 .institution-scroll,
 .nested-scroll {
+  position: relative;
   overflow-x: auto;
   max-width: 100%;
 }

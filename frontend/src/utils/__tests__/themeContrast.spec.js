@@ -71,17 +71,18 @@ const SURFACES = [
   '--surface-3',
   '--input-bg',
 ]
-// Light-theme table surfaces are plain hex and held to the same bar.
-const LIGHT_ONLY_SURFACES = [
+// Table surfaces carry dense data text in both themes and are held to the same bar.
+const TABLE_SURFACES = [
   '--table-surface',
   '--table-surface-alt',
   '--table-surface-strong',
   '--table-header',
+  '--table-control',
 ]
 
 const THEMES = [
-  ['nightfox', dark, SURFACES],
-  ['everforest-light', light, [...SURFACES, ...LIGHT_ONLY_SURFACES]],
+  ['nightfox', dark, [...SURFACES, ...TABLE_SURFACES]],
+  ['everforest-light', light, [...SURFACES, ...TABLE_SURFACES]],
 ]
 
 const TEXT_ROLES = [

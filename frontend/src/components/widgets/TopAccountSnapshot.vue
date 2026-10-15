@@ -1647,9 +1647,11 @@ defineExpose({
 .bs-group-banner {
   flex: 1;
   display: flex;
+  flex-wrap: wrap;
+  min-width: 0;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.5rem 0.75rem;
   background:
     linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, transparent), transparent),
     color-mix(in srgb, var(--color-bg-sec) 80%, transparent);
@@ -1723,9 +1725,11 @@ defineExpose({
 
 .bs-banner-meta {
   display: inline-flex;
+  flex-wrap: wrap;
+  min-width: 0;
   align-items: center;
-  gap: 0.65rem;
-  font-size: 0.8rem;
+  gap: 0.25rem 0.65rem;
+  font-size: 0.8125rem;
   color: var(--color-text-muted);
 }
 
@@ -1743,11 +1747,11 @@ defineExpose({
 }
 
 .bs-total-pos {
-  color: var(--color-accent-cyan);
+  color: var(--text-positive);
 }
 
 .bs-total-neg {
-  color: var(--color-accent-red);
+  color: var(--text-negative);
 }
 
 .bs-total-neutral {

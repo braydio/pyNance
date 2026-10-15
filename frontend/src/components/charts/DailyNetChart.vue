@@ -1078,7 +1078,7 @@ onUnmounted(() => chartInstance.value?.destroy())
   margin: 0;
   font-size: 0.9rem;
   font-weight: 600;
-  color: var(--color-accent-yellow);
+  color: var(--text-warning);
 }
 
 .daily-net-chart__details-metrics {
