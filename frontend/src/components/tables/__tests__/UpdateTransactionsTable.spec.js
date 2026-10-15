@@ -472,4 +472,121 @@ describe('UpdateTransactionsTable.vue', () => {
 
     expect(createTransactionRule).not.toHaveBeenCalled()
   })
+
+  describe('grid accessibility and column priority', () => {
+    const rows = [
+      {
+        transaction_id: 'a',
+        date: '2024-01-01',
+        amount: 10,
+        description:
+          'A very long description that should truncate in the cell but remain available',
+        category: 'Food',
+        merchant_name: 'Merchant A',
+        account_name: 'Checking',
+        institution_name: 'Bank',
+        subtype: 'checking',
+        running_balance: 100,
+      },
+      {
+        transaction_id: 'b',
+        date: '2024-02-01',
+        amount: -20,
+        description: 'B',
+        category: 'Bills',
+        merchant_name: 'Merchant B',
+        account_name: 'Savings',
+        institution_name: 'Bank',
+        subtype: 'savings',
+        running_balance: 80,
+      },
+    ]
+    const mountTable = () =>
+      mount(UpdateTransactionsTable, {
+        props: { transactions: rows },
+        global: { stubs: ['Modal', 'FuzzyDropdown'] },
+        attachTo: document.body,
+      })
+
+    it('sorts from a real button inside each header and reports aria-sort', async () => {
+      const wrapper = mountTable()
+      const dateHeader = wrapper.get('th.col-date')
+      expect(dateHeader.attributes('aria-sort')).toBe('descending')
+      expect(wrapper.get('th.col-amount').attributes('aria-sort')).toBe('none')
+
+      const button = wrapper.get('[data-testid="sort-amount"]')
+      expect(button.element.tagName).toBe('BUTTON')
+      expect(button.attributes('type')).toBe('button')
+      await button.trigger('click')
+      expect(wrapper.get('th.col-amount').attributes('aria-sort')).toBe('descending')
+      await button.trigger('click')
+      expect(wrapper.get('th.col-amount').attributes('aria-sort')).toBe('ascending')
+      expect(wrapper.get('th.col-date').attributes('aria-sort')).toBe('none')
+      expect(wrapper.get('th.col-actions').attributes('aria-sort')).toBeUndefined()
+      wrapper.unmount()
+    })
+
+    it('shows the priority columns by default and lets secondary columns be chosen', async () => {
+      const wrapper = mountTable()
+      const headers = () =>
+        wrapper.findAll('thead th').map((th) => th.text().replace(/\s*[▲▼]/, ''))
+      expect(headers()).toEqual(
+        expect.arrayContaining(['Date', 'Amount', 'Description', 'Category', 'Account', 'Actions']),
+      )
+      expect(headers().join(' ')).not.toContain('Institution')
+      expect(headers().join(' ')).not.toContain('Running balance')
+
+      await wrapper.get('[data-testid="column-toggle-institution"]').setValue(true)
+      await wrapper.get('[data-testid="column-toggle-running"]').setValue(true)
+      expect(headers().join(' ')).toContain('Institution')
+      expect(headers().join(' ')).toContain('Running balance')
+      expect(wrapper.find('td.col-institution').exists()).toBe(true)
+
+      await wrapper.get('[data-testid="column-toggle-institution"]').setValue(false)
+      expect(wrapper.find('td.col-institution').exists()).toBe(false)
+      wrapper.unmount()
+    })
+
+    it('keeps every body row aligned with the visible header count', async () => {
+      const wrapper = mountTable()
+      const headerCount = wrapper.findAll('thead th').length
+      const first = wrapper.findAll('tbody tr').find((tr) => tr.find('td.col-date').exists())
+      expect(first.findAll('td')).toHaveLength(headerCount)
+      wrapper.unmount()
+    })
+
+    it('does not force a 50vh minimum and scrolls only inside a labelled region', () => {
+      const wrapper = mountTable()
+      const scroll = wrapper.get('.table-scroll')
+      expect(scroll.classes().join(' ')).not.toMatch(/min-h-\[50vh\]|min-h-\[55vh\]/)
+      expect(scroll.attributes('role')).toBe('region')
+      expect(scroll.attributes('aria-label')).toBe('Transactions table')
+      expect(wrapper.get('.table-shell').classes()).not.toContain('overflow-hidden')
+      wrapper.unmount()
+    })
+
+    it('right-aligns amounts with tabular numerals and truncates text with the full value on hover', () => {
+      const wrapper = mountTable()
+      expect(wrapper.get('th.col-amount').classes()).toContain('text-right')
+      const titles = wrapper
+        .findAll('td.col-description .truncate')
+        .map((node) => node.attributes('title'))
+      expect(titles.some((title) => title?.includes('A very long description'))).toBe(true)
+    })
+
+    it('labels edit fields and keeps Save/Cancel as non-submitting buttons', async () => {
+      const wrapper = mountTable()
+      const edit = wrapper.findAll('button').find((b) => b.text() === 'Edit')
+      await edit.trigger('click')
+      await flushPromises()
+      ;['Date', 'Amount', 'Description', 'Category', 'Merchant'].forEach((label) => {
+        expect(wrapper.find(`input[aria-label="${label}"]`).exists(), label).toBe(true)
+      })
+      const save = wrapper.findAll('button').find((b) => b.text() === 'Save')
+      const cancel = wrapper.findAll('button').find((b) => b.text() === 'Cancel')
+      expect(save.attributes('type')).toBe('button')
+      expect(cancel.attributes('type')).toBe('button')
+      wrapper.unmount()
+    })
+  })
 })

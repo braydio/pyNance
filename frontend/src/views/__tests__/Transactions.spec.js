@@ -203,4 +203,23 @@ describe('Transactions.vue', () => {
 
     expect(wrapper.find('[data-testid="filter-summary"]').exists()).toBe(false)
   })
+
+  it('offers a toolbar Clear that resets search and filters together', async () => {
+    const { wrapper } = mountView({
+      query: { tx_type: 'debit' },
+      filtered: [{ transaction_id: 'tx-1', amount: 1 }],
+    })
+    await flushPromises()
+    const clear = wrapper.get('[data-testid="clear-search-filters"]')
+    await wrapper.get('#transactions-search').setValue('coffee')
+    await clear.trigger('click')
+    expect(wrapper.get('#transactions-search').element.value).toBe('')
+    expect(wrapper.find('[data-testid="clear-search-filters"]').exists()).toBe(false)
+  })
+
+  it('shows the toolbar Clear only when something can be cleared', async () => {
+    const { wrapper } = mountView()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="clear-search-filters"]').exists()).toBe(false)
+  })
 })

@@ -2,20 +2,47 @@
 <template>
   <div class="transactions-table space-y-4">
     <!-- Category Filters -->
-    <div class="flex items-center gap-4 category-filters">
-      <select v-model="selectedPrimaryCategory" class="input">
+    <div class="flex flex-wrap items-center gap-3 category-filters">
+      <select
+        v-model="selectedPrimaryCategory"
+        class="input category-filter-select"
+        aria-label="Filter by category"
+      >
         <option value="">All Categories</option>
         <option v-for="group in categoryTree" :key="group.name" :value="group.name">
           {{ group.name }}
         </option>
       </select>
-      <select v-model="selectedSubcategory" class="input" :disabled="!selectedPrimaryCategory">
+      <select
+        v-model="selectedSubcategory"
+        class="input category-filter-select"
+        aria-label="Filter by subcategory"
+        :disabled="!selectedPrimaryCategory"
+      >
         <option value="">All Subcategories</option>
         <option v-for="child in subcategoryOptions" :key="child.id" :value="child.name">
           {{ child.name }}
         </option>
       </select>
     </div>
+
+    <!-- Column chooser: secondary columns are opt-in so the grid stays readable when narrow -->
+    <details class="column-chooser" data-testid="column-chooser">
+      <summary>Columns</summary>
+      <ul class="column-chooser__list">
+        <li v-for="column in optionalColumnDefs" :key="column.key">
+          <label>
+            <input
+              type="checkbox"
+              :checked="isColumnVisible(column.key)"
+              :data-testid="`column-toggle-${column.key}`"
+              @change="toggleColumn(column.key)"
+            />
+            {{ column.label }}
+          </label>
+        </li>
+      </ul>
+    </details>
 
     <!-- Column Filter Controls -->
     <div class="field-filter-bar">
@@ -26,17 +53,22 @@
           type="button"
           class="btn-sm filter-chip"
           :class="{ active: activeFilterKey === field.key }"
+          :aria-pressed="activeFilterKey === field.key ? 'true' : 'false'"
           @click="selectFilterField(field.key)"
         >
           Filter {{ field.label }}
         </button>
       </div>
       <div v-if="activeFilterKey" class="filter-input-row">
-        <label class="text-xs font-semibold text-[var(--color-text-muted)]">
+        <label
+          for="field-filter-input"
+          class="text-sm font-semibold text-[var(--color-text-muted)]"
+        >
           Filtering by {{ activeFilterLabel }}
         </label>
         <div class="flex flex-wrap gap-2 items-center">
           <input
+            id="field-filter-input"
             ref="filterInputRef"
             v-model="fieldSearch"
             :list="`${activeFilterKey}-filters`"
@@ -62,7 +94,12 @@
         <span v-for="filter in activeFilterTags" :key="filter.key" class="filter-tag">
           <span class="filter-tag__label">{{ filter.label }}:</span>
           <span class="filter-tag__value">{{ filter.value }}</span>
-          <button type="button" class="filter-tag__remove" @click="removeFilterTag(filter.key)">
+          <button
+            type="button"
+            class="filter-tag__remove"
+            :aria-label="`Remove ${filter.label} filter`"
+            @click="removeFilterTag(filter.key)"
+          >
             ×
           </button>
         </span>
@@ -70,62 +107,48 @@
     </div>
 
     <!-- Transactions Table -->
-    <div class="table-shell overflow-hidden">
+    <div class="table-shell">
       <div
         ref="tableScrollRef"
-        class="table-scroll max-h-[70vh] lg:max-h-[75vh] min-h-[50vh] sm:min-h-[55vh] overflow-auto"
+        class="table-scroll max-h-[70dvh] lg:max-h-[75dvh] overflow-auto"
+        tabindex="0"
+        role="region"
+        aria-label="Transactions table"
       >
         <table class="transactions-grid min-w-full border-separate border-spacing-0 mt-2">
           <thead class="table-head sticky top-0 z-10">
             <tr>
-              <th class="col-date" @click="sortBy('date')">
-                Date <span v-if="sortKey === 'date'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-              </th>
-              <th class="col-amount text-right" @click="sortBy('amount')">
-                Amount
-                <span v-if="sortKey === 'amount'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-              </th>
-              <th class="col-description" @click="sortBy('description')">
-                Description
-                <span v-if="sortKey === 'description'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-              </th>
-              <th class="col-category" @click="sortBy('category')">
-                Category
-                <span v-if="sortKey === 'category'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-              </th>
-              <th class="col-merchant" @click="sortBy('merchant_name')">
-                Merchant
-                <span v-if="sortKey === 'merchant_name'">{{
-                  sortOrder === 'asc' ? '▲' : '▼'
-                }}</span>
-              </th>
-              <th class="col-account" @click="sortBy('account_name')">
-                Account Name
-                <span v-if="sortKey === 'account_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-              </th>
-              <th class="col-institution" @click="sortBy('institution_name')">
-                Institution
-                <span v-if="sortKey === 'institution_name'">{{
-                  sortOrder === 'asc' ? '▲' : '▼'
-                }}</span>
-              </th>
-              <th class="col-subtype" @click="sortBy('subtype')">
-                Subtype
-                <span v-if="sortKey === 'subtype'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-              </th>
-              <th class="col-actions">Actions</th>
-              <th class="col-running" @click="sortBy('running_balance')">
-                Running Balance
-                <span v-if="sortKey === 'running_balance'">{{
-                  sortOrder === 'asc' ? '▲' : '▼'
-                }}</span>
+              <th
+                v-for="column in visibleColumnDefs"
+                :key="column.key"
+                :class="[column.cls, column.align === 'right' ? 'text-right' : '']"
+                scope="col"
+                :aria-sort="ariaSort(column.sortKey)"
+              >
+                <button
+                  v-if="column.sortKey"
+                  type="button"
+                  class="sort-btn"
+                  :class="{ 'sort-btn--right': column.align === 'right' }"
+                  :data-testid="`sort-${column.sortKey}`"
+                  @click="sortBy(column.sortKey)"
+                >
+                  {{ column.label }}
+                  <span aria-hidden="true" class="sort-indicator">{{
+                    sortKey === column.sortKey ? (sortOrder === 'asc' ? '▲' : '▼') : ''
+                  }}</span>
+                </button>
+                <template v-else>{{ column.label }}</template>
               </th>
             </tr>
           </thead>
 
           <tbody>
             <tr v-if="useVirtualization && virtualPaddingTop" class="virtual-padding-row">
-              <td :colspan="10" :style="{ height: `${virtualPaddingTop}px` }"></td>
+              <td
+                :colspan="visibleColumnDefs.length"
+                :style="{ height: `${virtualPaddingTop}px` }"
+              ></td>
             </tr>
             <tr
               v-for="row in rowsToRender"
@@ -133,7 +156,7 @@
               :class="getRowClasses(row.tx, row.renderIndex)"
             >
               <template v-if="row.tx._placeholder">
-                <td v-for="n in 10" :key="n" class="px-4 py-3">&nbsp;</td>
+                <td v-for="n in visibleColumnDefs.length" :key="n" class="px-4 py-3">&nbsp;</td>
               </template>
               <template v-else>
                 <td class="col-date">
@@ -154,6 +177,7 @@
                       </span>
                       <input
                         v-model="editBuffer.date"
+                        aria-label="Date"
                         type="date"
                         class="input input-with-prefix"
                       />
@@ -172,6 +196,7 @@
                       <span class="input-prefix" aria-hidden="true">$</span>
                       <input
                         v-model.number="editBuffer.amount"
+                        aria-label="Amount"
                         type="number"
                         step="0.01"
                         class="input input-with-prefix amount-input"
@@ -201,12 +226,15 @@
                       </span>
                       <input
                         v-model="editBuffer.description"
+                        aria-label="Description"
                         type="text"
                         class="input input-with-prefix"
                       />
                     </div>
                   </div>
-                  <span v-else class="truncate">{{ row.tx.description }}</span>
+                  <span v-else class="truncate" :title="row.tx.description || undefined">{{
+                    row.tx.description
+                  }}</span>
                 </td>
                 <td class="col-category">
                   <div v-if="editingIndex === row.renderIndex" class="edit-cell">
@@ -223,6 +251,7 @@
                       </span>
                       <input
                         v-model="editBuffer.category"
+                        aria-label="Category"
                         type="text"
                         list="category-suggestions"
                         class="input input-with-prefix"
@@ -232,7 +261,7 @@
                   </div>
                   <span v-else>{{ row.tx.category }}</span>
                 </td>
-                <td class="px-4 py-3">
+                <td v-if="isColumnVisible('merchant')" class="col-merchant">
                   <div v-if="editingIndex === row.renderIndex" class="edit-cell">
                     <span class="edit-original">{{
                       editingOriginalValues.merchant_name || '—'
@@ -250,22 +279,36 @@
                       </span>
                       <input
                         v-model="editBuffer.merchant_name"
+                        aria-label="Merchant"
                         type="text"
                         list="merchant-suggestions"
                         class="input input-with-prefix"
                       />
                     </div>
                   </div>
-                  <span v-else class="truncate">{{ row.tx.merchant_name }}</span>
+                  <span v-else class="truncate" :title="row.tx.merchant_name || undefined">{{
+                    row.tx.merchant_name
+                  }}</span>
                 </td>
-                <td class="col-account truncate">{{ row.tx.account_name || 'N/A' }}</td>
-                <td class="col-institution truncate">{{ row.tx.institution_name || 'N/A' }}</td>
-                <td class="col-subtype truncate">{{ row.tx.subtype || 'N/A' }}</td>
+                <td v-if="isColumnVisible('account')" class="col-account">
+                  <span class="truncate" :title="row.tx.account_name || undefined">{{
+                    row.tx.account_name || 'N/A'
+                  }}</span>
+                </td>
+                <td v-if="isColumnVisible('institution')" class="col-institution">
+                  <span class="truncate" :title="row.tx.institution_name || undefined">{{
+                    row.tx.institution_name || 'N/A'
+                  }}</span>
+                </td>
+                <td v-if="isColumnVisible('subtype')" class="col-subtype">
+                  <span class="truncate">{{ row.tx.subtype || 'N/A' }}</span>
+                </td>
                 <td class="col-actions">
                   <div class="flex flex-wrap gap-2 text-xs action-bar">
                     <template v-if="editingIndex === row.renderIndex">
                       <div class="flex flex-wrap gap-2 option-toggle-group">
                         <button
+                          type="button"
                           class="btn-sm option-toggle"
                           :class="{ active: row.tx.is_internal }"
                           @click="toggleInternal(row.tx)"
@@ -279,6 +322,7 @@
                           </span>
                         </button>
                         <button
+                          type="button"
                           class="btn-sm option-toggle"
                           :class="{ active: isRecurringMarked(row.tx) }"
                           @click="markRecurring(row.tx)"
@@ -293,18 +337,22 @@
                         </button>
                       </div>
                       <div class="flex flex-wrap gap-2">
-                        <button class="btn-sm" @click="saveEdit(row.tx)">Save</button>
-                        <button class="btn-sm" @click="cancelEdit">Cancel</button>
+                        <button type="button" class="btn-sm" @click="saveEdit(row.tx)">Save</button>
+                        <button type="button" class="btn-sm" @click="cancelEdit">Cancel</button>
                       </div>
                     </template>
                     <template v-else>
-                      <button class="btn-sm" @click="startEdit(row.renderIndex, row.tx)">
+                      <button
+                        type="button"
+                        class="btn-sm"
+                        @click="startEdit(row.renderIndex, row.tx)"
+                      >
                         Edit
                       </button>
                     </template>
                   </div>
                 </td>
-                <td class="col-running text-right font-mono">
+                <td v-if="isColumnVisible('running')" class="col-running text-right font-mono">
                   <span v-if="row.tx.running_balance != null">{{
                     formatAmount(row.tx.running_balance)
                   }}</span>
@@ -313,7 +361,10 @@
               </template>
             </tr>
             <tr v-if="useVirtualization && virtualPaddingBottom" class="virtual-padding-row">
-              <td :colspan="10" :style="{ height: `${virtualPaddingBottom}px` }"></td>
+              <td
+                :colspan="visibleColumnDefs.length"
+                :style="{ height: `${virtualPaddingBottom}px` }"
+              ></td>
             </tr>
           </tbody>
         </table>
@@ -335,8 +386,8 @@
             placeholder="Search transactions"
           />
           <div class="flex justify-end gap-2">
-            <button class="btn-sm" @click="showInternalModal = false">Cancel</button>
-            <button class="btn-sm" @click="confirmInternal">Confirm</button>
+            <button type="button" class="btn-sm" @click="showInternalModal = false">Cancel</button>
+            <button type="button" class="btn-sm" @click="confirmInternal">Confirm</button>
           </div>
         </div>
       </template>
@@ -354,8 +405,12 @@
             >?
           </p>
           <div class="flex justify-end gap-2">
-            <button class="btn-sm" @click="resolveRulePrompt(false)">No, skip rule</button>
-            <button class="btn-sm" @click="resolveRulePrompt(true)">Yes, save rule</button>
+            <button type="button" class="btn-sm" @click="resolveRulePrompt(false)">
+              No, skip rule
+            </button>
+            <button type="button" class="btn-sm" @click="resolveRulePrompt(true)">
+              Yes, save rule
+            </button>
           </div>
         </div>
       </template>
@@ -978,6 +1033,69 @@ function formatDate(dateStr) {
   })
 }
 
+/**
+ * Column definitions. `optional` columns are hidden until chosen in the column chooser;
+ * date, amount, description, category and actions are always shown, and merchant/account
+ * stay on by default because editing and identification need them.
+ */
+const COLUMN_DEFS = [
+  { key: 'date', label: 'Date', sortKey: 'date', cls: 'col-date' },
+  { key: 'amount', label: 'Amount', sortKey: 'amount', cls: 'col-amount', align: 'right' },
+  { key: 'description', label: 'Description', sortKey: 'description', cls: 'col-description' },
+  { key: 'category', label: 'Category', sortKey: 'category', cls: 'col-category' },
+  {
+    key: 'merchant',
+    label: 'Merchant',
+    sortKey: 'merchant_name',
+    cls: 'col-merchant',
+    optional: true,
+  },
+  { key: 'account', label: 'Account', sortKey: 'account_name', cls: 'col-account', optional: true },
+  {
+    key: 'institution',
+    label: 'Institution',
+    sortKey: 'institution_name',
+    cls: 'col-institution',
+    optional: true,
+  },
+  { key: 'subtype', label: 'Subtype', sortKey: 'subtype', cls: 'col-subtype', optional: true },
+  { key: 'actions', label: 'Actions', sortKey: null, cls: 'col-actions' },
+  {
+    key: 'running',
+    label: 'Running balance',
+    sortKey: 'running_balance',
+    cls: 'col-running',
+    optional: true,
+    align: 'right',
+  },
+]
+const DEFAULT_VISIBLE_OPTIONAL = ['merchant', 'account']
+const shownOptionalColumns = ref(new Set(DEFAULT_VISIBLE_OPTIONAL))
+
+const optionalColumnDefs = COLUMN_DEFS.filter((column) => column.optional)
+const visibleColumnDefs = computed(() =>
+  COLUMN_DEFS.filter((column) => !column.optional || shownOptionalColumns.value.has(column.key)),
+)
+
+function isColumnVisible(key) {
+  const column = COLUMN_DEFS.find((candidate) => candidate.key === key)
+  return Boolean(column) && (!column.optional || shownOptionalColumns.value.has(key))
+}
+
+function toggleColumn(key) {
+  const next = new Set(shownOptionalColumns.value)
+  if (next.has(key)) next.delete(key)
+  else next.add(key)
+  shownOptionalColumns.value = next
+}
+
+/** aria-sort value for a column header. */
+function ariaSort(columnSortKey) {
+  if (!columnSortKey) return undefined
+  if (sortKey.value !== columnSortKey) return 'none'
+  return sortOrder.value === 'asc' ? 'ascending' : 'descending'
+}
+
 function sortBy(key) {
   if (sortKey.value === key) {
     sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
@@ -1203,13 +1321,6 @@ async function loadCategoryData() {
   color: var(--color-text-light);
 }
 
-.input {
-  @apply w-full px-3 py-2 rounded-lg border text-sm shadow-inner;
-  background: var(--input-bg);
-  color: var(--color-text-light);
-  border-color: var(--divider);
-}
-
 .edit-cell {
   display: flex;
   flex-direction: column;
@@ -1217,7 +1328,7 @@ async function loadCategoryData() {
 }
 
 .edit-original {
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   color: color-mix(in srgb, var(--color-text-light) 55%, transparent);
@@ -1254,13 +1365,9 @@ async function loadCategoryData() {
   padding-left: 2.2rem;
 }
 
-.input:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(113, 156, 214, 0.35);
-}
-
 .btn-sm {
-  @apply inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-lg transition shadow-sm;
+  @apply inline-flex items-center px-3 py-1.5 text-sm font-semibold rounded-lg transition shadow-sm;
+  min-height: var(--control-height-sm);
   background: linear-gradient(135deg, var(--color-accent-purple), var(--color-accent-cyan));
   color: #0f172a;
   border: none;
@@ -1283,22 +1390,83 @@ async function loadCategoryData() {
   box-shadow: 0 14px 48px rgba(0, 0, 0, 0.18);
 }
 
+/* The grid scrolls inside this region only; no ancestor clips it. */
 .table-scroll {
   background: var(--table-surface-alt);
+  border-radius: inherit;
+  overscroll-behavior: contain;
+}
+
+.table-scroll:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: -2px;
 }
 
 .transactions-grid {
   table-layout: fixed;
+  min-width: 56rem;
   color: var(--color-text-light);
 }
 
+/* Ellipsis is applied to text spans (.truncate), never to whole cells, so controls such as
+   Save/Cancel and edit inputs are never clipped. */
 .transactions-grid th,
 .transactions-grid td {
   padding: 0.75rem 1rem;
-  white-space: nowrap;
+  vertical-align: middle;
+  border-color: var(--table-border);
+}
+
+.transactions-grid .truncate {
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
-  border-color: var(--table-border);
+  white-space: nowrap;
+}
+
+.sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sort-btn--right {
+  justify-content: flex-end;
+}
+
+.sort-btn:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.column-chooser summary {
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.column-chooser__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+}
+
+.category-filter-select {
+  width: auto;
+  min-width: 10rem;
+  max-width: 100%;
 }
 
 .transactions-grid tr {
@@ -1308,15 +1476,18 @@ async function loadCategoryData() {
 .table-head {
   background: var(--table-header);
   color: var(--color-text-light);
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .table-head th {
-  cursor: pointer;
   text-align: left;
+}
+
+.table-head th.text-right {
+  text-align: right;
 }
 
 .col-date {

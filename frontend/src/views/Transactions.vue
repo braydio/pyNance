@@ -35,6 +35,15 @@
             Filters<span v-if="activeFilterChips.length"> ({{ activeFilterChips.length }})</span>
           </button>
           <button
+            v-if="hasActiveFilters || searchQuery"
+            type="button"
+            class="btn btn-outline"
+            data-testid="clear-search-filters"
+            @click="clearSearchAndFilters"
+          >
+            Clear
+          </button>
+          <button
             type="button"
             class="btn btn-outline"
             data-testid="import-toggle"
@@ -381,6 +390,12 @@ export default {
     })
 
     /** Reset all top-level filters (search is cleared separately by the user). */
+    /** Reset the search box together with every filter (toolbar "Clear"). */
+    function clearSearchAndFilters() {
+      searchQuery.value = ''
+      clearFilters()
+    }
+
     function clearFilters() {
       startDate.value = ''
       endDate.value = ''
@@ -546,6 +561,7 @@ export default {
       isExporting,
       exportFilteredTransactionsCsv,
       hasActiveFilters,
+      clearSearchAndFilters,
       filterSummary,
       formatCurrency,
     }
@@ -573,7 +589,7 @@ export default {
 }
 
 .pill {
-  @apply inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold rounded-full shadow-sm;
+  @apply inline-flex items-center gap-2 px-3 py-1 text-sm font-semibold rounded-full shadow-sm;
   color: var(--color-text-light);
   background: var(--color-bg-secondary);
   border: 1px solid var(--divider);
@@ -581,7 +597,7 @@ export default {
 
 .pill-subtle {
   background: rgba(113, 156, 214, 0.16);
-  color: var(--color-accent-blue);
+  color: var(--text-link);
   border: 1px solid rgba(113, 156, 214, 0.3);
 }
 
@@ -624,6 +640,19 @@ export default {
   min-width: 0;
 }
 
+/* Phones: search owns its row; Filters / Import / Clear sit below it. */
+@media (max-width: 639px) {
+  .activity-toolbar__search {
+    flex-basis: 100%;
+  }
+}
+
+.activity-toolbar__import {
+  max-height: min(24rem, 60dvh);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
 .activity-toolbar__search-icon {
   position: absolute;
   left: 0.75rem;
@@ -643,7 +672,7 @@ export default {
 }
 
 .result-count {
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   font-weight: 500;
   color: var(--color-text-muted);
 }
@@ -653,7 +682,7 @@ export default {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem 0.75rem;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
 }
 
 .filter-summary__total {

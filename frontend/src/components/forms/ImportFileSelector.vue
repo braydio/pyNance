@@ -1,25 +1,38 @@
 <template>
   <div class="import-selector">
     <div class="import-box">
-      <h2>󰋺 Import Transactions from File</h2>
+      <h2>Import transactions from a file</h2>
     </div>
-    <div v-if="loading" class="status">Loading available files...</div>
+    <div v-if="loading" class="status" role="status">Loading available files...</div>
 
     <div v-else>
-      <label class="text-label"> Click the dropdown. </label>
+      <label class="text-label" for="import-file-select">Import file</label>
 
       <div class="import-controls">
-        <select v-model="selectedFile">
-          <option disabled value="">-- Go ahead, do it. --</option>
+        <select id="import-file-select" v-model="selectedFile" class="input select">
+          <option disabled value="">Select a file to import</option>
           <option v-for="file in files" :key="file.name" :value="file.name">
             {{ file.label }}
           </option>
         </select>
 
-        <button :disabled="!selectedFile" @click="startImport" class="btn btn-primary">
-          Click Me
+        <button
+          type="button"
+          :disabled="!selectedFile || importing"
+          class="btn btn-primary"
+          @click="startImport"
+        >
+          {{ importing ? 'Importing…' : 'Import selected file' }}
         </button>
       </div>
+      <p
+        v-if="message"
+        :class="messageIsError ? 'text-negative' : 'text-muted'"
+        :role="messageIsError ? 'alert' : 'status'"
+      >
+        {{ message }}
+      </p>
+      <p v-else-if="!files.length" class="status">No import files are available.</p>
     </div>
   </div>
 </template>
@@ -31,6 +44,9 @@ import axios from 'axios'
 const files = ref([])
 const selectedFile = ref('')
 const loading = ref(true)
+const importing = ref(false)
+const message = ref('')
+const messageIsError = ref(false)
 
 async function loadFiles() {
   try {
@@ -48,13 +64,19 @@ async function loadFiles() {
 }
 
 async function startImport() {
-  if (!selectedFile.value) return
+  if (!selectedFile.value || importing.value) return
+  importing.value = true
+  message.value = ''
   try {
     await axios.post('/api/import/import', { file: selectedFile.value })
-    alert(`Import started for: ${selectedFile.value}`)
+    messageIsError.value = false
+    message.value = `Import started for ${selectedFile.value}.`
   } catch (err) {
     console.error('Import failed:', err)
-    alert('Failed to import file.')
+    messageIsError.value = true
+    message.value = 'Failed to import the file. Check the file and try again.'
+  } finally {
+    importing.value = false
   }
 }
 
@@ -99,27 +121,10 @@ onMounted(loadFiles)
 }
 
 select {
-  padding: 0.5rem;
-  border-radius: 6px;
-  border: 1px solid var(--divider);
-  background-color: var(--color-bg-dark);
-  color: var(--color-text-muted);
-  min-width: 220px;
+  width: min(22rem, 100%);
 }
 
-.btn-primary {
-  background-color: var(--button-bg);
-  color: var(--color-text-light);
-  padding: 0.5rem 1rem;
-  border: groove 2px var(--color-accent-purple);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.btn-primary:hover {
-  background-color: var(--color-accent-purple);
-  color: var(--page-bg);
-  border: groove 2px transparent;
+.import-controls {
+  align-items: stretch;
 }
 </style>

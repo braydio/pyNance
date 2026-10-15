@@ -2,7 +2,8 @@
   <select
     :value="modelValue"
     @change="onChange"
-    class="input px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)]"
+    class="input select"
+    aria-label="Filter by account"
     data-testid="account-select"
   >
     <option value="">All Accounts</option>

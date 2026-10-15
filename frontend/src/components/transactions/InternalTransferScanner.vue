@@ -2,7 +2,7 @@
 <template>
   <div class="space-y-4">
     <div class="flex justify-end">
-      <UiButton size="sm" @click="scan" :disabled="loading">
+      <UiButton type="button" size="sm" :disabled="loading" @click="scan">
         {{ loading ? 'Scanning...' : 'Scan' }}
       </UiButton>
     </div>
@@ -10,7 +10,7 @@
       <div
         v-for="pair in pairs"
         :key="pair.transaction_id"
-        class="flex items-start justify-between border p-4 rounded-md"
+        class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between border p-4 rounded-md"
       >
         <div class="text-sm">
           <p class="font-medium">
@@ -18,7 +18,7 @@
             {{ formatAccount(pair) }}
             | {{ flowLabel(pair.amount) }} {{ formatSignedAmount(pair.amount) }}
           </p>
-          <p class="text-gray-500">
+          <p class="text-muted">
             {{ pair.description }}
           </p>
           <p class="font-medium mt-2">
@@ -27,17 +27,20 @@
             | {{ flowLabel(pair.counterpart.amount) }}
             {{ formatSignedAmount(pair.counterpart.amount) }}
           </p>
-          <p class="text-gray-500">
+          <p class="text-muted">
             {{ pair.counterpart.description }}
           </p>
-          <p class="text-xs text-gray-500 mt-2">
+          <p class="text-sm text-muted mt-2">
             Match score: {{ pair.match_score }} | Time delta: {{ pair.time_delta_hours }}h
           </p>
         </div>
-        <UiButton variant="primary" @click="confirm(pair)">Mark Internal</UiButton>
+        <UiButton type="button" variant="primary" @click="confirm(pair)">Mark Internal</UiButton>
       </div>
     </div>
-    <p v-else-if="scanned" class="text-sm text-gray-500">No internal transfers found.</p>
+    <p v-else-if="scanError" class="text-sm text-negative" role="alert">
+      Unable to scan for internal transfers. Try again.
+    </p>
+    <p v-else-if="scanned" class="text-sm text-muted" role="status">No internal transfers found.</p>
   </div>
 </template>
 
@@ -49,14 +52,17 @@ import UiButton from '@/components/ui/Button.vue'
 const pairs = ref([])
 const loading = ref(false)
 const scanned = ref(false)
+const scanError = ref(false)
 
 async function scan() {
   loading.value = true
+  scanError.value = false
   try {
     const res = await api.scanInternalTransfers()
     pairs.value = res.pairs || []
   } catch (err) {
     console.error('Failed to scan internal transfers:', err)
+    scanError.value = true
   } finally {
     scanned.value = true
     loading.value = false

@@ -9,22 +9,45 @@
   <section id="recurring" class="recurring-manager">
     <h2 class="heading-md mb-4">Recurring Transactions</h2>
     <!-- Form Modal Toggle -->
-    <button @click="resetForm" class="btn">+ Add Recurring Transaction Rule</button>
-    <button @click="scanForRecurring" class="btn">Scan for Recurring</button>
+    <div class="recurring-actions">
+      <button type="button" class="btn btn-outline" @click="resetForm">
+        + Add Recurring Transaction Rule
+      </button>
+      <button type="button" class="btn btn-outline" @click="scanForRecurring">
+        Scan for Recurring
+      </button>
+    </div>
     <!-- Form -->
     <div v-if="showForm" class="recurring-form">
-      <input v-model="transactionId" placeholder="Transaction ID (e.g. tx_abc123)" />
-      <input v-model="description" placeholder="Description (optional)" />
-      <input v-model.number="amount" type="number" step="0.01" placeholder="Amount ($)" />
-      <select v-model="frequency">
+      <input
+        v-model="transactionId"
+        class="input"
+        aria-label="Transaction ID"
+        placeholder="Transaction ID (e.g. tx_abc123)"
+      />
+      <input
+        v-model="description"
+        class="input"
+        aria-label="Description"
+        placeholder="Description (optional)"
+      />
+      <input
+        v-model.number="amount"
+        class="input"
+        aria-label="Amount in dollars"
+        type="number"
+        step="0.01"
+        placeholder="Amount ($)"
+      />
+      <select v-model="frequency" class="input select" aria-label="Frequency">
         <option value="daily">Daily</option>
         <option value="weekly">Weekly</option>
         <option value="monthly">Monthly</option>
         <option value="yearly">Yearly</option>
       </select>
-      <input v-model="nextDueDate" type="date" placeholder="Next Due Date" />
-      <input v-model="notes" placeholder="Notes" />
-      <button @click="saveRecurring" :disabled="loading">
+      <input v-model="nextDueDate" class="input" aria-label="Next due date" type="date" />
+      <input v-model="notes" class="input" aria-label="Notes" placeholder="Notes" />
+      <button type="button" class="btn btn-primary" :disabled="loading" @click="saveRecurring">
         {{ loading ? 'Saving...' : isEditing ? 'Update' : 'Save' }}
       </button>
     </div>
@@ -51,8 +74,8 @@
             <td>{{ formatAmount(rule.amount) }}</td>
             <td>{{ rule.notes }}</td>
             <td>
-              <button class="btn-sm" @click="editRule(rule)">Edit</button>
-              <button class="btn-sm" @click="deleteRule(rule)">Delete</button>
+              <button type="button" class="btn-sm" @click="editRule(rule)">Edit</button>
+              <button type="button" class="btn-sm" @click="deleteRule(rule)">Delete</button>
             </td>
           </tr>
         </tbody>
@@ -201,7 +224,7 @@ onMounted(async () => {
 .heading-md {
   font-size: 1.6rem;
   font-weight: bold;
-  color: var(--color-accent-yellow);
+  color: var(--text-warning);
   margin-bottom: 1rem;
 }
 
@@ -219,47 +242,15 @@ onMounted(async () => {
   margin-top: 1.25rem;
 }
 
-.recurring-form input,
-.recurring-form select {
-  padding: 0.5rem;
-  border-radius: 6px;
-  border: 1px solid var(--divider);
-  background-color: var(--color-bg-dark);
-  color: var(--color-text-light);
+.recurring-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
-.btn {
+.recurring-form > button {
   grid-column: 1 / -1;
   justify-self: start;
-  background-color: var(--button-bg);
-  color: var(--color-text-light);
-  border: solid 2px var(--color-text-light);
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.btn:hover {
-  background-color: var(--color-accent-purple);
-  color: var(--button-bg);
-  border: solid 2px var(--color-accent-purple);
-}
-
-.recurring-form button {
-  grid-column: 1 / -1;
-  justify-self: start;
-  background-color: var(--button-bg);
-  color: var(--color-text-light);
-  border: solid 2px var(--color-text-light);
-  padding: 0.25rem 1.5rem;
-  border-radius: 3px;
-  cursor: pointer;
-}
-
-.recurring-form button:hover {
-  background-color: var(--color-accent-purple);
-  color: var(--button-bg);
-  border: solid 2px var(--color-accent-purple);
 }
 
 .table-section table {
@@ -288,6 +279,18 @@ table td {
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: 1.1rem;
+  min-height: var(--control-height-sm);
+  padding: 0 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-link);
+}
+
+.btn-sm:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.table-section {
+  overflow-x: auto;
 }
 </style>

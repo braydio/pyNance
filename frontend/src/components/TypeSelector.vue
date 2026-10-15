@@ -2,7 +2,8 @@
   <select
     :value="modelValue"
     @change="(e) => emit('update:modelValue', e.target.value)"
-    class="input px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)]"
+    class="input select"
+    aria-label="Filter by transaction type"
     data-testid="type-select"
   >
     <option value="">All Types</option>
