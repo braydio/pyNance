@@ -1,12 +1,12 @@
 # TP-20261014-002: Upcoming Recurring Due-First and Coverage-Aware
 
 **Packet ID:** TP-20261014-002  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-14  
 **Last updated:** 2026-10-14  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** docs/task-packets/active/TP-20261014-002-upcoming-recurring-action-order.md  
+**Canonical path:** docs/task-packets/completed/TP-20261014-002-upcoming-recurring-action-order.md  
 **Workstream size:** One recurring timeline/UI data-load packet  
 **Depends on:** TP-20261014-001 (same FinancialSummary.vue)  
 **Priority:** High  
@@ -40,3 +40,10 @@ No new bill-paying workflow, forecasting/projection rewrite, schema migration, o
 - [ ] Partial account failure does not erase successful reminders.
 - [ ] Empty/partial/error states are truthful; historical snapshot context is separated from today.
 Report files, tests, screenshots/inspection (if available), deviations.
+
+## Completion report
+
+- Reminders sort by `next_due_date`, then user before auto, confidence, occurrences, description/account. First six shown with "+N more due in 7 days".
+- Rows show Today/Tomorrow/"In N days · date", Scheduled vs Likely recurring, "based on N matches" for auto only. Header "Due in the next 7 days" with "As of today".
+- Per-account `Promise.allSettled`, partial-coverage warning, separate no-accounts / empty / all-failed (Retry) states, request-token guard, 5 minute TTL refresh on reopen, low-emphasis "View transactions" link.
+- Backend untouched. Validation as in TP-20261014-001. Deviations: none.

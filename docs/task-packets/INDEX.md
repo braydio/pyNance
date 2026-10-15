@@ -8,10 +8,10 @@ See [README.md](README.md) for naming, lifecycle, execution, and authoring rules
 
 | Packet ID | Title | Status | Created | Canonical packet |
 | --- | --- | --- | --- | --- |
-| TP-20261014-001 | Financial Detail: Decision Hierarchy and Honest Metrics | Ready | 2026-10-14 | [active/TP-20261014-001-financial-detail-decision-hierarchy.md](active/TP-20261014-001-financial-detail-decision-hierarchy.md) |
-| TP-20261014-002 | Upcoming Recurring: Due-First and Coverage-Aware | Ready | 2026-10-14 | [active/TP-20261014-002-upcoming-recurring-action-order.md](active/TP-20261014-002-upcoming-recurring-action-order.md) |
-| TP-20261014-003 | Dashboard Date Controls: One Visible Period | Ready | 2026-10-14 | [active/TP-20261014-003-dashboard-shared-period-truth.md](active/TP-20261014-003-dashboard-shared-period-truth.md) |
-| TP-20261014-004 | Dashboard Landing: Truthful Action Priority and Calm Copy | Ready | 2026-10-14 | [active/TP-20261014-004-dashboard-landing-truthful-actions.md](active/TP-20261014-004-dashboard-landing-truthful-actions.md) |
+| TP-20261014-001 | Financial Detail: Decision Hierarchy and Honest Metrics | Complete | 2026-10-14 | [completed/TP-20261014-001-financial-detail-decision-hierarchy.md](completed/TP-20261014-001-financial-detail-decision-hierarchy.md) |
+| TP-20261014-002 | Upcoming Recurring: Due-First and Coverage-Aware | Complete | 2026-10-14 | [completed/TP-20261014-002-upcoming-recurring-action-order.md](completed/TP-20261014-002-upcoming-recurring-action-order.md) |
+| TP-20261014-003 | Dashboard Date Controls: One Visible Period | Complete | 2026-10-14 | [completed/TP-20261014-003-dashboard-shared-period-truth.md](completed/TP-20261014-003-dashboard-shared-period-truth.md) |
+| TP-20261014-004 | Dashboard Landing: Truthful Action Priority and Calm Copy | Complete | 2026-10-14 | [completed/TP-20261014-004-dashboard-landing-truthful-actions.md](completed/TP-20261014-004-dashboard-landing-truthful-actions.md) |
 
 ## Completed
 

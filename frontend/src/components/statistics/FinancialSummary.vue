@@ -1,52 +1,36 @@
 <!--
   FinancialSummary.vue
-  Displays key income, expense, and net metrics derived from DailyNetChart data.
-  Users can toggle between basic and extended views with moving averages,
-  per-category trends with signed deltas, highest earning/spending days,
-  volatility, and basic outlier detection.
+  Collapsible financial detail panel for the dashboard. Collapsed it is a quiet
+  entry row; expanded it reads: date context, upcoming recurring (next 7 days
+  from today), selected-day spending, period net cash flow, then a closed
+  "More statistics" section. Unusual days emit `select-date` so the parent can
+  open the existing date transaction modal.
 -->
 <template>
   <div class="statistics-container">
-    <!-- Statistics Header with Toggle -->
+    <!-- Collapsed row: a quiet entry point, not another income/expense/net hero -->
     <div class="stats-header">
-      <h3 class="stats-title">Financial Snapshot</h3>
+      <div class="stats-heading">
+        <h3 class="stats-title">Financial details</h3>
+        <p v-if="periodLabel" class="stats-period">{{ periodLabel }}</p>
+      </div>
       <div class="stats-controls">
         <button
+          type="button"
           class="accent-toggle-btn"
           :class="{ 'accent-toggle-btn--active': isExtendedView }"
+          :aria-expanded="isExtendedView ? 'true' : 'false'"
+          aria-controls="financial-details-panel"
           @click="toggleExtendedView"
-          :title="isExtendedView ? 'Switch to Basic View' : 'Switch to Extended View'"
         >
-          {{ isExtendedView ? 'Hide Detail View' : 'Show Detail View' }}
+          {{ isExtendedView ? 'Hide details' : 'Show details' }}
         </button>
       </div>
     </div>
 
-    <!-- Basic Statistics (Always Visible) -->
-    <div class="basic-stats">
-      <div class="stat-item stat-income">
-        <span class="stat-label">Income:</span>
-        <span class="stat-value" :class="amountPolarityClass(detailSummary.totalIncome)">{{
-          formatAmount(detailSummary.totalIncome)
-        }}</span>
-      </div>
-      <div class="stat-item stat-expenses">
-        <span class="stat-label">Expenses:</span>
-        <span class="stat-value" :class="amountPolarityClass(detailSummary.totalExpenses)">{{
-          formatAmount(detailSummary.totalExpenses)
-        }}</span>
-      </div>
-      <div class="stat-item stat-net" :class="netPolarityClass">
-        <span class="stat-label">Net Total:</span>
-        <span class="stat-value" :class="amountPolarityClass(detailSummary.totalNet)">{{
-          formatAmount(detailSummary.totalNet)
-        }}</span>
-      </div>
-    </div>
-
-    <!-- Extended Statistics (Conditional) -->
     <Transition name="expand">
-      <div v-if="isExtendedView" class="extended-stats">
+      <div v-if="isExtendedView" id="financial-details-panel" class="extended-stats">
+        <!-- 1. Date context -->
         <div class="detail-date-controls">
           <label class="detail-date-label" for="financial-snapshot-detail-date"
             >View snapshot as of</label
@@ -67,195 +51,267 @@
           >
             Reset to today
           </button>
-          <p class="detail-date-helper">Showing activity through {{ viewingDateLabel }}</p>
+          <p class="detail-date-helper">Activity through {{ viewingDateLabel }}</p>
         </div>
 
-        <DailySpendingPanel :detail-date="detailDate" :min-detail-date="minDetailDate" />
-
-        <section class="recurring-upcoming-panel" aria-live="polite">
+        <!-- 2. Upcoming recurring (always relative to today, not detailDate) -->
+        <section
+          class="recurring-upcoming-panel"
+          aria-labelledby="recurring-upcoming-title"
+          aria-live="polite"
+        >
           <div class="recurring-upcoming-header">
-            <h4 class="group-title mb-0">Upcoming Transactions</h4>
-            <p class="recurring-upcoming-subtitle">
-              Prioritized by recurrence confidence and history depth.
-            </p>
+            <h4 id="recurring-upcoming-title" class="group-title mb-0">Due in the next 7 days</h4>
+            <p class="recurring-upcoming-subtitle">As of today, {{ todayLabel }}</p>
           </div>
-          <p v-if="recurringError" class="recurring-upcoming-state">
-            Unable to load recurring reminders right now.
-          </p>
-          <p v-else-if="isLoadingRecurring" class="recurring-upcoming-state">
+          <p v-if="isLoadingRecurring" class="recurring-upcoming-state">
             Loading upcoming recurring transactions…
           </p>
-          <p v-else-if="!prioritizedReminders.length" class="recurring-upcoming-state">
-            No recurring reminders due in the next 7 days.
-          </p>
-          <ul v-else class="recurring-upcoming-list">
-            <li
-              v-for="reminder in prioritizedReminders"
-              :key="buildReminderKey(reminder)"
-              class="recurring-upcoming-item"
-            >
-              <div>
-                <div class="recurring-upcoming-description">{{ reminder.description }}</div>
-                <div class="recurring-upcoming-meta">
-                  Due {{ reminder.next_due_date }} ·
-                  {{ reminder.auto_detection.occurrences }} matching transactions
-                </div>
-              </div>
-              <div class="recurring-upcoming-amount">{{ reminder.amount }}</div>
-            </li>
-          </ul>
+          <template v-else>
+            <p v-if="recurringStatus === 'no-accounts'" class="recurring-upcoming-state">
+              No accounts are selected for the dashboard snapshot, so nothing can be checked.
+            </p>
+            <div v-else-if="recurringStatus === 'error'" class="recurring-upcoming-state">
+              <p class="recurring-upcoming-message" role="alert">
+                Unable to load upcoming recurring transactions.
+              </p>
+              <button type="button" class="recurring-upcoming-retry" @click="retryRecurring">
+                Retry
+              </button>
+            </div>
+            <template v-else>
+              <p v-if="recurringFailedCount > 0" class="recurring-upcoming-warning" role="status">
+                Couldn't check {{ recurringFailedCount }} of {{ recurringAccountCount }} accounts;
+                this list may be incomplete.
+                <button type="button" class="recurring-upcoming-retry" @click="retryRecurring">
+                  Retry
+                </button>
+              </p>
+              <p v-if="!upcomingReminders.length" class="recurring-upcoming-state">
+                No recurring items due in the next 7 days.
+              </p>
+              <ul v-else class="recurring-upcoming-list">
+                <li
+                  v-for="(reminder, index) in visibleReminders"
+                  :key="buildReminderKey(reminder, index)"
+                  class="recurring-upcoming-item"
+                >
+                  <div>
+                    <div class="recurring-upcoming-description">{{ reminder.description }}</div>
+                    <div class="recurring-upcoming-meta">
+                      {{ describeDue(reminder) }} ·
+                      {{ reminder.source === 'user' ? 'Scheduled' : 'Likely recurring' }}
+                      <template
+                        v-if="reminder.source !== 'user' && reminder.auto_detection.occurrences"
+                      >
+                        · based on {{ reminder.auto_detection.occurrences }} matches
+                      </template>
+                    </div>
+                  </div>
+                  <div class="recurring-upcoming-amount">{{ reminder.amount }}</div>
+                </li>
+              </ul>
+              <p v-if="hiddenReminderCount > 0" class="recurring-upcoming-more">
+                +{{ hiddenReminderCount }} more due in 7 days
+              </p>
+            </template>
+          </template>
+          <router-link class="recurring-upcoming-link" to="/transactions"
+            >View transactions</router-link
+          >
         </section>
 
-        <div class="stats-grid">
-          <!-- Averages (Daily + Moving) -->
-          <div class="stat-group">
-            <h4 class="group-title">Averages</h4>
-            <div class="subsection-title">Daily</div>
-            <div class="stat-item">
+        <!-- 3. Selected-day spending + latest transactions -->
+        <DailySpendingPanel :detail-date="detailDate" :min-detail-date="minDetailDate" />
+
+        <!-- 4. Period interpretation -->
+        <section class="period-summary" aria-labelledby="period-summary-title">
+          <h4 id="period-summary-title" class="group-title">
+            Period through {{ viewingDateLabel }}
+          </h4>
+          <div class="period-summary-grid">
+            <div class="stat-item stat-net" :class="netPolarityClass">
+              <span class="stat-label">Net cash flow:</span>
+              <span class="stat-value" :class="amountPolarityClass(detailSummary.totalNet)">{{
+                formatAmount(detailSummary.totalNet)
+              }}</span>
+            </div>
+            <div class="stat-item stat-income">
               <span class="stat-label">Income:</span>
-              <span
-                class="stat-value"
-                :class="amountPolarityClass(extendedMetrics.avgDailyIncome)"
-                >{{ formatAmount(extendedMetrics.avgDailyIncome) }}</span
-              >
+              <span class="stat-value" :class="amountPolarityClass(detailSummary.totalIncome)">{{
+                formatAmount(detailSummary.totalIncome)
+              }}</span>
             </div>
-            <div class="stat-item">
+            <div class="stat-item stat-expenses">
               <span class="stat-label">Expenses:</span>
-              <span
-                class="stat-value"
-                :class="amountPolarityClass(extendedMetrics.avgDailyExpenses)"
-                >{{ formatAmount(extendedMetrics.avgDailyExpenses) }}</span
-              >
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">Net:</span>
-              <span class="stat-value" :class="amountPolarityClass(extendedMetrics.avgDailyNet)">{{
-                formatAmount(extendedMetrics.avgDailyNet)
+              <span class="stat-value" :class="amountPolarityClass(detailSummary.totalExpenses)">{{
+                formatAmount(detailSummary.totalExpenses)
               }}</span>
             </div>
-            <div class="subsection-title">Moving Averages</div>
-            <div class="stat-item">
-              <span class="stat-label">7-Day:</span>
-              <span class="stat-value" :class="amountPolarityClass(extendedMetrics.netMA7)">{{
-                formatAmount(extendedMetrics.netMA7)
-              }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">30-Day:</span>
-              <span class="stat-value" :class="amountPolarityClass(extendedMetrics.netMA30)">{{
-                formatAmount(extendedMetrics.netMA30)
-              }}</span>
+            <div v-if="netPercentOfIncomeLabel" class="stat-item stat-net-percent">
+              <span class="stat-label">Net as % of income:</span>
+              <span class="stat-value">{{ netPercentOfIncomeLabel }}</span>
             </div>
           </div>
+        </section>
 
-          <!-- Trends & Volatility -->
-          <div class="stat-group">
-            <h4 class="group-title">
-              Trends <span class="group-subtitle-inline">{{ trendSummary }}</span>
-            </h4>
-            <div class="stat-item">
-              <span class="stat-label">Net:</span>
-              <span
-                class="stat-value trend-indicator"
-                :class="amountPolarityClass(extendedMetrics.netChange)"
-                >{{ formatCurrencyDelta(extendedMetrics.netChange) }}</span
-              >
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">Income:</span>
-              <span
-                class="stat-value trend-indicator"
-                :class="amountPolarityClass(extendedMetrics.incomeChange)"
-                >{{ formatCurrencyDelta(extendedMetrics.incomeChange) }}</span
-              >
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">Expenses:</span>
-              <span
-                class="stat-value trend-indicator"
-                :class="amountPolarityClass(extendedMetrics.expenseChange)"
-                >{{ formatCurrencyDelta(extendedMetrics.expenseChange) }}</span
-              >
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">Volatility (σ of daily net):</span>
-              <span class="stat-value" :class="amountPolarityClass(extendedMetrics.volatility)">
-                {{ volatilityLevel }} (σ {{ formatAmount(extendedMetrics.volatility) }})
-              </span>
-            </div>
-          </div>
-
-          <!-- Extremes & Outliers -->
-          <div class="stat-group">
-            <h4 class="group-title">
-              Outliers <span class="group-subtitle-inline">Largest day amounts • 2σ anomalies</span>
-            </h4>
-            <div class="stat-item">
-              <span class="stat-label">Income: <span class="badge-note">largest</span></span>
-              <span class="stat-value outlier-value">
-                <span>{{ topEarningDateLabel }}</span>
-                <span class="outlier-amount" :class="amountPolarityClass(topEarningAmountValue)">{{
-                  topEarningAmountLabel
+        <!-- 5. Secondary statistics, closed by default -->
+        <details class="more-statistics">
+          <summary>More statistics</summary>
+          <p class="more-statistics-note">
+            Based on {{ dayCountLabel }}. Days with no activity count as zero in daily averages and
+            day counts.
+          </p>
+          <div class="stats-grid">
+            <div class="stat-group">
+              <h4 class="group-title">Daily averages</h4>
+              <div class="stat-item">
+                <span class="stat-label">Income:</span>
+                <span
+                  class="stat-value"
+                  :class="amountPolarityClass(extendedMetrics.avgDailyIncome)"
+                  >{{ formatAmount(extendedMetrics.avgDailyIncome) }}</span
+                >
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Expenses:</span>
+                <span
+                  class="stat-value"
+                  :class="amountPolarityClass(extendedMetrics.avgDailyExpenses)"
+                  >{{ formatAmount(extendedMetrics.avgDailyExpenses) }}</span
+                >
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Net:</span>
+                <span
+                  class="stat-value"
+                  :class="amountPolarityClass(extendedMetrics.avgDailyNet)"
+                  >{{ formatAmount(extendedMetrics.avgDailyNet) }}</span
+                >
+              </div>
+              <div class="stat-item stat-ma7">
+                <span class="stat-label">Last 7 days, average net:</span>
+                <span class="stat-value" :class="amountPolarityClass(extendedMetrics.netMA7)">{{
+                  movingAverageLabel(extendedMetrics.netMA7, 7)
                 }}</span>
-              </span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">Expense: <span class="badge-note">largest</span></span>
-              <span class="stat-value outlier-value">
-                <span>{{ topSpendingDateLabel }}</span>
-                <span class="outlier-amount" :class="amountPolarityClass(topSpendingAmountValue)">{{
-                  topSpendingAmountLabel
+              </div>
+              <div class="stat-item stat-ma30">
+                <span class="stat-label">Last 30 days, average net:</span>
+                <span class="stat-value" :class="amountPolarityClass(extendedMetrics.netMA30)">{{
+                  movingAverageLabel(extendedMetrics.netMA30, 30)
                 }}</span>
-              </span>
+              </div>
             </div>
-            <div class="stat-item">
-              <span class="stat-label">Anomalies (>|2σ|):</span>
-              <span class="stat-value">{{ extendedMetrics.outlierDays.length }}</span>
-            </div>
-          </div>
 
-          <!-- Savings Metric -->
-          <div class="stat-group">
-            <h4 class="group-title">Savings</h4>
-            <div class="subsection-title">Counts</div>
-            <div class="stat-item">
-              <span class="stat-label">Positive Days:</span>
-              <span class="stat-value">{{ positiveDaysLabel }}</span>
+            <div class="stat-group">
+              <h4 class="group-title">First vs last day (not a period trend)</h4>
+              <div class="stat-item">
+                <span class="stat-label">Net:</span>
+                <span
+                  class="stat-value trend-indicator"
+                  :class="amountPolarityClass(extendedMetrics.netChange)"
+                  >{{ formatCurrencyDelta(extendedMetrics.netChange) }}</span
+                >
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Income:</span>
+                <span
+                  class="stat-value trend-indicator"
+                  :class="amountPolarityClass(extendedMetrics.incomeChange)"
+                  >{{ formatCurrencyDelta(extendedMetrics.incomeChange) }}</span
+                >
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Expenses:</span>
+                <span
+                  class="stat-value trend-indicator"
+                  :class="amountPolarityClass(extendedMetrics.expenseChange)"
+                  >{{ formatCurrencyDelta(extendedMetrics.expenseChange) }}</span
+                >
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Daily net standard deviation:</span>
+                <span class="stat-value">{{ formatAmount(extendedMetrics.volatility) }}</span>
+              </div>
             </div>
-            <div class="stat-item">
-              <span class="stat-label">Negative Days:</span>
-              <span class="stat-value">{{ negativeDaysLabel }}</span>
+
+            <div class="stat-group">
+              <h4 class="group-title">Largest days</h4>
+              <div class="stat-item">
+                <span class="stat-label">Income:</span>
+                <span class="stat-value outlier-value">
+                  <span>{{ topEarningDateLabel }}</span>
+                  <span
+                    class="outlier-amount"
+                    :class="amountPolarityClass(topEarningAmountValue)"
+                    >{{ topEarningAmountLabel }}</span
+                  >
+                </span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Expense:</span>
+                <span class="stat-value outlier-value">
+                  <span>{{ topSpendingDateLabel }}</span>
+                  <span
+                    class="outlier-amount"
+                    :class="amountPolarityClass(topSpendingAmountValue)"
+                    >{{ topSpendingAmountLabel }}</span
+                  >
+                </span>
+              </div>
+              <div class="stat-item stat-unusual">
+                <span class="stat-label">Unusual days:</span>
+                <span v-if="unusualDays.length" class="stat-value unusual-days">
+                  <button
+                    v-for="date in unusualDays"
+                    :key="date"
+                    type="button"
+                    class="unusual-day-btn"
+                    @click="emit('select-date', date)"
+                  >
+                    {{ date }}
+                  </button>
+                </span>
+                <span v-else class="stat-value">{{ unusualDaysEmptyLabel }}</span>
+              </div>
             </div>
-            <div class="subsection-title">Averages</div>
-            <div class="stat-item">
-              <span class="stat-label">Savings Rate:</span>
-              <span class="stat-value">{{ savingsRateLabel }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">Savings Amount:</span>
-              <span class="stat-value" :class="amountPolarityClass(savingsAmountValue)">{{
-                savingsAmountLabel
-              }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">Avg Savings (positive):</span>
-              <span class="stat-value" :class="amountPolarityClass(avgPositiveSavingsValue)">{{
-                avgPositiveSavingsLabel
-              }}</span>
+
+            <div class="stat-group">
+              <h4 class="group-title">Day counts</h4>
+              <div class="stat-item">
+                <span class="stat-label">Positive-net days:</span>
+                <span class="stat-value">{{ positiveDaysLabel }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Negative-net days:</span>
+                <span class="stat-value">{{ negativeDaysLabel }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Average positive-net day:</span>
+                <span class="stat-value" :class="amountPolarityClass(avgPositiveNetDayValue)">{{
+                  avgPositiveNetDayLabel
+                }}</span>
+              </div>
             </div>
           </div>
-        </div>
+        </details>
       </div>
     </Transition>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import api from '@/services/api'
 import { getRecurringTransactions } from '@/api/recurring'
 import { amountPolarityClass, formatAmount } from '@/utils/format'
 import DailySpendingPanel from './DailySpendingPanel.vue'
+
+/** Minimum days of history before moving averages / unusual days are meaningful. */
+const MIN_OUTLIER_SAMPLE_DAYS = 7
+const MAX_UNUSUAL_DAYS = 3
+const MAX_VISIBLE_REMINDERS = 6
+const RECURRING_TTL_MS = 5 * 60 * 1000
 
 /**
  * Format a numeric delta with shared accounting-style currency rules.
@@ -299,6 +355,8 @@ const props = defineProps({
   },
 })
 
+const emit = defineEmits(['select-date'])
+
 // Toggle state for basic/extended view
 const isExtendedView = ref(false)
 
@@ -311,10 +369,6 @@ const TODAY_ISO = formatAsISODate(TODAY)
 
 const detailDate = ref(TODAY_ISO)
 const userAdjustedDate = ref(false)
-const prioritizedReminders = ref([])
-const isLoadingRecurring = ref(false)
-const recurringError = ref(null)
-const remindersFetched = ref(false)
 
 const chartDateBounds = computed(() => {
   const data = Array.isArray(props.chartData) ? props.chartData : []
@@ -375,13 +429,51 @@ function resetDetailDate() {
 }
 
 /**
+ * Format an ISO date as a short locale label (e.g. "Apr 11").
+ *
+ * @param {string} iso - ISO date string.
+ * @returns {string} Short label, or the input when unparseable.
+ */
+function formatShortDate(iso) {
+  const parsed = parseISODate(iso)
+  return parsed ? parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : iso
+}
+
+const periodLabel = computed(() => {
+  if (!props.startDate || !props.endDate) return ''
+  return `Selected period: ${formatShortDate(props.startDate)} – ${formatShortDate(props.endDate)}`
+})
+
+const todayLabel = computed(() => formatShortDate(TODAY_ISO))
+
+// ---------------------------------------------------------------------------
+// Upcoming recurring (due-first, coverage-aware). Always relative to today.
+// ---------------------------------------------------------------------------
+
+const upcomingReminders = ref([])
+const isLoadingRecurring = ref(false)
+/** @type {import('vue').Ref<'idle'|'ok'|'no-accounts'|'error'>} */
+const recurringStatus = ref('idle')
+const recurringFailedCount = ref(0)
+const recurringAccountCount = ref(0)
+let recurringFetchedAt = 0
+let recurringRequestId = 0
+let isUnmounted = false
+
+const visibleReminders = computed(() => upcomingReminders.value.slice(0, MAX_VISIBLE_REMINDERS))
+const hiddenReminderCount = computed(() =>
+  Math.max(0, upcomingReminders.value.length - MAX_VISIBLE_REMINDERS),
+)
+
+/**
  * Build a stable key for rendering recurring reminders.
  *
  * @param {Record<string, unknown>} reminder - Reminder payload from recurring endpoints.
- * @returns {string} Unique-ish key for list rendering.
+ * @param {number} index - Position in the deterministic sort order.
+ * @returns {string} Key for list rendering.
  */
-function buildReminderKey(reminder) {
-  return `${reminder.account_id}-${reminder.description}-${reminder.next_due_date}-${reminder.amount}`
+function buildReminderKey(reminder, index) {
+  return `${reminder.account_id}-${reminder.source}-${reminder.description}-${reminder.next_due_date}-${reminder.amount}-${index}`
 }
 
 /**
@@ -408,13 +500,25 @@ function normalizeReminder(reminder, accountId) {
 }
 
 /**
- * Sort reminders so high-confidence recurring patterns surface first.
+ * Sort reminders by due date first so nothing earlier is hidden by confidence.
+ *
+ * Ties: user-scheduled before auto-detected, then confidence, occurrences, and
+ * finally description/account for a stable order.
  *
  * @param {Record<string, unknown>} left - Left reminder item.
  * @param {Record<string, unknown>} right - Right reminder item.
  * @returns {number} Comparator compatible with Array.sort.
  */
 function compareReminders(left, right) {
+  const dueDelta = String(left?.next_due_date || '').localeCompare(
+    String(right?.next_due_date || ''),
+  )
+  if (dueDelta !== 0) return dueDelta
+
+  const leftUser = left?.source === 'user' ? 0 : 1
+  const rightUser = right?.source === 'user' ? 0 : 1
+  if (leftUser !== rightUser) return leftUser - rightUser
+
   const confidenceDelta =
     (right?.auto_detection?.confidence_score || 0) - (left?.auto_detection?.confidence_score || 0)
   if (confidenceDelta !== 0) return confidenceDelta
@@ -423,56 +527,111 @@ function compareReminders(left, right) {
     (right?.auto_detection?.occurrences || 0) - (left?.auto_detection?.occurrences || 0)
   if (occurrenceDelta !== 0) return occurrenceDelta
 
-  return String(left?.next_due_date || '').localeCompare(String(right?.next_due_date || ''))
+  const descriptionDelta = String(left?.description || '').localeCompare(
+    String(right?.description || ''),
+  )
+  if (descriptionDelta !== 0) return descriptionDelta
+
+  return String(left?.account_id || '').localeCompare(String(right?.account_id || ''))
+}
+
+/**
+ * Describe when a reminder is due relative to today.
+ *
+ * @param {Record<string, unknown>} reminder - Normalized reminder.
+ * @returns {string} "Today", "Tomorrow" or "In N days · Apr 11".
+ */
+function describeDue(reminder) {
+  let days = Number(reminder?.days_until_due)
+  if (!Number.isFinite(days)) {
+    const due = parseISODate(reminder?.next_due_date)
+    const today = parseISODate(formatAsISODate(new Date()))
+    days = due && today ? Math.round((due - today) / 86400000) : NaN
+  }
+  if (days === 0) return 'Today'
+  if (days === 1) return 'Tomorrow'
+  const short = formatShortDate(reminder?.next_due_date)
+  return Number.isFinite(days) ? `In ${days} days · ${short}` : `Due ${short}`
 }
 
 /**
  * Load recurring reminders for selected dashboard snapshot accounts.
  *
- * Retrieves up to six reminders due within seven days and ranks them by confidence
- * and observed recurrence history.
+ * Failed accounts do not erase reminders from healthy ones; stale or superseded
+ * responses are ignored.
  *
+ * @param {{ force?: boolean }} [options] - Bypass the freshness TTL.
  * @returns {Promise<void>} Resolves once reminders are loaded (or gracefully degraded).
  */
-async function loadUpcomingRecurringTransactions() {
-  if (remindersFetched.value) {
+async function loadUpcomingRecurringTransactions({ force = false } = {}) {
+  const fresh =
+    recurringStatus.value === 'ok' &&
+    recurringFailedCount.value === 0 &&
+    Date.now() - recurringFetchedAt < RECURRING_TTL_MS
+  if (!force && fresh) {
     return
   }
 
+  const requestId = ++recurringRequestId
+  const isCurrent = () => !isUnmounted && requestId === recurringRequestId
   isLoadingRecurring.value = true
-  recurringError.value = null
 
   try {
     const snapshotResponse = await api.getAccountSnapshot()
+    if (!isCurrent()) return
     const selectedAccountIds = Array.isArray(snapshotResponse?.data?.selected_account_ids)
       ? snapshotResponse.data.selected_account_ids
       : []
 
     if (!selectedAccountIds.length) {
-      prioritizedReminders.value = []
-      remindersFetched.value = true
+      upcomingReminders.value = []
+      recurringAccountCount.value = 0
+      recurringFailedCount.value = 0
+      recurringStatus.value = 'no-accounts'
+      recurringFetchedAt = Date.now()
       return
     }
 
-    const reminderGroups = await Promise.all(
+    const results = await Promise.allSettled(
       selectedAccountIds.map(async (accountId) => {
         const response = await getRecurringTransactions(accountId)
-        const rawReminders =
-          response?.status === 'success' && Array.isArray(response?.reminders)
-            ? response.reminders
-            : []
+        if (response?.status !== 'success') {
+          throw new Error('Recurring request did not succeed')
+        }
+        const rawReminders = Array.isArray(response?.reminders) ? response.reminders : []
         return rawReminders.map((reminder) => normalizeReminder(reminder, accountId))
       }),
     )
+    if (!isCurrent()) return
 
-    prioritizedReminders.value = reminderGroups.flat().sort(compareReminders).slice(0, 6)
-    remindersFetched.value = true
+    const failed = results.filter((result) => result.status === 'rejected').length
+    recurringAccountCount.value = selectedAccountIds.length
+    recurringFailedCount.value = failed
+    if (failed === results.length) {
+      upcomingReminders.value = []
+      recurringStatus.value = 'error'
+      return
+    }
+    upcomingReminders.value = results
+      .filter((result) => result.status === 'fulfilled')
+      .flatMap((result) => result.value)
+      .sort(compareReminders)
+    recurringStatus.value = 'ok'
+    recurringFetchedAt = Date.now()
   } catch (error) {
-    recurringError.value = error
-    prioritizedReminders.value = []
+    if (!isCurrent()) return
+    upcomingReminders.value = []
+    recurringFailedCount.value = 0
+    recurringStatus.value = 'error'
   } finally {
-    isLoadingRecurring.value = false
+    if (isCurrent()) {
+      isLoadingRecurring.value = false
+    }
   }
+}
+
+function retryRecurring() {
+  loadUpcomingRecurringTransactions({ force: true })
 }
 
 watch(isExtendedView, (showExtended) => {
@@ -486,6 +645,14 @@ onMounted(() => {
     loadUpcomingRecurringTransactions()
   }
 })
+
+onBeforeUnmount(() => {
+  isUnmounted = true
+})
+
+// ---------------------------------------------------------------------------
+// Period statistics
+// ---------------------------------------------------------------------------
 
 /**
  * Build an inclusive list of date labels between two ISO date strings.
@@ -606,11 +773,23 @@ const viewingDateLabel = computed(() => {
   })
 })
 
-// Basic computed properties
 const netPolarityClass = computed(() => ({
   positive: detailSummary.value.totalNet >= 0,
   negative: detailSummary.value.totalNet < 0,
 }))
+
+/** Net as a percent of income; null when there is no income to divide by. */
+const netPercentOfIncomeLabel = computed(() => {
+  const income = detailSummary.value.totalIncome
+  if (!(income > 0)) return ''
+  const pct = Math.round((detailSummary.value.totalNet / income) * 1000) / 10
+  return `${pct}%`
+})
+
+const dayCountLabel = computed(() => {
+  const n = filteredChartData.value.length
+  return `${n} ${n === 1 ? 'day' : 'days'}`
+})
 
 // Extended statistics calculations
 const extendedMetrics = computed(() => {
@@ -620,11 +799,8 @@ const extendedMetrics = computed(() => {
       avgDailyIncome: 0,
       avgDailyExpenses: 0,
       avgDailyNet: 0,
-      netMA7: 0,
-      netMA30: 0,
-      netTrend: 0,
-      incomeTrend: 0,
-      expenseTrend: 0,
+      netMA7: null,
+      netMA30: null,
       netChange: 0,
       incomeChange: 0,
       expenseChange: 0,
@@ -637,7 +813,7 @@ const extendedMetrics = computed(() => {
 
   const days = data.length
 
-  // Daily aggregates
+  // Daily aggregates (zero-activity days included)
   const incomeValues = data.map((d) => d.income?.parsedValue || 0)
   const expenseValues = data.map((d) => Math.abs(d.expenses?.parsedValue || 0))
   const netValues = data.map((d) => d.net?.parsedValue || 0)
@@ -649,9 +825,6 @@ const extendedMetrics = computed(() => {
   const netMA7 = calculateMovingAverage(netValues, 7)
   const netMA30 = calculateMovingAverage(netValues, 30)
 
-  const netTrend = calculateTrend(netValues)
-  const incomeTrend = calculateTrend(incomeValues)
-  const expenseTrend = calculateTrend(expenseValues)
   const netChange = netValues[netValues.length - 1] - netValues[0]
   const incomeChange = incomeValues[incomeValues.length - 1] - incomeValues[0]
   const expenseChange = expenseValues[expenseValues.length - 1] - expenseValues[0]
@@ -667,12 +840,18 @@ const extendedMetrics = computed(() => {
     ? { date: data[maxExpenseIdx].date, amount: expenseValues[maxExpenseIdx] }
     : null
 
-  // Basic outlier detection using 2 standard deviations
-  const mean = netValues.reduce((a, b) => a + b, 0) / days
-  const threshold = 2 * volatility
-  const outlierDays = data
-    .filter((d, i) => Math.abs(netValues[i] - mean) > threshold)
-    .map((d) => d.date)
+  // Days whose net is more than 2 standard deviations from the mean, largest first.
+  // Needs a minimum sample and non-zero spread to say anything meaningful.
+  let outlierDays = []
+  if (days >= MIN_OUTLIER_SAMPLE_DAYS && volatility > 0) {
+    const mean = netValues.reduce((a, b) => a + b, 0) / days
+    const threshold = 2 * volatility
+    outlierDays = data
+      .map((d, i) => ({ date: d.date, deviation: Math.abs(netValues[i] - mean) }))
+      .filter((d) => d.deviation > threshold)
+      .sort((a, b) => b.deviation - a.deviation || a.date.localeCompare(b.date))
+      .map((d) => d.date)
+  }
 
   return {
     avgDailyIncome,
@@ -680,9 +859,6 @@ const extendedMetrics = computed(() => {
     avgDailyNet,
     netMA7,
     netMA30,
-    netTrend,
-    incomeTrend,
-    expenseTrend,
     netChange,
     incomeChange,
     expenseChange,
@@ -693,24 +869,10 @@ const extendedMetrics = computed(() => {
   }
 })
 
-// Single-line trend summary subtitle
-const trendSummary = computed(() => {
-  function part(change, label) {
-    if (change > 0.01) return `Increasing ${label}`
-    if (change < -0.01) return `Decreasing ${label}`
-    return `Stable ${label}`
-  }
-  const income = part(extendedMetrics.value.incomeChange, 'Income')
-  const expenses = part(extendedMetrics.value.expenseChange, 'Expenses')
-  return `${income} • ${expenses}`
-})
-
-const volatilityLevel = computed(() => {
-  const vol = extendedMetrics.value.volatility
-  if (vol < 50) return 'Low'
-  if (vol < 200) return 'Medium'
-  return 'High'
-})
+const unusualDays = computed(() => extendedMetrics.value.outlierDays.slice(0, MAX_UNUSUAL_DAYS))
+const unusualDaysEmptyLabel = computed(() =>
+  filteredChartData.value.length < MIN_OUTLIER_SAMPLE_DAYS ? 'Not enough history' : 'None found',
+)
 
 const topEarningAmountValue = computed(() => extendedMetrics.value.topEarningDay?.amount ?? null)
 const topSpendingAmountValue = computed(() => {
@@ -731,25 +893,28 @@ const topSpendingAmountLabel = computed(() => {
   return formatAmount(topSpendingAmountValue.value)
 })
 
-// Statistical calculation functions
+/**
+ * Average of the trailing `period` values, or null until a full window exists.
+ *
+ * @param {number[]} values - Daily values, oldest first.
+ * @param {number} period - Window length in days.
+ * @returns {number | null} Window average or null with insufficient history.
+ */
 function calculateMovingAverage(values, period) {
-  if (values.length < period) return values.reduce((a, b) => a + b, 0) / values.length
-
+  if (values.length < period) return null
   const recent = values.slice(-period)
   return recent.reduce((a, b) => a + b, 0) / period
 }
 
-function calculateTrend(values) {
-  const n = values.length
-  if (n < 2) return 0
-
-  const x = Array.from({ length: n }, (_, i) => i)
-  const sumX = x.reduce((a, b) => a + b, 0)
-  const sumY = values.reduce((a, b) => a + b, 0)
-  const sumXY = x.reduce((sum, xi, i) => sum + xi * values[i], 0)
-  const sumXX = x.reduce((sum, xi) => sum + xi * xi, 0)
-
-  return (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX)
+/**
+ * Format a moving average, explaining when the window is not yet full.
+ *
+ * @param {number | null} value - Moving average.
+ * @param {number} period - Window length in days.
+ * @returns {string} Display label.
+ */
+function movingAverageLabel(value, period) {
+  return value === null ? `N/A (needs ${period} days)` : formatAmount(value)
 }
 
 function calculateVolatility(values) {
@@ -760,34 +925,6 @@ function calculateVolatility(values) {
   const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / n
   return Math.sqrt(variance)
 }
-
-// Savings metrics
-const savingsRateLabel = computed(() => {
-  const data = extendedMetrics.value
-  // Use sums from arrays to avoid sign confusion
-  // incomeValues positive, expenseValues used as abs in extendedMetrics calculations
-  // Reconstruct sums from averages where possible
-  const days = filteredChartData.value.length
-  if (!days) return 'N/A'
-  const totalIncome = data.avgDailyIncome * days
-  const totalExpensesAbs = Math.abs(data.avgDailyExpenses * days)
-  if (totalIncome <= 0) return 'N/A'
-  const rate = (totalIncome - totalExpensesAbs) / totalIncome
-  const pct = Math.round(rate * 1000) / 10
-  return `${pct}%`
-})
-
-const savingsAmountValue = computed(() => {
-  if (!filteredChartData.value.length) return null
-  const totalIncome = detailSummary.value?.totalIncome ?? 0
-  const totalExpensesAbs = Math.abs(detailSummary.value?.totalExpenses ?? 0)
-  return totalIncome - totalExpensesAbs
-})
-
-const savingsAmountLabel = computed(() => {
-  if (savingsAmountValue.value === null) return 'N/A'
-  return formatAmount(savingsAmountValue.value)
-})
 
 const positiveDaysLabel = computed(() => {
   const values = filteredChartData.value.map((d) => d.net?.parsedValue || 0)
@@ -807,25 +944,16 @@ const negativeDaysLabel = computed(() => {
   return `${pct}% (${neg}/${n})`
 })
 
-const avgPositiveSavingsValue = computed(() => {
+const avgPositiveNetDayValue = computed(() => {
   const values = filteredChartData.value.map((d) => d.net?.parsedValue || 0).filter((v) => v > 0)
   if (!values.length) return null
   return values.reduce((a, b) => a + b, 0) / values.length
 })
 
-const avgPositiveSavingsLabel = computed(() => {
-  if (avgPositiveSavingsValue.value === null) return 'N/A'
-  return formatAmount(avgPositiveSavingsValue.value)
+const avgPositiveNetDayLabel = computed(() => {
+  if (avgPositiveNetDayValue.value === null) return 'N/A'
+  return formatAmount(avgPositiveNetDayValue.value)
 })
-
-// Watch for chart data changes to recalculate
-watch(
-  [filteredChartData, () => props.zoomedOut],
-  () => {
-    extendedMetrics.value
-  },
-  { deep: true },
-)
 
 /**
  * Convert a date string into a Date instance using local timezone.
@@ -889,8 +1017,8 @@ function clampDateString(value, min, max) {
 
 <style scoped>
 .statistics-container {
-  background: linear-gradient(135deg, var(--color-bg-dark) 0%, var(--color-bg-sec) 100%);
-  border: 1px solid var(--color-accent-cyan);
+  background: var(--color-bg-sec);
+  border: 1px solid var(--divider);
   border-radius: 12px;
   padding: 1rem;
   margin-top: 1rem;
@@ -900,22 +1028,107 @@ function clampDateString(value, min, max) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
-  border-bottom: 1px solid var(--divider);
-  padding-bottom: 0.5rem;
+  gap: 0.75rem;
+}
+
+.stats-period {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.accent-toggle-btn:focus-visible,
+.detail-date-reset:focus-visible,
+.recurring-upcoming-retry:focus-visible,
+.unusual-day-btn:focus-visible,
+.more-statistics summary:focus-visible,
+.recurring-upcoming-link:focus-visible {
+  outline: 2px solid var(--color-accent-cyan);
+  outline-offset: 2px;
 }
 
 .stats-title {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 600;
-  color: var(--color-accent-cyan);
   margin: 0;
 }
 
-.basic-stats {
-  display: flex;
-  gap: 1.5rem;
+.period-summary {
+  margin-top: 1rem;
+}
+
+.period-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 1.5rem;
+}
+
+.more-statistics {
+  margin-top: 1rem;
+}
+
+.more-statistics summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.more-statistics-note {
+  margin: 0.5rem 0;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.unusual-days {
+  display: inline-flex;
   flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+.unusual-day-btn {
+  padding: 0.1rem 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid var(--divider);
+  background: transparent;
+  color: var(--color-accent-cyan);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.recurring-upcoming-warning {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  color: var(--color-accent-yellow);
+}
+
+.recurring-upcoming-retry {
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.6rem;
+  border-radius: 9999px;
+  border: 1px solid var(--divider);
+  background: transparent;
+  color: var(--color-accent-cyan);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.recurring-upcoming-more {
+  margin: 0.5rem 0 0;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.recurring-upcoming-link {
+  display: inline-block;
+  margin-top: 0.6rem;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  text-decoration: underline;
+}
+
+.recurring-upcoming-message {
+  margin: 0 0 0.35rem;
 }
 
 .stat-item {
@@ -1074,15 +1287,18 @@ function clampDateString(value, min, max) {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: 1fr;
   gap: 1rem;
 }
 
+@media (min-width: 769px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .stat-group {
-  background: var(--color-bg-dark);
-  border: 1px solid var(--divider);
-  border-radius: 8px;
-  padding: 0.75rem;
+  padding: 0.25rem 0;
 }
 
 .group-title {
@@ -1174,32 +1390,29 @@ function clampDateString(value, min, max) {
   color: var(--color-accent-yellow);
 }
 
-/* Transition animations */
+/* Transition: opacity only, no fixed-height clipping */
 .expand-enter-active,
 .expand-leave-active {
-  transition: all 0.3s ease;
-  overflow: hidden;
+  transition: opacity 0.2s ease;
 }
 
 .expand-enter-from,
 .expand-leave-to {
   opacity: 0;
-  max-height: 0;
-  transform: translateY(-10px);
 }
 
-.expand-enter-to,
-.expand-leave-from {
-  opacity: 1;
-  max-height: 500px;
-  transform: translateY(0);
+@media (prefers-reduced-motion: reduce) {
+  .expand-enter-active,
+  .expand-leave-active,
+  .detail-date-reset {
+    transition: none;
+  }
 }
 
 /* Responsive design */
 @media (max-width: 768px) {
-  .basic-stats {
-    flex-direction: column;
-    gap: 0.75rem;
+  .period-summary-grid {
+    grid-template-columns: 1fr;
   }
 
   .stats-grid {
@@ -1207,10 +1420,7 @@ function clampDateString(value, min, max) {
   }
 
   .stats-header {
-    flex-direction: column;
-    gap: 0.5rem;
-    align-items: stretch;
-    text-align: center;
+    flex-wrap: wrap;
   }
 }
 </style>

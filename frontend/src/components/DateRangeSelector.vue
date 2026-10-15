@@ -1,19 +1,26 @@
 <template>
   <div class="flex items-center gap-2">
-    <input
-      type="date"
-      :value="startDate"
-      @input="onStart($event.target.value)"
-      class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-cyan)]"
-    />
-    <input
-      type="date"
-      :value="endDate"
-      @input="onEnd($event.target.value)"
-      class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-cyan)]"
-    />
+    <label class="date-field">
+      <span class="date-field__label">From</span>
+      <input
+        type="date"
+        :value="startDate"
+        @input="onStart($event.target.value)"
+        class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-cyan)]"
+      />
+    </label>
+    <label class="date-field">
+      <span class="date-field__label">Through</span>
+      <input
+        type="date"
+        :value="endDate"
+        @input="onEnd($event.target.value)"
+        class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-cyan)]"
+      />
+    </label>
     <button
       v-if="!disableZoom"
+      type="button"
       class="accent-toggle-btn ml-2"
       :class="{ 'accent-toggle-btn--active': zoomedOut }"
       @click="toggleZoom"
@@ -62,6 +69,17 @@ function toggleZoom() {
 </script>
 
 <style scoped>
+.date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.date-field__label {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
 .date-picker {
   min-width: 10rem;
 }

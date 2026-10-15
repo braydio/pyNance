@@ -10,13 +10,13 @@
     <Suspense>
       <template #default>
         <NetOverviewSection
-          :user-name="userName"
           :current-date="currentDate"
-          :net-worth-message="greetingMessage"
+          :activity-status-message="activityStatusMessage"
+          :load-error-message="loadErrorMessage"
+          :reconnect-count="reconnectCount"
           :date-range="dateRange"
           :debounced-range="debouncedRange"
-          :net-range="netRange"
-          :net-timeframe="netTimeframe"
+          :net-timeframe="selectedPreset"
           :zoomed-out="zoomedOut"
           :net-summary="netSummary"
           :chart-data="chartData"
@@ -30,13 +30,13 @@
           :safe-to-spend-loading="safeToSpendLoading"
           :safe-to-spend-error="safeToSpendError"
           :safe-to-spend-mode="safeToSpendMode"
-          :review-count="reviewCount"
-          :review-count-loading="reviewCountLoading"
-          :review-count-error="reviewCountError"
+          :period-transaction-count="periodTransactionCount"
+          :period-transaction-count-loading="periodTransactionCountLoading"
+          :period-transaction-count-error="periodTransactionCountError"
           :review-tag-filter="reviewTagFilter"
           @update:review-tag-filter="reviewTagFilter = $event"
-          @update:start-date="dateRange.start = $event"
-          @update:end-date="dateRange.end = $event"
+          @update:start-date="setManualStartDate"
+          @update:end-date="setManualEndDate"
           @update:zoomed-out="zoomedOut = $event"
           @update:show7-day="show7Day = $event"
           @update:show30-day="show30Day = $event"
@@ -44,11 +44,12 @@
           @update:show-avg-expenses="showAvgExpenses = $event"
           @update:show-comparison-overlay="showComparisonOverlay = $event"
           @update:comparison-mode="comparisonMode = $event"
-          @update:net-timeframe="netTimeframe = $event"
+          @update:net-timeframe="setDashboardPeriodPreset"
           @update:safe-to-spend-mode="setSafeToSpendMode"
           @net-summary-change="netSummary = $event"
           @net-data-change="chartData = $event"
           @net-bar-click="onNetBarClick"
+          @select-date="onNetBarClick"
           @open-review="openReviewModal"
         />
       </template>
@@ -165,7 +166,6 @@ import TopAccountSnapshot from '@/components/widgets/TopAccountSnapshot.vue'
 import SkeletonCard from '@/components/ui/SkeletonCard.vue'
 import api from '@/services/api'
 import { uniqueReconnectConnections } from '@/utils/plaidConnectionStatus'
-import { useTransactions } from '@/composables/useTransactions.js'
 import { formatDateInput, useDateRange } from '@/composables/useDateRange'
 import { fetchTransactions as fetchTransactionsApi } from '@/api/transactions'
 import { fetchCategoryTransactions, fetchMerchantTransactions } from '@/api/charts'
@@ -186,9 +186,6 @@ const CategoryBreakdownSection = defineAsyncComponent(
 )
 const InsightsRow = defineAsyncComponent(() => import('@/components/dashboard/InsightsRow.vue'))
 
-// Transactions and user
-const pageSize = 15
-const { fetchTransactions: loadTransactions } = useTransactions(pageSize)
 // Modal manager
 const { openModal, closeModal, isVisible } = useDashboardModals()
 const showDailyModal = isVisible('daily')
@@ -203,28 +200,14 @@ const categoryModalSubtitle = ref('')
 const categoryModalSubtitlePrefix = ref('')
 const categoryModalKind = ref('category')
 const plaidUserId = import.meta.env.VITE_USER_ID_PLAID || ''
-const userName = plaidUserId || 'Guest'
 const currentDate = new Date().toLocaleDateString(undefined, {
   month: 'long',
   day: 'numeric',
   year: 'numeric',
 })
-const netWorth = ref(0)
 const loadErrorMessage = ref('')
 const activityStatusMessage = ref('')
-const accountReconnectMessage = ref('')
-const greetingMessage = computed(() => {
-  if (accountReconnectMessage.value) {
-    return accountReconnectMessage.value
-  }
-  if (loadErrorMessage.value) {
-    return loadErrorMessage.value
-  }
-  if (activityStatusMessage.value) return activityStatusMessage.value
-  if (netWorth.value < 0) return '... and things are looking quite bleak.'
-  if (netWorth.value > 1000) return 'Ahh... well in the black.'
-  return 'Uhh... keep up the... whatever this is.'
-})
+const reconnectCount = ref(0)
 
 /** --- DAILY NET STATE --- */
 const netSummary = ref({
@@ -240,7 +223,10 @@ const showAvgIncome = ref(false)
 const showAvgExpenses = ref(false)
 const showComparisonOverlay = ref(false)
 const comparisonMode = ref('prior_month_to_date')
+/** Last quick preset applied (mtd | rolling_30); the active period is `selectedPreset`. */
 const netTimeframe = ref('mtd')
+/** Which period control produced the visible dates: mtd | rolling_30 | custom. */
+const selectedPreset = ref('mtd')
 const safeToSpend = ref(null)
 const safeToSpendLoading = ref(false)
 const safeToSpendError = ref('')
@@ -248,25 +234,21 @@ const safeToSpendMode = ref('today')
 let activeLoadToken = 0
 let safeToSpendToken = 0
 
-const netRange = computed(() => {
-  const today = new Date()
-  const end = formatDateInput(today)
-
-  if (netTimeframe.value === 'rolling_30') {
-    const startDate = new Date(today)
-    startDate.setDate(startDate.getDate() - 29)
-    return {
-      start: formatDateInput(startDate),
-      end,
-    }
+/**
+ * Build the visible dashboard period for a quick preset, ending today.
+ *
+ * @param {'mtd'|'rolling_30'} mode - Preset to resolve.
+ * @param {Date} [now] - Reference date.
+ * @returns {{ start: string; end: string }} Inclusive date boundaries.
+ */
+function getPresetRange(mode, now = new Date()) {
+  const end = formatDateInput(now)
+  if (mode === 'rolling_30') {
+    const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29)
+    return { start: formatDateInput(startDate), end }
   }
-
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
-  return {
-    start: formatDateInput(monthStart),
-    end,
-  }
-})
+  return { start: formatDateInput(new Date(now.getFullYear(), now.getMonth(), 1)), end }
+}
 
 const catSummary = ref({ total: 0, startDate: '', endDate: '' })
 const {
@@ -297,15 +279,43 @@ async function onDateRangeChange(range) {
 
 const { dateRange = ref({ start: '', end: '' }), debouncedRange = ref({ start: '', end: '' }) } =
   useDateRange({
+    // Month-to-date: the dashboard never defaults to future days.
+    initialRange: getPresetRange('mtd'),
     onDebouncedChange: onDateRangeChange,
   })
 
+/**
+ * Apply a quick period preset. Picker values, chart range, and preset state
+ * change together so the controls cannot disagree with the chart.
+ *
+ * @param {'mtd'|'rolling_30'} mode - Preset to apply.
+ */
+function setDashboardPeriodPreset(mode) {
+  if (mode !== 'mtd' && mode !== 'rolling_30') return
+  const range = getPresetRange(mode)
+  dateRange.value = { ...range }
+  debouncedRange.value = { ...range }
+  netTimeframe.value = mode
+  selectedPreset.value = mode
+}
+
+function setManualStartDate(value) {
+  dateRange.value.start = value
+  selectedPreset.value = 'custom'
+}
+
+function setManualEndDate(value) {
+  dateRange.value.end = value
+  selectedPreset.value = 'custom'
+}
+
 const reviewTagFilter = ref('')
 const normalizedReviewTag = computed(() => reviewTagFilter.value.trim())
-const reviewCount = ref(0)
-const reviewCountLoading = ref(false)
-const reviewCountError = ref(false)
-let reviewCountToken = 0
+/** Count of ALL transactions in the selected period (there is no reviewed status yet). */
+const periodTransactionCount = ref(0)
+const periodTransactionCountLoading = ref(false)
+const periodTransactionCountError = ref(false)
+let periodTransactionCountToken = 0
 
 const reviewFilters = computed(() => {
   const filters = {
@@ -318,10 +328,10 @@ const reviewFilters = computed(() => {
   return filters
 })
 
-async function loadReviewCount(filters = reviewFilters.value) {
-  const token = ++reviewCountToken
-  reviewCountLoading.value = true
-  reviewCountError.value = false
+async function loadPeriodTransactionCount(filters = reviewFilters.value) {
+  const token = ++periodTransactionCountToken
+  periodTransactionCountLoading.value = true
+  periodTransactionCountError.value = false
 
   try {
     const result = await fetchTransactionsApi({
@@ -329,17 +339,17 @@ async function loadReviewCount(filters = reviewFilters.value) {
       page_size: 1,
       ...filters,
     })
-    if (token !== reviewCountToken) return
+    if (token !== periodTransactionCountToken) return
     const total = Number(result.total ?? result.total_count ?? result.count ?? 0)
-    reviewCount.value = Number.isFinite(total) ? total : 0
+    periodTransactionCount.value = Number.isFinite(total) ? total : 0
   } catch (error) {
-    if (token !== reviewCountToken) return
-    console.error('Failed to load review count', error)
-    reviewCountError.value = true
-    reviewCount.value = 0
+    if (token !== periodTransactionCountToken) return
+    console.error('Failed to load period transaction count', error)
+    periodTransactionCountError.value = true
+    periodTransactionCount.value = 0
   } finally {
-    if (token === reviewCountToken) {
-      reviewCountLoading.value = false
+    if (token === periodTransactionCountToken) {
+      periodTransactionCountLoading.value = false
     }
   }
 }
@@ -383,14 +393,14 @@ function setSafeToSpendMode(mode) {
 }
 
 /**
- * Perform the dashboard's initial data load in parallel so hero, breakdown,
- * transaction widgets, and decision guidance all start with fresh data. Applies
- * a shared fallback message when any fetch fails so the UI surfaces a consistent
- * error tone. The optional range argument enables debounced refreshes without
- * overlapping the results from earlier requests.
+ * Perform the dashboard's data load in parallel so breakdown options, activity
+ * status, and decision guidance all start with fresh data. Applies a shared
+ * fallback message when any fetch fails. The optional range argument enables
+ * debounced refreshes without overlapping the results from earlier requests.
+ * The period transaction count is loaded by the `reviewFilters` watcher.
  *
  * @param {{ start: string; end: string }} [range] - Date boundaries to apply to
- *   option and transaction requests.
+ *   option requests.
  * @returns {Promise<void>} Resolves when the dashboard data requests settle.
  */
 async function loadDashboardData(range = debouncedRange.value) {
@@ -408,35 +418,23 @@ async function loadDashboardData(range = debouncedRange.value) {
   }
 
   try {
-    const [netAssetsResult, categoriesResult, transactionsResult, activityStatusResult] =
-      await Promise.all([
-        api.fetchNetAssets().catch(recordFailure),
-        refreshOptions(params).catch(recordFailure),
-        loadTransactions(1, { force: true }).catch(recordFailure),
-        api.fetchDashboardActivityStatus(params).catch(recordFailure),
-        loadSafeToSpend().catch(recordFailure),
-      ])
-    loadReviewCount(reviewFilters.value)
+    const [categoriesResult, activityStatusResult] = await Promise.all([
+      refreshOptions(params).catch(recordFailure),
+      api.fetchDashboardActivityStatus(params).catch(recordFailure),
+      loadSafeToSpend().catch(recordFailure),
+    ])
 
     if (loadToken !== activeLoadToken) {
       return
     }
 
-    const hadFailure =
-      [categoriesResult, transactionsResult, activityStatusResult].some(
-        (result) => result && '__error' in result,
-      ) ||
-      (netAssetsResult && '__error' in netAssetsResult)
+    const hadFailure = [categoriesResult, activityStatusResult].some(
+      (result) => result && '__error' in result,
+    )
 
-    if (netAssetsResult?.status === 'success' && Array.isArray(netAssetsResult.data)) {
-      const lastPoint = netAssetsResult.data[netAssetsResult.data.length - 1]
-      netWorth.value = lastPoint?.net_assets ?? 0
-    } else {
-      loadErrorMessage.value = fallback
-    }
     if (activityStatusResult?.status === 'success' && activityStatusResult.data?.message) {
       activityStatusMessage.value = activityStatusResult.data.message
-    } else if (!loadErrorMessage.value) {
+    } else {
       activityStatusMessage.value = ''
     }
 
@@ -640,6 +638,7 @@ async function maybeAutoSyncAccounts() {
   try {
     await api.refreshAccounts({ user_id: plaidUserId })
     await loadDashboardData()
+    loadPeriodTransactionCount()
     await refreshPersistedConnectionHealth()
   } catch (error) {
     console.error('Failed to auto-sync dashboard accounts:', error)
@@ -649,10 +648,7 @@ async function maybeAutoSyncAccounts() {
 async function refreshPersistedConnectionHealth() {
   try {
     const response = await api.getAccounts()
-    const count = uniqueReconnectConnections(response?.accounts || []).length
-    accountReconnectMessage.value = count
-      ? `${count} Plaid connection${count === 1 ? '' : 's'} need${count === 1 ? 's' : ''} to be reconnected. Open Accounts to repair ${count === 1 ? 'it' : 'them'}.`
-      : ''
+    reconnectCount.value = uniqueReconnectConnections(response?.accounts || []).length
   } catch (error) {
     console.error('Failed to load persisted Plaid connection health:', error)
   }
@@ -662,7 +658,7 @@ onMounted(() => {
   loadDashboardData()
   maybeAutoSyncAccounts()
 })
-watch(reviewFilters, (filters) => loadReviewCount(filters), { immediate: true })
+watch(reviewFilters, (filters) => loadPeriodTransactionCount(filters), { immediate: true })
 
 /**
  * The modal manager in `useDashboardModals` keeps overlays mutually exclusive so

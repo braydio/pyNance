@@ -154,7 +154,7 @@ const props = defineProps({
   timeframe: {
     type: String,
     default: 'mtd',
-    validator: (value) => ['mtd', 'rolling_30'].includes(value),
+    validator: (value) => ['mtd', 'rolling_30', 'custom'].includes(value),
   },
 })
 
@@ -330,6 +330,27 @@ function formatDateKey(date) {
   ).padStart(2, '0')}`
 }
 
+/**
+ * Convert a local calendar date to a whole UTC day number (DST-safe).
+ *
+ * @param {Date} date - Date whose local Y/M/D should be used.
+ * @returns {number} Days since the Unix epoch for that calendar date.
+ */
+function toUtcDay(date) {
+  return Math.round(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / MS_PER_DAY)
+}
+
+/**
+ * Convert a UTC day number back to a local calendar Date at midnight.
+ *
+ * @param {number} dayNumber - Days since the Unix epoch.
+ * @returns {Date} Local Date for that calendar day.
+ */
+function fromUtcDay(dayNumber) {
+  const utc = new Date(dayNumber * MS_PER_DAY)
+  return new Date(utc.getUTCFullYear(), utc.getUTCMonth(), utc.getUTCDate())
+}
+
 function parseDateKey(str) {
   if (!str) return null
   const d = new Date(`${str}T00:00:00`)
@@ -499,13 +520,22 @@ function buildComparisonContext() {
     }
   }
 
+  // rolling_30 compares against a fixed 30-day window; custom compares against the
+  // immediately preceding window with the same inclusive day count. Day math goes
+  // through UTC day numbers so DST shifts cannot add or drop a day.
+  const days = timeframe.value === 'custom' ? 1 + (toUtcDay(end) - toUtcDay(start)) : 30
+  if (!(days >= 1)) return null
   const currentStart = start
-  const priorEnd = new Date(currentStart)
-  priorEnd.setDate(priorEnd.getDate() - 1)
-  const priorStart = new Date(priorEnd)
-  priorStart.setDate(priorStart.getDate() - 29)
+  const priorEnd = fromUtcDay(toUtcDay(currentStart) - 1)
+  const priorStart = fromUtcDay(toUtcDay(priorEnd) - (days - 1))
 
-  return { mode: 'rolling_30', priorStart, priorEnd, currentStart }
+  return {
+    mode: timeframe.value === 'custom' ? 'custom' : 'rolling_30',
+    days,
+    priorStart,
+    priorEnd,
+    currentStart,
+  }
 }
 
 function buildComparisonSeries(labels, data, ctx) {
@@ -526,14 +556,14 @@ function buildComparisonSeries(labels, data, ctx) {
   data.forEach((d) => {
     const parsed = parseDateKey(d.date)
     if (!parsed) return
-    const idx = Math.floor((parsed - ctx.priorStart) / MS_PER_DAY)
-    if (idx >= 0 && idx < 30) byIndex.set(idx, toParsedValue(d.net))
+    const idx = toUtcDay(parsed) - toUtcDay(ctx.priorStart)
+    if (idx >= 0 && idx < ctx.days) byIndex.set(idx, toParsedValue(d.net))
   })
 
   return labels.map((l) => {
     const parsed = parseDateKey(l)
     if (!parsed) return null
-    const idx = Math.floor((parsed - ctx.currentStart) / MS_PER_DAY)
+    const idx = toUtcDay(parsed) - toUtcDay(ctx.currentStart)
     return byIndex.get(idx) ?? null
   })
 }
@@ -704,7 +734,7 @@ async function renderChart() {
   if (showComparisonOverlay.value) {
     const ctx = buildComparisonContext()
     comparisonSeries = buildComparisonSeries(labels, comparisonData.value, ctx)
-    comparisonLabel = 'This Day Last Month'
+    comparisonLabel = timeframe.value === 'custom' ? 'Previous period' : 'This Day Last Month'
     datasets.push(
       buildLineDataset(comparisonLabel, comparisonSeries, comparisonColor, {
         borderDash: [8, 8],

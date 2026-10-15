@@ -1,12 +1,12 @@
 # TP-20261014-001: Financial Detail Decision Hierarchy and Honest Metrics
 
 **Packet ID:** TP-20261014-001  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-14  
 **Last updated:** 2026-10-14  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** docs/task-packets/active/TP-20261014-001-financial-detail-decision-hierarchy.md  
+**Canonical path:** docs/task-packets/completed/TP-20261014-001-financial-detail-decision-hierarchy.md  
 **Workstream size:** One independently testable Financials detail UI packet  
 **Depends on:** None  
 **Priority:** High  
@@ -45,3 +45,12 @@ No change to daily-net API, forecasting math, category aggregation, TransactionM
 - [ ] Outlier dates open existing transaction details; states and mobile remain usable.
 - [ ] Existing date-selection and DailySpendingPanel requests still work.
 Report before/after order, changed paths, precise commands/results, and any deviation.
+
+## Completion report
+
+- Order before: date > spending > upcoming > four equal stat cards. After: date context ("Activity through …") > upcoming (next 7 days from today) > selected-day spending > period net cash flow/income/expenses/"Net as % of income" > closed "More statistics".
+- Changed: `FinancialSummary.vue`, `DailySpendingPanel.vue`, `NetOverviewSection.vue` (`select-date` relay), `Dashboard.vue` (`@select-date="onNetBarClick"`).
+- 7/30-day averages return `null` ("N/A (needs N days)") until the window is full; Low/Medium/High, "Savings" and increasing/decreasing wording removed; unused trend regression and deep watcher removed. Outliers: up to 3 real dates as buttons, "Not enough history" under 7 days.
+- `DailySpendingPanel` is only mounted while details are open, so it never fetches while hidden (no change needed).
+- Validation: focused specs, full `vitest` (53 files / 298 tests) pass; `npm run lint` 0 errors; `npm run build` OK.
+- Deviations: none.

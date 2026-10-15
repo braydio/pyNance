@@ -1,17 +1,44 @@
 <!--
   NetOverviewSection.vue
-  Renders the dashboard hero, date controls, net income chart, and summary widgets.
+  Renders the dashboard overview, reconnect alert, date controls, net income chart,
+  and summary widgets. One selected period (debouncedRange) drives the chart,
+  cash direction, financial detail, and transaction count; Safe-to-Spend is an
+  independent current-guidance horizon.
 -->
 <template>
   <section class="flex flex-col gap-6">
     <header class="net-overview-context" data-testid="net-overview-context">
-      <h2 class="net-overview-context__title">
-        Welcome, <span class="username">{{ userName }}</span>
-      </h2>
-      <p class="net-overview-context__meta">
-        {{ currentDate }}<span v-if="netWorthMessage"> · {{ netWorthMessage }}</span>
+      <h2 class="net-overview-context__title">Overview</h2>
+      <p class="net-overview-context__meta">{{ currentDate }}</p>
+      <p
+        v-if="activityStatusMessage"
+        class="net-overview-context__status"
+        data-testid="activity-status"
+      >
+        Activity note: {{ activityStatusMessage }}
+      </p>
+      <p
+        v-if="loadErrorMessage"
+        class="net-overview-context__status"
+        data-testid="load-error-notice"
+        role="status"
+      >
+        {{ loadErrorMessage }}
       </p>
     </header>
+
+    <div
+      v-if="reconnectCount > 0"
+      class="surface-attention reconnect-alert p-4 flex flex-wrap items-center justify-between gap-3"
+      data-testid="reconnect-alert"
+      role="alert"
+    >
+      <p class="text-sm font-semibold">
+        {{ reconnectCount }} {{ reconnectCount === 1 ? 'connection needs' : 'connections need' }}
+        reconnection
+      </p>
+      <router-link to="/accounts" class="btn btn-outline">Reconnect in Accounts</router-link>
+    </div>
 
     <!-- Tier 1: Now -->
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-3 items-stretch" data-testid="now-tier">
@@ -23,23 +50,22 @@
           :selected-mode="safeToSpendMode"
           @update:mode="emit('update:safe-to-spend-mode', $event)"
         />
+        <p class="text-xs text-muted mt-2" data-testid="safe-to-spend-scope">
+          Current guidance (not filtered by chart dates)
+        </p>
       </div>
-      <div
-        class="surface-normal p-4 md:p-5 flex flex-col gap-3"
-        :class="{ 'surface-attention': reviewCount > 0 && !reviewCountError }"
-        data-testid="needs-attention"
-      >
-        <h3 class="text-sm font-semibold">Needs attention</h3>
-        <p class="net-overview-review-status-text" role="status">{{ reviewCountLabel }}</p>
+      <div class="surface-normal p-4 md:p-5 flex flex-col gap-3" data-testid="transactions-card">
+        <h3 class="text-sm font-semibold">Transactions</h3>
+        <p class="net-overview-review-status-text" role="status">{{ transactionCountLabel }}</p>
         <div class="flex flex-wrap items-center gap-2 mt-auto">
           <button
-            class="btn btn-primary net-overview-review-status"
+            class="btn btn-outline net-overview-review-status"
             type="button"
-            :disabled="reviewCountLoading"
-            :aria-label="reviewCountAriaLabel"
+            :disabled="periodTransactionCountLoading"
+            :aria-label="transactionCountAriaLabel"
             @click="emit('open-review')"
           >
-            Review
+            Review transactions
           </button>
           <button
             class="net-overview-refine-toggle"
@@ -55,19 +81,20 @@
           :value="reviewTagFilter"
           class="input review-filter-input"
           type="text"
-          aria-label="Review tag filter"
+          aria-label="Transaction tag filter"
           placeholder="Optional tag (e.g., #groceries)"
           @input="emit('update:review-tag-filter', $event.target.value)"
         />
       </div>
       <div class="surface-normal p-4 md:p-5 flex flex-col gap-2" data-testid="cash-direction">
         <h3 class="text-sm font-semibold">Cash direction</h3>
+        <p class="text-xs text-muted" data-testid="cash-direction-period">{{ periodText }}</p>
         <p
           class="net-overview-net"
           :class="netSummary.totalNet < 0 ? 'is-negative' : 'is-positive'"
         >
           {{ netSummary.totalNet < 0 ? '▼' : '▲' }} {{ formatAmount(netSummary.totalNet) }}
-          <span class="net-overview-net__label">net this period</span>
+          <span class="net-overview-net__label">net in selected period</span>
         </p>
         <p class="text-xs text-muted">
           Income {{ formatAmount(netSummary.totalIncome) }} · Expenses
@@ -80,7 +107,8 @@
     <div
       class="daily-net-chart-panel net-overview-panel surface-normal p-5 md:p-6 flex flex-col gap-3 relative"
     >
-      <div class="flex justify-end">
+      <div class="flex flex-wrap items-end justify-between gap-2">
+        <p class="text-xs text-muted" data-testid="selected-period">{{ periodText }}</p>
         <DateRangeSelector
           :start-date="dateRange.start"
           :end-date="dateRange.end"
@@ -153,6 +181,13 @@
                 >
                   Rolling 30
                 </button>
+                <span
+                  v-if="netTimeframe === 'custom'"
+                  class="daily-net-timeframe-custom"
+                  data-testid="daily-net-timeframe-custom"
+                >
+                  Custom
+                </span>
               </div>
             </div>
           </div>
@@ -168,6 +203,7 @@
           :zoomed-out="zoomedOut"
           :start-date="activeRange.start"
           :end-date="activeRange.end"
+          @select-date="emit('select-date', $event)"
         />
       </slot>
     </div>
@@ -187,9 +223,10 @@ import FinancialSummary from '@/components/statistics/FinancialSummary.vue'
 import { formatAmount } from '@/utils/format'
 
 const props = defineProps({
-  userName: { type: String, default: 'Guest' },
   currentDate: { type: String, default: '' },
-  netWorthMessage: { type: String, default: '' },
+  activityStatusMessage: { type: String, default: '' },
+  loadErrorMessage: { type: String, default: '' },
+  reconnectCount: { type: Number, default: 0 },
   dateRange: {
     type: Object,
     required: true,
@@ -198,14 +235,10 @@ const props = defineProps({
     type: Object,
     required: true,
   },
-  netRange: {
-    type: Object,
-    default: null,
-  },
   netTimeframe: {
     type: String,
     default: 'mtd',
-    validator: (value) => ['mtd', 'rolling_30'].includes(value),
+    validator: (value) => ['mtd', 'rolling_30', 'custom'].includes(value),
   },
   zoomedOut: { type: Boolean, default: false },
   netSummary: { type: Object, required: true },
@@ -220,9 +253,9 @@ const props = defineProps({
   safeToSpendLoading: { type: Boolean, default: false },
   safeToSpendError: { type: String, default: '' },
   safeToSpendMode: { type: String, default: 'today' },
-  reviewCount: { type: Number, default: 0 },
-  reviewCountLoading: { type: Boolean, default: false },
-  reviewCountError: { type: Boolean, default: false },
+  periodTransactionCount: { type: Number, default: 0 },
+  periodTransactionCountLoading: { type: Boolean, default: false },
+  periodTransactionCountError: { type: Boolean, default: false },
   reviewTagFilter: { type: String, default: '' },
 })
 
@@ -241,22 +274,26 @@ const emit = defineEmits([
   'net-summary-change',
   'net-data-change',
   'net-bar-click',
+  'select-date',
   'open-review',
   'update:review-tag-filter',
 ])
 
 const showTagFilter = ref(false)
 
-const reviewCountLabel = computed(() => {
-  if (props.reviewCountLoading) return 'Loading review queue…'
-  if (props.reviewCountError) return 'Review count unavailable'
-  const noun = props.reviewCount === 1 ? 'transaction' : 'transactions'
-  return `${props.reviewCount} ${noun} to review`
+const transactionCountLabel = computed(() => {
+  if (props.periodTransactionCountLoading) return 'Loading transactions…'
+  if (props.periodTransactionCountError) return 'Transaction count unavailable'
+  if (props.periodTransactionCount === 0) return 'No transactions in this period'
+  const noun = props.periodTransactionCount === 1 ? 'transaction' : 'transactions'
+  return `${props.periodTransactionCount} ${noun} in selected period`
 })
 
-const reviewCountAriaLabel = computed(() => {
-  if (props.reviewCountLoading || props.reviewCountError) return reviewCountLabel.value
-  return `${reviewCountLabel.value}. Open transaction review workflow.`
+const transactionCountAriaLabel = computed(() => {
+  if (props.periodTransactionCountLoading || props.periodTransactionCountError) {
+    return transactionCountLabel.value
+  }
+  return `${transactionCountLabel.value}. Open transaction review.`
 })
 
 const show7DayModel = computed({
@@ -285,16 +322,49 @@ const comparisonModeModel = computed({
 })
 
 /**
- * Net visualization date boundaries, preferring the provided net range while
- * falling back to the shared debounced range when no override is supplied.
+ * The single reporting period shown by the chart, cash direction, financial
+ * detail, and transaction count.
  */
-const activeRange = computed(() => props.netRange || props.debouncedRange)
+const activeRange = computed(() => props.debouncedRange)
+
+/**
+ * Format an ISO date (YYYY-MM-DD) for the period label without timezone shifts.
+ *
+ * @param {string} iso - ISO date string.
+ * @param {boolean} withYear - Include the year.
+ * @returns {string} Display date, or the input when unparseable.
+ */
+function formatPeriodDate(iso, withYear) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''))
+  if (!match) return String(iso || '')
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+  return date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    ...(withYear ? { year: 'numeric' } : {}),
+  })
+}
+
+const periodText = computed(() => {
+  const { start, end } = activeRange.value || {}
+  if (!start || !end) return 'Selected period'
+  return `Selected period: ${formatPeriodDate(start, false)} – ${formatPeriodDate(end, true)}`
+})
 </script>
 
 <style scoped>
-.username {
-  color: var(--color-accent-cyan);
-  font-weight: 600;
+.net-overview-context__status {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.daily-net-timeframe-custom {
+  font-size: 0.65rem;
+  padding: 0.2rem 0.6rem;
+  border: 1px dashed var(--divider);
+  border-radius: var(--chart-shell-radius-tight);
+  color: var(--color-text-muted);
+  line-height: 1;
 }
 
 .text-muted {

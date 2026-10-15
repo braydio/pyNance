@@ -1,12 +1,12 @@
 # TP-20261014-004: Dashboard Landing Truthful Action Priority and Calm Copy
 
 **Packet ID:** TP-20261014-004  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-14  
 **Last updated:** 2026-10-14  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** docs/task-packets/active/TP-20261014-004-dashboard-landing-truthful-actions.md  
+**Canonical path:** docs/task-packets/completed/TP-20261014-004-dashboard-landing-truthful-actions.md  
 **Workstream size:** One landing-page information/behavior packet  
 **Depends on:** TP-20261014-003 (same Dashboard/NetOverview components)  
 **Priority:** High  
@@ -43,3 +43,10 @@ Do not add review-persistence DB schema or falsely treat "Approve" as saved stat
 - [ ] Redundant dashboard transactions fetch removed; working routes/modal preserved.
 - [ ] Mobile and desktop readable without multiple competing hero cards.
 Report changed paths, verification, removed requests, visual comparisons (if captured), and deviations.
+
+## Completion report
+
+- Count renamed to `periodTransactionCount*`; Transactions card reads "N transactions in selected period" / "No transactions in this period" / "Transaction count unavailable"; no attention styling; button "Review transactions".
+- Reconnect alert (`reconnectCount` from `uniqueReconnectConnections`) with link to `/accounts`; load-failure notice kept separate.
+- Welcome/net-worth messages and `VITE_USER_ID_PLAID` display removed; heading "Overview" with date and optional "Activity note". Removed `useTransactions` fetch, `fetchNetAssets`/`netWorth`. Period count loads only from the `reviewFilters` watcher (plus after account auto-sync).
+- No review persistence added. Deviations: none.

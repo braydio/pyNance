@@ -243,6 +243,67 @@ describe('DailyNetChart.vue', () => {
     expect(comparison.data[labels.indexOf('2024-06-15')]).toBe(120)
   })
 
+  it('compares a custom range with the preceding window of the same inclusive length', async () => {
+    fetchDailyNet
+      .mockResolvedValueOnce({
+        status: 'success',
+        data: [{ date: '2025-03-02', net: { parsedValue: 10 } }],
+      })
+      .mockResolvedValueOnce({
+        status: 'success',
+        data: [
+          { date: '2025-02-20', net: { parsedValue: 7 } },
+          { date: '2025-03-01', net: { parsedValue: 9 } },
+        ],
+      })
+
+    mount(DailyNetChart, {
+      props: {
+        startDate: '2025-03-02',
+        endDate: '2025-03-11',
+        zoomedOut: false,
+        showComparisonOverlay: true,
+        timeframe: 'custom',
+      },
+    })
+
+    await flushRender()
+    await flushRender()
+
+    // 10 inclusive days => prior window is 2025-02-20 .. 2025-03-01 (not 30 days, not prior MTD).
+    expect(fetchDailyNet).toHaveBeenLastCalledWith({
+      start_date: '2025-02-20',
+      end_date: '2025-03-01',
+    })
+    const lastConfig = chartMock.mock.calls.at(-1)[0]
+    const labels = lastConfig.data.labels
+    const comparison = lastConfig.data.datasets.find((d) => d.label === 'Previous period')
+    expect(comparison).toBeTruthy()
+    expect(comparison.data[labels.indexOf('2025-03-02')]).toBe(7)
+    expect(comparison.data[labels.indexOf('2025-03-11')]).toBe(9)
+  })
+
+  it('keeps a DST-spanning custom comparison aligned to whole days', async () => {
+    fetchDailyNet.mockResolvedValue({ status: 'success', data: [] })
+
+    mount(DailyNetChart, {
+      props: {
+        startDate: '2025-03-09',
+        endDate: '2025-03-12',
+        zoomedOut: false,
+        showComparisonOverlay: true,
+        timeframe: 'custom',
+      },
+    })
+    await flushRender()
+    await flushRender()
+
+    expect(fetchDailyNet).toHaveBeenLastCalledWith({
+      start_date: '2025-03-05',
+      end_date: '2025-03-08',
+    })
+  })
+
   it('removes comparison dataset when overlay is disabled', async () => {
     fetchDailyNet
       .mockResolvedValueOnce({

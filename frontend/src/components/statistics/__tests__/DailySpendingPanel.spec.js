@@ -69,7 +69,7 @@ describe('DailySpendingPanel', () => {
       end_date: '2024-06-03',
       page_size: 6,
     })
-    expect(chartConfig.data.labels).toEqual(['Today'])
+    expect(chartConfig.data.labels).toEqual(['Selected day'])
     expect(chartConfig.data.datasets.map((dataset) => dataset.label)).toEqual(['Food', 'Fuel'])
 
     const rows = wrapper.findAll('.transaction-row')
@@ -93,7 +93,7 @@ describe('DailySpendingPanel', () => {
 
     await flushPromises()
 
-    expect(wrapper.text()).toContain('No spending yet today.')
+    expect(wrapper.text()).toContain('No spending recorded for this day')
     expect(wrapper.text()).toContain('No transactions found.')
   })
 
@@ -157,7 +157,7 @@ describe('DailySpendingPanel', () => {
       (dataset) => dataset.profileType === 'average',
     )
 
-    expect(tooltipCallbacks.title([{ dataset: averageDataset }])).toBe('Average Profile')
+    expect(tooltipCallbacks.title([{ dataset: averageDataset }])).toBe('Average daily spending')
 
     const mockPoint = {
       dataset: averageDataset,
@@ -192,5 +192,22 @@ describe('DailySpendingPanel', () => {
 
     expect(chartsApi.fetchCategoryBreakdownTree).toHaveBeenCalledTimes(1)
     expect(chartConfig.data.datasets.some((dataset) => dataset.label.includes('(Avg)'))).toBe(false)
+  })
+
+  it('labels the panel by the selected day instead of today', async () => {
+    chartsApi.fetchCategoryBreakdownTree.mockResolvedValue({ status: 'success', data: [] })
+    transactionsApi.fetchTransactions.mockResolvedValue({ transactions: [] })
+
+    const wrapper = mount(DailySpendingPanel, {
+      props: { detailDate: '2024-06-03', minDetailDate: '2024-06-01' },
+    })
+    await flushPromises()
+
+    const title = wrapper.get('.panel-title').text()
+    expect(title).toMatch(/^Spending on /)
+    expect(title).toContain('2024')
+    expect(wrapper.text()).not.toMatch(/Today/)
+    expect(wrapper.text()).toContain('No spending recorded for this day')
+    expect(wrapper.text()).toContain('average daily spending over Jun 1 – Jun 3')
   })
 })

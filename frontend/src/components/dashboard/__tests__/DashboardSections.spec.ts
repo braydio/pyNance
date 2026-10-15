@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest'
-import { shallowMount } from '@vue/test-utils'
+import { shallowMount, RouterLinkStub } from '@vue/test-utils'
 import NetOverviewSection from '../NetOverviewSection.vue'
 import CategoryBreakdownSection from '../CategoryBreakdownSection.vue'
 import AccountsSection from '../AccountsSection.vue'
@@ -43,6 +43,7 @@ const FinancialSummaryStub = {
   name: 'FinancialSummary',
   template: '<div class="financial-summary-stub" />',
   props: ['summary', 'chartData', 'zoomedOut', 'startDate', 'endDate'],
+  emits: ['select-date'],
 }
 
 const ChartWidgetTopBarStub = {
@@ -88,9 +89,8 @@ describe('Dashboard section components', () => {
   it('renders net overview content and forwards slot content', () => {
     const wrapper = shallowMount(NetOverviewSection, {
       props: {
-        userName: 'Casey',
         currentDate: 'January 1, 2025',
-        netWorthMessage: 'In the black',
+        activityStatusMessage: 'Largest expense was Rent.',
         dateRange: { start: '2025-01-01', end: '2025-01-31' },
         debouncedRange: { start: '2025-01-01', end: '2025-01-31' },
         zoomedOut: false,
@@ -98,7 +98,7 @@ describe('Dashboard section components', () => {
         chartData: [],
         safeToSpend: { amount_cents: 4200, status: 'caution' },
         safeToSpendMode: 'today',
-        reviewCount: 12,
+        periodTransactionCount: 12,
       },
       global: {
         stubs: {
@@ -108,6 +108,7 @@ describe('Dashboard section components', () => {
           DailyNetChart: DailyNetChartStub,
           SafeToSpendCard: SafeToSpendCardStub,
           FinancialSummary: FinancialSummaryStub,
+          RouterLink: RouterLinkStub,
         },
       },
       slots: {
@@ -115,8 +116,12 @@ describe('Dashboard section components', () => {
       },
     })
 
-    expect(wrapper.text()).toContain('Casey')
-    expect(wrapper.text()).toContain('In the black')
+    expect(wrapper.text()).toContain('Overview')
+    expect(wrapper.text()).toContain('January 1, 2025')
+    expect(wrapper.get('[data-testid="activity-status"]').text()).toContain(
+      'Largest expense was Rent.',
+    )
+    expect(wrapper.text()).not.toContain('Welcome')
     expect(wrapper.find('.summary-slot').exists()).toBe(true)
     expect(wrapper.findComponent(DateRangeSelectorStub).props()).toMatchObject({
       startDate: '2025-01-01',
@@ -131,8 +136,15 @@ describe('Dashboard section components', () => {
       payload: { amount_cents: 4200, status: 'caution' },
       selectedMode: 'today',
     })
-    expect(wrapper.find('[data-testid="needs-attention"]').text()).toContain(
-      '12 transactions to review',
+    const transactionsCard = wrapper.get('[data-testid="transactions-card"]')
+    expect(transactionsCard.text()).toContain('12 transactions in selected period')
+    expect(transactionsCard.text()).not.toContain('to review')
+    expect(transactionsCard.classes()).not.toContain('surface-attention')
+    expect(wrapper.get('[data-testid="safe-to-spend-scope"]').text()).toContain(
+      'not filtered by chart dates',
+    )
+    expect(wrapper.get('[data-testid="cash-direction-period"]').text()).toContain(
+      'Jan 1 – Jan 31, 2025',
     )
     expect(wrapper.findAll('.net-overview-review-status')).toHaveLength(1)
     const html = wrapper.html()
@@ -161,7 +173,7 @@ describe('Dashboard section components', () => {
         dateRange: { start: '2025-01-01', end: '2025-01-31' },
         debouncedRange: { start: '2025-01-01', end: '2025-01-31' },
         netSummary: { totalIncome: 0, totalExpenses: 0, totalNet: 0 },
-        reviewCount: 1,
+        periodTransactionCount: 1,
       },
       global: {
         stubs: {
@@ -171,16 +183,127 @@ describe('Dashboard section components', () => {
           DailyNetChart: DailyNetChartStub,
           SafeToSpendCard: SafeToSpendCardStub,
           FinancialSummary: FinancialSummaryStub,
+          RouterLink: RouterLinkStub,
         },
       },
     })
 
-    expect(wrapper.get('[data-testid="needs-attention"]').text()).toContain(
-      '1 transaction to review',
+    expect(wrapper.get('[data-testid="transactions-card"]').text()).toContain(
+      '1 transaction in selected period',
     )
     await wrapper.get('.net-overview-review-status').trigger('click')
 
     expect(wrapper.emitted('open-review')).toHaveLength(1)
+  })
+
+  const sectionStubs = {
+    DateRangeSelector: DateRangeSelectorStub,
+    ChartDetailsSidebar: ChartDetailsSidebarStub,
+    TopAccountSnapshot: true,
+    DailyNetChart: DailyNetChartStub,
+    SafeToSpendCard: SafeToSpendCardStub,
+    FinancialSummary: FinancialSummaryStub,
+    RouterLink: RouterLinkStub,
+  }
+  const baseSectionProps = {
+    dateRange: { start: '2025-01-08', end: '2025-01-17' },
+    debouncedRange: { start: '2025-01-08', end: '2025-01-17' },
+    netSummary: { totalIncome: 0, totalExpenses: 0, totalNet: 0 },
+  }
+
+  it('shows zero, loading and error transaction counts without urgency', () => {
+    const zero = shallowMount(NetOverviewSection, {
+      props: { ...baseSectionProps, periodTransactionCount: 0 },
+      global: { stubs: sectionStubs },
+    })
+    expect(zero.get('[data-testid="transactions-card"]').text()).toContain(
+      'No transactions in this period',
+    )
+
+    const failed = shallowMount(NetOverviewSection, {
+      props: { ...baseSectionProps, periodTransactionCount: 0, periodTransactionCountError: true },
+      global: { stubs: sectionStubs },
+    })
+    const failedText = failed.get('[data-testid="transactions-card"]').text()
+    expect(failedText).toContain('Transaction count unavailable')
+    expect(failedText).not.toContain('No transactions')
+  })
+
+  it('renders an actionable reconnect alert only when connections need reconnection', () => {
+    const none = shallowMount(NetOverviewSection, {
+      props: { ...baseSectionProps, reconnectCount: 0 },
+      global: { stubs: sectionStubs },
+    })
+    expect(none.find('[data-testid="reconnect-alert"]').exists()).toBe(false)
+
+    const two = shallowMount(NetOverviewSection, {
+      props: {
+        ...baseSectionProps,
+        reconnectCount: 2,
+        loadErrorMessage: 'Unable to refresh dashboard data.',
+      },
+      global: { stubs: { ...sectionStubs, RouterLink: RouterLinkStub } },
+    })
+    const alert = two.get('[data-testid="reconnect-alert"]')
+    expect(alert.text()).toContain('2 connections need reconnection')
+    expect(alert.findComponent(RouterLinkStub).props('to')).toBe('/accounts')
+    expect(two.get('[data-testid="load-error-notice"]').text()).toContain('Unable to refresh')
+  })
+
+  it('shows the same selected period beside the picker, cash direction and chart', () => {
+    const wrapper = shallowMount(NetOverviewSection, {
+      props: baseSectionProps,
+      global: { stubs: sectionStubs },
+    })
+    expect(wrapper.findComponent(DateRangeSelectorStub).props()).toMatchObject({
+      startDate: '2025-01-08',
+      endDate: '2025-01-17',
+    })
+    expect(wrapper.findComponent(DailyNetChartStub).props()).toMatchObject({
+      startDate: '2025-01-08',
+      endDate: '2025-01-17',
+    })
+    expect(wrapper.findComponent(FinancialSummaryStub).props()).toMatchObject({
+      startDate: '2025-01-08',
+      endDate: '2025-01-17',
+    })
+    expect(wrapper.get('[data-testid="selected-period"]').text()).toContain('Jan 8 – Jan 17, 2025')
+    expect(wrapper.get('[data-testid="cash-direction-period"]').text()).toContain(
+      'Jan 8 – Jan 17, 2025',
+    )
+  })
+
+  it('marks exactly one period control active and shows Custom for manual dates', () => {
+    const preset = shallowMount(NetOverviewSection, {
+      props: { ...baseSectionProps, netTimeframe: 'rolling_30' },
+      global: { stubs: sectionStubs },
+    })
+    const pressed = preset
+      .findAll('.daily-net-timeframe-btn')
+      .filter((button) => button.attributes('aria-pressed') === 'true')
+    expect(pressed).toHaveLength(1)
+    expect(pressed[0].text()).toBe('Rolling 30')
+    expect(preset.find('[data-testid="daily-net-timeframe-custom"]').exists()).toBe(false)
+
+    const custom = shallowMount(NetOverviewSection, {
+      props: { ...baseSectionProps, netTimeframe: 'custom' },
+      global: { stubs: sectionStubs },
+    })
+    expect(
+      custom
+        .findAll('.daily-net-timeframe-btn')
+        .some((b) => b.attributes('aria-pressed') === 'true'),
+    ).toBe(false)
+    expect(custom.get('[data-testid="daily-net-timeframe-custom"]').text()).toBe('Custom')
+  })
+
+  it('forwards unusual-day selection from the financial summary', async () => {
+    const wrapper = shallowMount(NetOverviewSection, {
+      props: baseSectionProps,
+      global: { stubs: sectionStubs },
+    })
+    wrapper.findComponent(FinancialSummaryStub).vm.$emit('select-date', '2025-01-10')
+    expect(wrapper.emitted('select-date')?.[0]).toEqual(['2025-01-10'])
   })
 
   it('renders category breakdown controls and emits change events', async () => {

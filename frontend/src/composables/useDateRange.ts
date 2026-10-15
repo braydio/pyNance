@@ -15,6 +15,10 @@ export type UseDateRangeOptions = {
    */
   initialDate?: Date
   /**
+   * Explicit starting range. Overrides the month-bounds default when supplied.
+   */
+  initialRange?: DateRange
+  /**
    * Debounce duration in milliseconds for change notifications.
    */
   debounceMs?: number
@@ -80,10 +84,14 @@ function normalizeRange(range: DateRange): DateRange {
 export function useDateRange(options: UseDateRangeOptions = {}) {
   const baseDate = options.initialDate ?? new Date()
   const { start, end } = getMonthBounds(baseDate)
-  const dateRange = ref<DateRange>({
-    start: formatDateInput(start),
-    end: formatDateInput(end),
-  })
+  const dateRange = ref<DateRange>(
+    options.initialRange
+      ? { ...options.initialRange }
+      : {
+          start: formatDateInput(start),
+          end: formatDateInput(end),
+        },
+  )
   const debouncedRange = ref<DateRange>({ ...dateRange.value })
 
   const notifyChange = options.onDebouncedChange ?? (() => {})

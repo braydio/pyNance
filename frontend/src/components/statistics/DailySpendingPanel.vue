@@ -6,13 +6,13 @@
   <section class="daily-spending-panel">
     <header class="panel-header">
       <div>
-        <h4 class="panel-title">Today's Spending</h4>
-        <p class="panel-subtitle">Snapshot for {{ formattedDetailDate }}</p>
+        <h4 class="panel-title">Spending on {{ formattedDetailDate }}</h4>
+        <p class="panel-subtitle">Selected day</p>
       </div>
       <div class="panel-controls">
         <label class="average-toggle">
           <input v-model="compareToAverage" type="checkbox" />
-          <span>Compare to average profile</span>
+          <span>Compare to {{ averageBaselineLabel }}</span>
         </label>
       </div>
     </header>
@@ -20,18 +20,18 @@
     <div class="panel-content">
       <div class="chart-card">
         <canvas ref="chartCanvas" class="chart-canvas"></canvas>
-        <div v-if="categoryLoading" class="panel-state">Loading today's spending...</div>
+        <div v-if="categoryLoading" class="panel-state">Loading spending for this day...</div>
         <div v-else-if="categoryError" class="panel-state panel-state-error">
           Unable to load spending breakdown.
         </div>
-        <div v-else-if="isCategoryEmpty" class="panel-state">No spending yet today.</div>
+        <div v-else-if="isCategoryEmpty" class="panel-state">No spending recorded for this day</div>
       </div>
 
       <div class="transactions-card">
         <h5 class="transactions-title">Latest Transactions</h5>
         <div v-if="averageLoading" class="panel-state">Building average profile...</div>
         <div v-if="showAverageBreakdown" class="average-breakdown">
-          <div class="average-breakdown-header">Average Profile Breakdown</div>
+          <div class="average-breakdown-header">{{ averageBaselineLabel }}</div>
           <ol class="average-breakdown-list">
             <li v-for="row in averageDisplayRows" :key="row.label" class="average-breakdown-row">
               <span class="average-breakdown-rank">{{ row.rank }}</span>
@@ -102,6 +102,17 @@ const compareToAverage = ref(false)
 const averageRows = ref([])
 const averageLoading = ref(false)
 
+/**
+ * Format an ISO date as a short locale date, or '' when invalid.
+ *
+ * @param {string} value - ISO date string.
+ * @returns {string} Short date label.
+ */
+function formatShortDate(value) {
+  const parsed = parseISODate(value)
+  return parsed ? parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''
+}
+
 const formattedDetailDate = computed(() => {
   const parsed = parseISODate(props.detailDate)
   if (!parsed) {
@@ -112,6 +123,12 @@ const formattedDetailDate = computed(() => {
     month: 'short',
     day: '2-digit',
   })
+})
+
+const averageBaselineLabel = computed(() => {
+  const start = formatShortDate(props.minDetailDate)
+  const end = formatShortDate(props.detailDate)
+  return start && end ? `average daily spending over ${start} – ${end}` : 'average daily spending'
 })
 
 const isCategoryEmpty = computed(
@@ -323,7 +340,7 @@ async function renderChart(rows, avgRows) {
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: ['Today'],
+      labels: ['Selected day'],
       datasets,
     },
     options: {
@@ -345,7 +362,7 @@ async function renderChart(rows, avgRows) {
           callbacks: {
             title: (contexts) => {
               const profileType = contexts?.[0]?.dataset?.profileType
-              return profileType === 'average' ? 'Average Profile' : 'Daily Profile'
+              return profileType === 'average' ? 'Average daily spending' : 'Selected day'
             },
             label: (context) => `${context.dataset.label}: ${formatAmount(context.parsed.y || 0)}`,
             afterLabel: (context) => {

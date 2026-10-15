@@ -1,12 +1,12 @@
 # TP-20261014-003: Dashboard Date Controls One Visible Period
 
 **Packet ID:** TP-20261014-003  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-14  
 **Last updated:** 2026-10-14  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** docs/task-packets/active/TP-20261014-003-dashboard-shared-period-truth.md  
+**Canonical path:** docs/task-packets/completed/TP-20261014-003-dashboard-shared-period-truth.md  
 **Workstream size:** One shared dashboard period-contract packet  
 **Depends on:** None  
 **Priority:** High  
@@ -41,3 +41,10 @@ Do not alter daily-net backend financial totals, forecasting engine, useDateRang
 - [ ] Presets and manual dates never disagree; custom comparison has correct equal-duration baseline.
 - [ ] Safe-to-Spend independence is obvious; existing chart click drilldown works.
 Report query boundaries in tests, paths, commands/results, and any deviations.
+
+## Completion report
+
+- `Dashboard.vue`: `debouncedRange` is the only chart range (`netRange` removed); initial range is month-start through today via new optional `initialRange` in `useDateRange` (defaults unchanged). `selectedPreset` (mtd|rolling_30|custom) and `setDashboardPeriodPreset` set picker values, chart range, preset and `netTimeframe` together; manual edits set `custom`.
+- `NetOverviewSection.vue`: shows the exact selected period near the picker and Cash direction, Custom indicator, Safe-to-Spend "Current guidance (not filtered by chart dates)". `DateRangeSelector.vue`: From/Through labels.
+- `DailyNetChart.vue`: `custom` timeframe compares against the preceding window of the same inclusive day count using UTC day numbers (DST-safe); label "Previous period".
+- Tests: Dashboard, DashboardSections, DailyNetChart (10-day custom window across a month boundary, DST). Deviations: none.

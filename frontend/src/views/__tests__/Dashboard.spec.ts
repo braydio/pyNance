@@ -23,24 +23,6 @@ vi.mock('@/services/api', () => ({
   },
 }))
 
-const mockFetchTransactions = vi.fn().mockResolvedValue({})
-
-vi.mock('@/composables/useTransactions.js', () => ({
-  useTransactions: () => ({
-    searchQuery: ref(''),
-    currentPage: ref(1),
-    totalPages: ref(1),
-    totalCount: ref(0),
-    filteredTransactions: ref([]),
-    sortKey: ref(null),
-    sortOrder: ref(1),
-    setSort: vi.fn(),
-    setPage: vi.fn(),
-    changePage: vi.fn(),
-    fetchTransactions: mockFetchTransactions,
-  }),
-}))
-
 vi.mock('@/api/transactions', () => ({
   fetchTransactions: vi.fn().mockResolvedValue({ transactions: [] }),
   fetchTopMerchants: vi.fn().mockResolvedValue([]),
@@ -96,7 +78,11 @@ vi.mock('@/composables/useDateRange', () => {
 
   return {
     useDateRange: (options = {}) => {
-      const dateRange = ref({ start: '2024-02-01', end: '2024-02-29' })
+      const dateRange = ref(
+        options.initialRange
+          ? { ...options.initialRange }
+          : { start: '2024-02-01', end: '2024-02-29' },
+      )
       const debouncedRange = ref(normalizeRange(dateRange.value))
       const onChange = options.onDebouncedChange || (() => {})
       let timer = null
@@ -303,12 +289,12 @@ const NetOverviewSectionStub = defineComponent({
   name: 'NetOverviewSection',
   components: { DailyNetChart: DailyNetChartStub },
   props: {
-    userName: { type: String, default: 'Guest' },
     currentDate: { type: String, default: '' },
-    netWorthMessage: { type: String, default: '' },
+    activityStatusMessage: { type: String, default: '' },
+    loadErrorMessage: { type: String, default: '' },
+    reconnectCount: { type: Number, default: 0 },
     dateRange: { type: Object, required: true },
     debouncedRange: { type: Object, required: true },
-    netRange: { type: Object, default: null },
     netTimeframe: { type: String, default: 'mtd' },
     zoomedOut: { type: Boolean, default: false },
     netSummary: { type: Object, required: true },
@@ -319,9 +305,9 @@ const NetOverviewSectionStub = defineComponent({
     showAvgExpenses: { type: Boolean, default: false },
     showComparisonOverlay: { type: Boolean, default: false },
     comparisonMode: { type: String, default: 'prior_month_to_date' },
-    reviewCount: { type: Number, default: 0 },
-    reviewCountLoading: { type: Boolean, default: false },
-    reviewCountError: { type: Boolean, default: false },
+    periodTransactionCount: { type: Number, default: 0 },
+    periodTransactionCountLoading: { type: Boolean, default: false },
+    periodTransactionCountError: { type: Boolean, default: false },
   },
   emits: [
     'update:start-date',
@@ -337,6 +323,7 @@ const NetOverviewSectionStub = defineComponent({
     'net-summary-change',
     'net-data-change',
     'net-bar-click',
+    'select-date',
     'open-review',
   ],
   setup(props) {
@@ -347,8 +334,8 @@ const NetOverviewSectionStub = defineComponent({
   template: `
     <div class="net-overview-section-stub">
       <DailyNetChart
-        :start-date="(props.netRange?.start || props.debouncedRange.start || props.dateRange.start)"
-        :end-date="(props.netRange?.end || props.debouncedRange.end || props.dateRange.end)"
+        :start-date="(props.debouncedRange.start || props.dateRange.start)"
+        :end-date="(props.debouncedRange.end || props.dateRange.end)"
         :zoomed-out="props.zoomedOut"
         :show7-day="props.show7Day"
         :show30-day="props.show30Day"
@@ -404,13 +391,12 @@ async function resolveAsyncSections(wrapper) {
       timeframe: wrapper.vm.netTimeframe,
     }
     netOverviewSectionProps ||= {
-      userName: wrapper.vm.userName,
       chartData: wrapper.vm.chartData,
       netSummary: wrapper.vm.netSummary,
       comparisonMode: wrapper.vm.comparisonMode,
-      reviewCount: wrapper.vm.reviewCount,
-      reviewCountLoading: wrapper.vm.reviewCountLoading,
-      reviewCountError: wrapper.vm.reviewCountError,
+      periodTransactionCount: wrapper.vm.periodTransactionCount,
+      periodTransactionCountLoading: wrapper.vm.periodTransactionCountLoading,
+      periodTransactionCountError: wrapper.vm.periodTransactionCountError,
     }
     receivedProps ||= { groups: mockGroupedOptions.value }
     categoryBreakdownSectionProps ||= {
@@ -532,8 +518,6 @@ beforeEach(async () => {
     status: 'success',
     data: { message: 'Review your largest recent expense for accuracy.' },
   })
-  mockFetchTransactions.mockResolvedValue({})
-  mockFetchTransactions.mockClear()
 })
 
 afterEach(() => {
@@ -611,21 +595,25 @@ describe('Dashboard.vue', () => {
         },
       ],
     })
-    const wrapper = createWrapper()
+    const wrapper = createWrapper({ asyncSections: true })
     await resolveAsyncSections(wrapper)
-    expect(wrapper.vm.greetingMessage).toContain('2 Plaid connections')
+    expect(wrapper.vm.reconnectCount).toBe(2)
     expect(apiService.refreshAccounts).not.toHaveBeenCalled()
     wrapper.unmount()
   })
 
-  it('loads net assets, categories, and transactions together on mount', async () => {
+  it('loads categories, activity status and the period count once on mount', async () => {
     const apiService = (await import('@/services/api')).default
+    fetchTransactions.mockClear()
     const wrapper = createWrapper()
     await resolveAsyncSections(wrapper)
 
-    expect(apiService.fetchNetAssets).toHaveBeenCalledTimes(1)
     expect(mockRefreshOptions).toHaveBeenCalledTimes(1)
-    expect(mockFetchTransactions).toHaveBeenCalledTimes(1)
+    expect(apiService.fetchDashboardActivityStatus).toHaveBeenCalled()
+    expect(apiService.fetchNetAssets).not.toHaveBeenCalled()
+    // Count request only: no obsolete dashboard transaction list fetch.
+    expect(fetchTransactions).toHaveBeenCalledTimes(1)
+    expect(fetchTransactions.mock.calls[0][0]).toMatchObject({ page: 1, page_size: 1 })
     wrapper.unmount()
   })
 
@@ -634,25 +622,29 @@ describe('Dashboard.vue', () => {
     const wrapper = createWrapper()
     await resolveAsyncSections(wrapper)
 
-    expect(wrapper.vm.reviewCount).toBe(14)
+    expect(wrapper.vm.periodTransactionCount).toBe(14)
     expect(netOverviewSectionProps).toMatchObject({
-      reviewCount: 14,
-      reviewCountLoading: false,
-      reviewCountError: false,
+      periodTransactionCount: 14,
+      periodTransactionCountLoading: false,
+      periodTransactionCountError: false,
     })
   })
 
-  it('defaults the date range to the current month boundaries', async () => {
+  it('treats a failed count request as an error, not zero transactions', async () => {
+    fetchTransactions.mockRejectedValueOnce(new Error('down'))
+    const wrapper = createWrapper()
+    await resolveAsyncSections(wrapper)
+    expect(wrapper.vm.periodTransactionCountError).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('defaults the date range to month start through today', async () => {
     const wrapper = createWrapper({ asyncSections: true })
     await resolveAsyncSections(wrapper)
 
-    const monthStart = new Date(2024, 1, 1)
-    const monthEnd = new Date(2024, 1, 29)
-
-    expect(formatDateInput(monthStart)).toBe('2024-02-01')
-    expect(formatDateInput(monthEnd)).toBe('2024-02-29')
     expect(wrapper.vm.dateRange.start).toBe('2024-02-01')
-    expect(wrapper.vm.dateRange.end).toBe('2024-02-29')
+    expect(wrapper.vm.dateRange.end).toBe('2024-02-15')
+    expect(wrapper.vm.selectedPreset).toBe('mtd')
     expect(dailyNetChartProps.startDate).toBe('2024-02-01')
     expect(dailyNetChartProps.endDate).toBe('2024-02-15')
     expect(dailyNetChartProps.timeframe).toBe('mtd')
@@ -662,11 +654,60 @@ describe('Dashboard.vue', () => {
     const wrapper = createWrapper({ asyncSections: true })
     await resolveAsyncSections(wrapper)
 
-    wrapper.vm.netTimeframe = 'rolling_30'
+    wrapper.vm.setDashboardPeriodPreset('rolling_30')
     await nextTick()
     await flushPromises()
 
     expect(wrapper.vm.netTimeframe).toBe('rolling_30')
+    expect(wrapper.vm.selectedPreset).toBe('rolling_30')
+    // Picker values and chart query move together: 30 inclusive days ending today.
+    expect(wrapper.vm.dateRange).toMatchObject({ start: '2024-01-17', end: '2024-02-15' })
+    expect(wrapper.vm.debouncedRange).toMatchObject({ start: '2024-01-17', end: '2024-02-15' })
+
+    wrapper.vm.setDashboardPeriodPreset('mtd')
+    await nextTick()
+    expect(wrapper.vm.dateRange).toMatchObject({ start: '2024-02-01', end: '2024-02-15' })
+  })
+
+  it('switches to custom when dates are edited manually and chart follows the dates', async () => {
+    const wrapper = createWrapper({ asyncSections: true })
+    await resolveAsyncSections(wrapper)
+
+    wrapper.vm.setManualStartDate('2025-01-08')
+    wrapper.vm.setManualEndDate('2025-01-17')
+    await vi.advanceTimersByTimeAsync(250)
+    await flushPromises()
+
+    expect(wrapper.vm.selectedPreset).toBe('custom')
+    expect(wrapper.vm.debouncedRange).toMatchObject({ start: '2025-01-08', end: '2025-01-17' })
+    const lastCount = fetchTransactions.mock.calls.at(-1)[0]
+    expect(lastCount).toMatchObject({ start_date: '2025-01-08', end_date: '2025-01-17' })
+
+    wrapper.vm.setDashboardPeriodPreset('mtd')
+    await nextTick()
+    expect(wrapper.vm.selectedPreset).toBe('mtd')
+  })
+
+  it('does not refetch Safe-to-Spend when the period changes', async () => {
+    const apiService = (await import('@/services/api')).default
+    const wrapper = createWrapper({ asyncSections: true })
+    await resolveAsyncSections(wrapper)
+    apiService.fetchSafeToSpend.mockClear()
+    wrapper.vm.setManualStartDate('2025-01-08')
+    await nextTick()
+    expect(wrapper.vm.safeToSpendMode).toBe('today')
+    expect(wrapper.vm.selectedPreset).toBe('custom')
+  })
+
+  it('opens the daily transaction modal from a selected unusual day', async () => {
+    const wrapper = createWrapper({ asyncSections: true })
+    await resolveAsyncSections(wrapper)
+    fetchTransactions.mockClear()
+    wrapper.vm.onNetBarClick('2024-02-10')
+    await flushPromises()
+    expect(fetchTransactions).toHaveBeenCalledWith(
+      expect.objectContaining({ start_date: '2024-02-10', end_date: '2024-02-10' }),
+    )
   })
 
   it.each([
@@ -687,13 +728,13 @@ describe('Dashboard.vue', () => {
 
   it('surfaces a unified fallback message when initial loading fails', async () => {
     const apiService = (await import('@/services/api')).default
-    apiService.fetchNetAssets.mockRejectedValueOnce(new Error('boom'))
-    mockFetchTransactions.mockRejectedValueOnce(new Error('oops'))
+    apiService.fetchDashboardActivityStatus.mockRejectedValueOnce(new Error('boom'))
 
     const wrapper = createWrapper()
     await resolveAsyncSections(wrapper)
 
-    expect(wrapper.vm.greetingMessage).toContain('Unable to refresh dashboard data')
+    expect(wrapper.vm.loadErrorMessage).toContain('Unable to refresh dashboard data')
+    expect(wrapper.vm.reconnectCount).toBe(0)
   })
 
   it('runs a single fetch cycle when the date range changes', async () => {
@@ -701,18 +742,18 @@ describe('Dashboard.vue', () => {
     const wrapper = createWrapper()
     await flushPromises()
 
-    apiService.fetchNetAssets.mockClear()
+    apiService.fetchDashboardActivityStatus.mockClear()
     mockRefreshOptions.mockClear()
-    mockFetchTransactions.mockClear()
+    fetchTransactions.mockClear()
 
     wrapper.vm.dateRange.start = '2024-03-01'
     wrapper.vm.dateRange.end = '2024-03-31'
     await vi.advanceTimersByTimeAsync(220)
     await flushPromises()
 
-    expect(apiService.fetchNetAssets).toHaveBeenCalledTimes(1)
+    expect(apiService.fetchDashboardActivityStatus).toHaveBeenCalledTimes(1)
     expect(mockRefreshOptions).toHaveBeenCalledTimes(1)
-    expect(mockFetchTransactions).toHaveBeenCalledTimes(1)
+    expect(fetchTransactions).toHaveBeenCalledTimes(1)
   })
 
   it('applies debounced date edits to chart inputs', async () => {
@@ -780,7 +821,7 @@ describe('Dashboard.vue', () => {
     expect(fetchCategoryTransactions).toHaveBeenCalledWith({
       category_ids: ['12', '34'],
       start_date: '2024-02-01',
-      end_date: '2024-02-29',
+      end_date: '2024-02-15',
     })
     expect(wrapper.vm.categoryModalTransactions).toEqual(categoryTransactions)
     expect(wrapper.vm.showCategoryModal).toBe(true)
@@ -798,7 +839,7 @@ describe('Dashboard.vue', () => {
     expect(fetchMerchantTransactions).toHaveBeenCalledWith({
       merchant: 'Coffee Shop',
       start_date: '2024-02-01',
-      end_date: '2024-02-29',
+      end_date: '2024-02-15',
     })
     expect(wrapper.vm.categoryModalTransactions).toEqual(merchantTransactions)
     expect(wrapper.vm.categoryModalKind).toBe('merchant')
@@ -868,20 +909,19 @@ describe('Dashboard.vue', () => {
   it('delivers dashboard state into async sections once loaded', async () => {
     const wrapper = createWrapper({ asyncSections: true })
     await resolveAsyncSections(wrapper)
-    const expectedUserName = import.meta.env.VITE_USER_ID_PLAID || 'Guest'
 
+    expect(netOverviewSectionProps).not.toHaveProperty('userName')
     expect(netOverviewSectionProps).toMatchObject({
-      userName: expectedUserName,
       chartData: [],
       netSummary: { totalIncome: 0, totalExpenses: 0, totalNet: 0 },
       comparisonMode: 'prior_month_to_date',
-      reviewCount: 0,
-      reviewCountError: false,
+      periodTransactionCount: 0,
+      periodTransactionCountError: false,
     })
 
     expect(categoryBreakdownSectionProps).toMatchObject({
       startDate: '2024-02-01',
-      endDate: '2024-02-29',
+      endDate: '2024-02-15',
       breakdownType: 'category',
       groupOthers: true,
       selectedCategoryIds: [],
