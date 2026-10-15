@@ -16,19 +16,29 @@
       <!-- Quick actions -->
       <div class="quick-actions" v-if="availableAccounts.length > 0">
         <button
+          type="button"
           @click="selectAll"
           class="action-btn"
           :disabled="selectedAccountIds.length === availableAccounts.length"
         >
           Select All
         </button>
-        <button @click="deselectAll" class="action-btn" :disabled="selectedAccountIds.length === 0">
+        <button
+          type="button"
+          @click="deselectAll"
+          class="action-btn"
+          :disabled="selectedAccountIds.length === 0"
+        >
           Clear
         </button>
-        <button @click="selectAccountsByType('depository')" class="action-btn type-btn">
+        <button
+          type="button"
+          @click="selectAccountsByType('depository')"
+          class="action-btn type-btn"
+        >
           Assets Only
         </button>
-        <button @click="selectAccountsByType('credit')" class="action-btn type-btn">
+        <button type="button" @click="selectAccountsByType('credit')" class="action-btn type-btn">
           Liabilities Only
         </button>
       </div>
@@ -43,22 +53,29 @@
     <!-- Error state -->
     <div v-else-if="error" class="error-state">
       <p class="error-text">{{ error }}</p>
-      <button @click="fetchAccounts" class="retry-btn">Retry</button>
+      <button type="button" @click="fetchAccounts" class="retry-btn">Retry</button>
     </div>
 
     <!-- Account grid -->
     <div v-else-if="availableAccounts.length > 0" class="accounts-grid">
-      <div
+      <label
         v-for="account in availableAccounts"
         :key="account.id"
         class="account-card"
         :class="{
           selected: selectedAccountIds.includes(account.id),
-          asset: account.balance >= 0,
-          liability: account.balance < 0,
+          asset: !isLiability(account),
+          liability: isLiability(account),
         }"
-        @click="toggleAccount(account.id)"
+        :data-testid="`account-card-${account.id}`"
       >
+        <input
+          type="checkbox"
+          class="account-card__input"
+          :checked="selectedAccountIds.includes(account.id)"
+          :aria-label="`${account.name}, ${isLiability(account) ? 'liability' : 'asset'}`"
+          @change="toggleAccount(account.id)"
+        />
         <div class="account-header">
           <div class="account-icon">
             <img
@@ -99,13 +116,13 @@
         <div class="account-balance">
           <span
             class="balance-amount"
-            :class="{ positive: account.balance >= 0, negative: account.balance < 0 }"
+            :class="{ positive: !isLiability(account), negative: isLiability(account) }"
           >
             {{ formatBalance(account.balance) }}
           </span>
-          <span class="balance-label">{{ account.balance >= 0 ? 'Asset' : 'Liability' }}</span>
+          <span class="balance-label">{{ isLiability(account) ? 'Liability' : 'Asset' }}</span>
         </div>
-      </div>
+      </label>
     </div>
 
     <!-- Empty state -->
@@ -117,6 +134,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { classifyAccount, isLiabilityGroup } from '@/utils/accountPortfolio'
 
 const props = defineProps({
   selectedAccountIds: { type: Array, required: true },
@@ -135,6 +153,11 @@ const emit = defineEmits([
 
 // Computed
 const hasSelection = computed(() => props.selectedAccountIds.length > 0)
+
+/** Liability status comes from the account type, never from the sign of today's balance. */
+function isLiability(account) {
+  return isLiabilityGroup(classifyAccount(account))
+}
 
 // Methods
 function toggleAccount(accountId) {
@@ -324,6 +347,21 @@ function initials(name) {
   position: relative;
 }
 
+.account-card__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.account-card:focus-within {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
 .account-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px var(--shadow, rgba(0, 0, 0, 0.1));
@@ -384,17 +422,16 @@ function initials(name) {
   font-size: 1rem;
   font-weight: 600;
   color: var(--color-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
   margin-bottom: 0.25rem;
 }
 
 .account-details {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   color: var(--color-text-light);
 }
 
@@ -453,15 +490,15 @@ function initials(name) {
 }
 
 .balance-amount.positive {
-  color: var(--color-accent-cyan);
+  color: var(--text-link);
 }
 
 .balance-amount.negative {
-  color: var(--color-accent-yellow);
+  color: var(--text-warning);
 }
 
 .balance-label {
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;

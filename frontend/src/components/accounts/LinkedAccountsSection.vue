@@ -90,7 +90,7 @@
               >
                 <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div class="space-y-1">
-                    <p class="text-base font-medium">{{ account.name }}</p>
+                    <p class="text-base font-medium wrap-anywhere">{{ account.name }}</p>
                     <span
                       v-if="account.connection_status?.requires_reauth"
                       class="inline-flex rounded bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900"
@@ -513,3 +513,9 @@ function addPromotion(accountId) {
   resetPromotionForm(accountId)
 }
 </script>
+
+<style scoped>
+.wrap-anywhere {
+  overflow-wrap: anywhere;
+}
+</style>

@@ -21,55 +21,86 @@
           v-model="searchQuery"
           class="filter-input"
           type="text"
+          aria-label="Search accounts"
           placeholder="Search accounts, institutions, or types"
         />
-        <button class="ghost-btn" v-if="searchQuery" @click="searchQuery = ''">Clear</button>
+        <button class="ghost-btn" type="button" v-if="searchQuery" @click="searchQuery = ''">
+          Clear
+        </button>
       </div>
       <div class="chip-row">
         <button
-          class="pill md:text-sm"
-          :class="{ active: controlsVisible }"
-          @click="controlsVisible = !controlsVisible"
-        >
-          {{ controlsVisible ? 'Hide Options' : 'Show Options' }}
-        </button>
-        <button
+          type="button"
           class="pill md:text-sm"
           :class="{ active: showHidden }"
+          :aria-pressed="showHidden ? 'true' : 'false'"
+          data-testid="toggle-hidden"
           @click="showHidden = !showHidden"
         >
-          {{ showHidden ? 'Showing Hidden' : 'Hide Hidden' }}
+          Include hidden
         </button>
         <button
+          type="button"
           class="pill md:text-sm"
           :class="{ active: showTypeFilter }"
+          :aria-expanded="showTypeFilter ? 'true' : 'false'"
+          aria-controls="account-type-filter"
+          data-testid="toggle-type-filter"
           @click="showTypeFilter = !showTypeFilter"
         >
-          Filter Types
+          Filter types<span v-if="typeFilters.length"> ({{ typeFilters.length }})</span>
+        </button>
+        <button type="button" class="pill md:text-sm" @click="exportCSV">Export CSV</button>
+        <!-- Destructive tools live behind management mode -->
+        <button
+          type="button"
+          class="pill md:text-sm"
+          :class="{ active: controlsVisible }"
+          :aria-pressed="controlsVisible ? 'true' : 'false'"
+          data-testid="toggle-manage"
+          @click="toggleManagement"
+        >
+          {{ controlsVisible ? 'Done managing' : 'Manage accounts' }}
         </button>
         <button
+          v-if="controlsVisible"
+          type="button"
           class="pill md:text-sm"
           :class="{ active: showDeleteButtons }"
+          :aria-pressed="showDeleteButtons ? 'true' : 'false'"
+          data-testid="toggle-delete"
           @click="toggleDeleteButtons"
         >
-          {{ showDeleteButtons ? 'Delete Visible' : 'Hide Delete' }}
+          {{ showDeleteButtons ? 'Delete enabled' : 'Enable delete' }}
         </button>
-        <button class="pill md:text-sm" @click="exportCSV">Export CSV</button>
       </div>
     </div>
-    <div v-if="showTypeFilter" class="type-filter-row">
-      <label class="type-filter-label">Account Types</label>
-      <select multiple v-model="typeFilters" class="filter-input filter-input--ghost">
-        <option v-for="type in uniqueTypes" :key="type" :value="type">
-          {{ formatType(type) }}
-        </option>
-      </select>
-    </div>
+    <fieldset v-if="showTypeFilter" id="account-type-filter" class="type-filter-row">
+      <legend class="type-filter-label">Account types</legend>
+      <label v-for="type in uniqueTypes" :key="type" class="type-filter-option">
+        <input v-model="typeFilters" type="checkbox" :value="type" />
+        {{ formatType(type) }}
+      </label>
+      <button
+        v-if="typeFilters.length"
+        type="button"
+        class="ghost-btn"
+        data-testid="clear-type-filter"
+        @click="typeFilters = []"
+      >
+        Clear types
+      </button>
+    </fieldset>
     <div v-if="activeFilters.length" class="filter-tags" data-testid="accounts-filter-tags">
       <span v-for="filter in activeFilters" :key="filter.key" class="filter-tag">
         <span class="filter-tag__label">{{ filter.label }}:</span>
         <span class="filter-tag__value">{{ filter.value }}</span>
-        <button type="button" class="filter-tag__remove" @click="removeFilter(filter.key)">
+        <button
+          type="button"
+          class="filter-tag__remove"
+          :aria-label="`Remove ${filter.label} filter`"
+          @click="removeFilter(filter.key)"
+        >
           ×
         </button>
       </span>
@@ -79,13 +110,25 @@
       <table class="data-table">
         <thead class="table-head">
           <tr>
-            <th class="th-cell text-left">Last Refreshed</th>
-            <th class="th-cell text-left">Institution</th>
-            <th class="th-cell text-left">Name</th>
-            <th class="th-cell text-left">Account Type</th>
-            <th class="th-cell text-right">Balance</th>
-            <th :class="['th-cell text-center', 'w-[60px]']">Trend</th>
-            <th v-if="controlsVisible" class="th-cell text-left">Actions</th>
+            <th
+              v-for="column in sortableColumns"
+              :key="column.key"
+              scope="col"
+              :class="['th-cell', column.align === 'right' ? 'text-right' : 'text-left']"
+              :aria-sort="ariaSort(column.key)"
+            >
+              <button
+                type="button"
+                class="sort-btn"
+                :data-testid="`sort-${column.key}`"
+                @click="sortTable(column.key)"
+              >
+                {{ column.label }}
+                <span aria-hidden="true">{{ sortIndicator(column.key) }}</span>
+              </button>
+            </th>
+            <th scope="col" :class="['th-cell text-center', 'w-[60px]']">Trend</th>
+            <th v-if="controlsVisible" scope="col" class="th-cell text-left">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -131,10 +174,15 @@
             <!-- Actions -->
             <td v-if="controlsVisible" class="cell">
               <div class="btn-group">
-                <button class="btn btn-sm" @click="toggleHidden(account)">
+                <button type="button" class="btn btn-sm" @click="toggleHidden(account)">
                   {{ account.is_hidden ? 'Unhide' : 'Hide' }}
                 </button>
-                <button v-if="showDeleteButtons" class="btn btn-sm" @click="promptDelete(account)">
+                <button
+                  v-if="showDeleteButtons"
+                  type="button"
+                  class="btn btn-sm"
+                  @click="promptDelete(account)"
+                >
                   Delete
                 </button>
               </div>
@@ -143,7 +191,14 @@
         </tbody>
       </table>
     </div>
-    <div v-if="!loading && !sortedAccounts.length" class="p-6 text-[color:var(--color-text-muted)]">
+    <div v-if="error && !loading" class="p-6" role="alert">
+      <p class="text-negative">{{ error }}</p>
+      <button type="button" class="btn btn-sm" @click="fetchAccounts">Retry</button>
+    </div>
+    <div
+      v-else-if="!loading && !sortedAccounts.length"
+      class="p-6 text-[color:var(--color-text-muted)]"
+    >
       No accounts found.
     </div>
     <div v-else-if="loading" class="p-6 text-[color:var(--color-text-muted)]">
@@ -223,6 +278,15 @@ export default {
     }
   },
   computed: {
+    sortableColumns() {
+      return [
+        { key: 'last_refreshed', label: 'Last Refreshed' },
+        { key: 'institution_name', label: 'Institution' },
+        { key: 'name', label: 'Name' },
+        { key: 'type', label: 'Account Type' },
+        { key: 'balance', label: 'Balance', align: 'right' },
+      ]
+    },
     uniqueTypes() {
       return [...new Set(this.accounts.map((acc) => acc.type).filter(Boolean))]
     },
@@ -404,6 +468,19 @@ export default {
       if (!type || typeof type !== 'string') return 'Unknown'
       const normalized = type.replace(/[_-]+/g, ' ').toLowerCase()
       return normalized.replace(/(^|[\s/])([a-z])/g, (_, sep, ch) => `${sep}${ch.toUpperCase()}`)
+    },
+    toggleManagement() {
+      this.controlsVisible = !this.controlsVisible
+      // Leaving management mode always re-locks the destructive controls.
+      if (!this.controlsVisible) this.showDeleteButtons = false
+    },
+    ariaSort(key) {
+      if (this.sortKey !== key) return 'none'
+      return this.sortOrder === 1 ? 'ascending' : 'descending'
+    },
+    sortIndicator(key) {
+      if (this.sortKey !== key) return ''
+      return this.sortOrder === 1 ? '▲' : '▼'
     },
     sortTable(key) {
       if (this.sortKey === key) {
@@ -619,14 +696,41 @@ export default {
 }
 
 .type-filter-row {
-  @apply mb-4 rounded-xl p-3 flex flex-col gap-1;
+  @apply mb-4 rounded-xl p-3 flex flex-wrap items-center gap-x-4 gap-y-2;
   background-color: var(--table-control);
   border: 1px solid var(--table-border);
 }
 
 .type-filter-label {
-  @apply text-xs uppercase tracking-wide;
+  @apply text-sm font-semibold;
   color: var(--color-text-muted);
+  padding: 0;
+}
+
+.type-filter-option {
+  @apply inline-flex items-center gap-2 text-sm;
+  min-height: var(--control-height-sm);
+}
+
+.sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.sort-btn:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.table-shell {
+  overflow-x: auto;
 }
 
 .filter-tags {
@@ -634,7 +738,7 @@ export default {
 }
 
 .filter-tag {
-  @apply inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs;
+  @apply inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm;
   background-color: color-mix(in srgb, var(--color-accent-blue) 12%, transparent);
   border: 1px solid var(--table-border);
   color: var(--text-primary);
