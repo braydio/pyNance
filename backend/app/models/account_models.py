@@ -60,6 +60,14 @@ class Account(db.Model, TimestampMixin):
     apr_sample_cycles = db.Column(db.Integer, nullable=True)
     # Per-bucket rates for multi-APR cards (purchase, cash, balance transfer, penalty, promo...).
     apr_details = db.Column(db.JSON, nullable=True)
+    # Cached Plaid Liabilities metadata (not real-time); nulls mean "not reported".
+    minimum_payment_amount = db.Column(db.Numeric(18, 2), nullable=True)
+    next_payment_due_date = db.Column(db.Date, nullable=True)
+    statement_balance = db.Column(db.Numeric(18, 2), nullable=True)
+    statement_date = db.Column(db.Date, nullable=True)
+    # ok | no_rates_reported | unavailable | stale | null (never fetched)
+    liabilities_status = db.Column(db.String(24), nullable=True)
+    liabilities_as_of = db.Column(db.DateTime(timezone=True), nullable=True)
     # Provider-reported credit line (credit products only; never an overdraft limit).
     credit_limit = db.Column(db.Numeric(18, 2), nullable=True)
     # Provider "available" figure exactly as reported; distinct from the current balance.

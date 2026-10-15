@@ -21,6 +21,7 @@ from app.services.account_interest_rates import (
     recent_interest_by_account,
 )
 from app.services.accounts_service import fetch_accounts
+from app.services.plaid_liabilities import refresh_item_liabilities
 from app.sql.account_logic import (
     canonicalize_plaid_products,
     mark_plaid_item_reauth_required,
@@ -103,6 +104,35 @@ def _plaid_products_for_account(account: Account) -> set[str]:
     if not products:
         products.add("transactions")
     return products
+
+
+def _refresh_plaid_liabilities(account: Account, access_token: str, done_items: set, error_map: dict) -> bool:
+    """Run the Item-scoped liabilities adapter at most once per Item per refresh.
+
+    Failures are recorded and swallowed so other accounts and products keep refreshing.
+    """
+
+    plaid_rel = getattr(account, "plaid_account", None)
+    item_id = getattr(plaid_rel, "item_id", None)
+    if not item_id or item_id in done_items:
+        return False
+    done_items.add(item_id)
+    result = refresh_item_liabilities(
+        item_id, access_token, products=_plaid_products_for_account(account), owner_user_id=account.user_id
+    )
+    status = result.get("status")
+    if status == "error":
+        error = result.get("error") or {}
+        if result.get("reauth"):
+            mark_plaid_item_reauth_required(access_token, error, commit=False, item_id=item_id)
+        _append_refresh_error(error_map, account, error)
+        db.session.commit()
+        return False
+    if status == "unavailable":
+        logger.info("Plaid liabilities unavailable for item %s", item_id)
+        db.session.commit()
+        return False
+    return status == "ok" and bool(result.get("updated"))
 
 
 def _plaid_item_for_account(account: Account) -> PlaidItem | None:
@@ -299,6 +329,7 @@ def refresh_all_accounts():
         skipped_rate_limited = 0
         previous_institution = None
         token_account_cache: dict[str, list] = {}
+        liabilities_done_items: set[str] = set()
 
         for account in accounts:
             inst = account.institution_name or "Unknown"
@@ -426,6 +457,11 @@ def refresh_all_accounts():
                                 exc,
                                 exc_info=True,
                             )
+                    elif product_name == "liabilities":
+                        account_updated = (
+                            _refresh_plaid_liabilities(account, access_token, liabilities_done_items, error_map)
+                            or account_updated
+                        )
                     else:
                         logger.info(
                             "Skipping unsupported Plaid product %s for institution %s",
@@ -662,6 +698,8 @@ def refresh_single_account(account_id):
                     ),
                     502,
                 )
+        elif product_name == "liabilities":
+            plaid_updated = _refresh_plaid_liabilities(account, token, set(), {}) or plaid_updated
         else:
             logger.info(
                 "Skipping unsupported Plaid product %s for institution %s",
@@ -761,6 +799,17 @@ def list_accounts():
                         "apr_details": a.apr_details,
                         # Effective annualized charge rate; null unless >= 2 verified cycles exist.
                         "estimated_rate": estimates.get(a.account_id),
+                        # Cached Plaid Liabilities data (not real-time); nulls mean "not reported".
+                        "interest_rate_breakdown": a.apr_details,
+                        "rate_status": a.liabilities_status,
+                        "rate_source": "plaid_liabilities" if a.liabilities_as_of else None,
+                        "rate_as_of": _to_iso(a.liabilities_as_of),
+                        "minimum_payment_amount": _optional_float(a.minimum_payment_amount),
+                        "next_payment_due_date": (
+                            a.next_payment_due_date.isoformat() if a.next_payment_due_date else None
+                        ),
+                        "statement_balance": _optional_float(a.statement_balance),
+                        "statement_date": a.statement_date.isoformat() if a.statement_date else None,
                         "interest_paid_recent": interest_recent.get(a.account_id),
                         "link_type": a.link_type,
                         "last_refreshed": _to_iso(last_refreshed),

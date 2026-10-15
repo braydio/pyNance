@@ -1,12 +1,12 @@
 # TP-20261014-007: Optional Plaid Liabilities APR and payment metadata
 
 **Packet ID:** TP-20261014-007  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-14  
 **Last updated:** 2026-10-14  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261014-007-plaid-liabilities-enrichment.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261014-007-plaid-liabilities-enrichment.md`  
 **Workstream size:** One independently testable implementation packet  
 **Depends on:** TP-20261014-005, TP-20261014-006  
 **Priority:** Normal  
@@ -43,3 +43,11 @@ Optional Plaid Liabilities APR and payment metadata. Implement against current m
 
 ## Do not rediscover
 Avoid broad repo archaeology. Only inspect explicitly named paths, directly imported helpers/tests, and exact migrations/route registrations needed to implement this packet.
+
+## Completion report
+
+- New `app/services/plaid_liabilities.py` (+ doc): scope-gated, one `/liabilities/get` per Item via the installed SDK `LiabilitiesGetRequest`, per-bucket APR storage, loan rates kept separate, cross-item/cross-owner rejection, safe handling of consent/reauth/network errors.
+- `routes/accounts.py`: `_refresh_plaid_liabilities` hooked into bulk and single refresh (existing throttle/reauth/error aggregation; failures do not stop other accounts/products). `list_accounts` adds `interest_rate_breakdown`, `rate_status`, `rate_source`, `rate_as_of`, `minimum_payment_amount`, `next_payment_due_date`, `statement_balance`, `statement_date`.
+- Migration `c3e7f9a1d5b4` (revises `b2d6e8f0c4a3`) + doc for the six nullable metadata columns.
+- Tests: new `tests/test_plaid_liabilities_enrichment.py` (11, mocked remote call); with `test_accounts_product_scopes.py`, `test_plaid_connection_health.py` and the 005/006 tests: 53 passed. ruff/black clean.
+- Deviations/not run: webhook-driven refresh not added (not in scope); migration not run against a live dev DB; no live Plaid call (sandbox credentials unavailable here).
