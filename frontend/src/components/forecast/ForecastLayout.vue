@@ -1,12 +1,12 @@
 <template>
-  <div class="forecast-layout p-6 bg-gray-50 space-y-6">
-    <div v-if="error" class="card glass text-sm text-red-600">
+  <div class="forecast-layout">
+    <div v-if="error" class="card glass text-sm text-negative" role="alert">
       {{ error.message }}
     </div>
-    <div v-else-if="isLoading" class="card glass text-sm text-gray-500">
+    <div v-else-if="isLoading" class="card glass text-sm text-muted" role="status">
       Loading forecast data...
     </div>
-    <div v-else-if="!hasForecastData" class="card glass text-sm text-gray-500">
+    <div v-else-if="!hasForecastData" class="card glass text-sm text-muted" role="status">
       Forecast data is not available yet. Select at least one account in the scope above, or add an
       adjustment below, then try again.
     </div>
@@ -35,9 +35,9 @@
     />
 
     <div class="card glass text-sm control-row basic-controls" data-testid="basic-controls">
-      <label>
-        Chart aspect
-        <select v-model="selectedAspect" class="input ml-2">
+      <label class="control-field">
+        <span class="control-field__label">Chart aspect</span>
+        <select v-model="selectedAspect" class="input select control-field__input">
           <option v-for="aspect in forecastAspectOptions" :key="aspect.value" :value="aspect.value">
             {{ aspect.label }}
           </option>
@@ -81,7 +81,7 @@
         {{ autoDetectedAdjustments.length }} auto-detected. Review assumptions
       </summary>
       <div class="assumptions-details__body space-y-6">
-        <div class="card glass adjustments-grid">
+        <div class="adjustments-grid">
           <div>
             <h3 class="adjustments-title">Manual Adjustments</h3>
             <p v-if="manualAdjustmentPoints.length === 0" class="adjustments-empty">
@@ -124,7 +124,7 @@
           Detected bills and paychecks are listed under “What drives this forecast”. Everyday
           spending is estimated from your recent history and shown as typical spending.
         </p>
-        <div v-else class="card glass auto-adjustments-card">
+        <div v-else class="auto-adjustments-card">
           <div class="auto-adjustments-card__header">
             <div>
               <h3 class="adjustments-title">Auto-Detected Adjustments</h3>
@@ -318,39 +318,43 @@
     <details class="card glass text-sm advanced-controls" data-testid="advanced-controls">
       <summary class="disclosure-summary">Advanced model controls</summary>
       <div class="control-row advanced-controls__body">
-        <label>
-          Forecast model
-          <select v-model="modelVersion" class="input ml-2" data-testid="model-version-select">
+        <label class="control-field">
+          <span class="control-field__label">Forecast model</span>
+          <select
+            v-model="modelVersion"
+            class="input select control-field__input"
+            data-testid="model-version-select"
+          >
             <option value="v2">Liquid cash (V2, recommended)</option>
             <option value="v1">Legacy average-delta (V1)</option>
           </select>
         </label>
         <template v-if="appliedModelVersion === 'v2'">
-          <label data-testid="simulation-toggle">
-            <input v-model="simulationEnabled" type="checkbox" class="mr-1" /> Show likely range and
-            shortfall chance
+          <label class="control-check" data-testid="simulation-toggle">
+            <input v-model="simulationEnabled" type="checkbox" /> Show likely range and shortfall
+            chance
           </label>
         </template>
         <template v-else>
-          <label>
-            Graph mode
-            <select v-model="graphMode" class="input ml-2">
+          <label class="control-field">
+            <span class="control-field__label">Graph mode</span>
+            <select v-model="graphMode" class="input select control-field__input">
               <option value="combined">Combined</option>
               <option value="forecast">Forecast only</option>
               <option value="historical">Historical only</option>
             </select>
           </label>
-          <label>
-            Moving average
-            <select v-model.number="movingAverageWindow" class="input ml-2">
+          <label class="control-field">
+            <span class="control-field__label">Moving average</span>
+            <select v-model.number="movingAverageWindow" class="input select control-field__input">
               <option :value="7">7 days</option>
               <option :value="30">30 days</option>
               <option :value="60">60 days</option>
               <option :value="90">90 days</option>
             </select>
           </label>
-          <label
-            ><input v-model="normalize" type="checkbox" class="mr-1" /> Normalize history</label
+          <label class="control-check"
+            ><input v-model="normalize" type="checkbox" /> Normalize history</label
           >
         </template>
       </div>
@@ -960,21 +964,58 @@ function summarizeMatchingFields(fields?: SourceTransactionMatchingFields) {
 .disclosure-summary {
   cursor: pointer;
   font-weight: 600;
+  min-height: var(--control-height-sm);
+  display: flex;
+  align-items: center;
+}
+
+.disclosure-summary:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
 }
 
 @reference "../../assets/css/main.css";
 
+/* The page layout owns the outer gutter; this component only owns vertical rhythm. */
 .forecast-layout {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  min-width: 0;
+  color: var(--text-primary);
 }
 
 .control-row {
   display: flex;
-  gap: 1rem;
-  align-items: center;
+  gap: 0.75rem 1rem;
+  align-items: flex-end;
   flex-wrap: wrap;
+}
+
+.control-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.control-field__label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.control-field__input {
+  width: auto;
+  min-width: 10rem;
+  max-width: 100%;
+}
+
+.control-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: var(--control-height);
+  font-size: 0.875rem;
 }
 
 .adjustments-grid {
@@ -990,7 +1031,7 @@ function summarizeMatchingFields(fields?: SourceTransactionMatchingFields) {
 }
 
 .adjustments-empty {
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   color: var(--text-muted);
 }
 
@@ -1006,11 +1047,26 @@ function summarizeMatchingFields(fields?: SourceTransactionMatchingFields) {
   display: flex;
   justify-content: space-between;
   gap: 0.5rem;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.adjustments-list li > strong {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.source-transaction-item__description,
+.source-transaction-item__meta,
+.source-transaction-item__matching,
+.auto-adjustment-item__label,
+.auto-adjustment-item__meta {
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 
 .adjustments-list.auto strong {
-  color: #047857;
+  color: var(--text-positive);
 }
 
 .auto-adjustments-card {
@@ -1069,7 +1125,7 @@ function summarizeMatchingFields(fields?: SourceTransactionMatchingFields) {
 .source-transaction-item__matching,
 .auto-adjustment-item__empty {
   margin: 0.2rem 0 0;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   color: var(--text-muted);
 }
 
@@ -1081,12 +1137,12 @@ function summarizeMatchingFields(fields?: SourceTransactionMatchingFields) {
 }
 
 .auto-adjustment-toggle {
-  border: 1px solid rgba(37, 99, 235, 0.25);
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 30%, transparent);
   border-radius: 999px;
   padding: 0.35rem 0.75rem;
-  background: rgba(37, 99, 235, 0.08);
-  color: #1d4ed8;
-  font-size: 0.78rem;
+  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+  color: var(--text-link);
+  font-size: 0.8125rem;
   font-weight: 600;
 }
 
@@ -1110,7 +1166,7 @@ function summarizeMatchingFields(fields?: SourceTransactionMatchingFields) {
 
 .source-transaction-item {
   border-radius: 0.65rem;
-  background: rgba(248, 250, 252, 0.85);
+  background: var(--surface-2);
   padding: 0.75rem 0.85rem;
 }
 
@@ -1171,7 +1227,7 @@ function summarizeMatchingFields(fields?: SourceTransactionMatchingFields) {
 }
 
 .forecast-item-modal__meta dt {
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
   color: var(--text-muted);
 }
 

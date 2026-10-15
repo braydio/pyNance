@@ -266,4 +266,66 @@ describe('ForecastLayout', () => {
     expect(assumptions.get('summary').text()).toContain('0 manual, 1 auto-detected')
     expect(assumptions.text()).toContain('View source transactions')
   })
+
+  it('uses the theme instead of hardcoded light backgrounds and grays, with one gutter owner', async () => {
+    useForecastDataMock.mockReturnValue(buildUseForecastDataReturn([]))
+    const wrapper = mount(ForecastLayout)
+    await flushPromises()
+    const root = wrapper.get('.forecast-layout')
+    expect(root.classes()).not.toContain('bg-gray-50')
+    expect(root.classes()).not.toContain('p-6')
+    expect(wrapper.html()).not.toMatch(/text-gray-|text-red-600|bg-gray-/)
+  })
+
+  it('renders status messages with roles and themed text classes', async () => {
+    const loading = buildUseForecastDataReturn([])
+    loading.loading = computed(() => true)
+    useForecastDataMock.mockReturnValue(loading)
+    const wrapper = mount(ForecastLayout)
+    await flushPromises()
+    const status = wrapper.get('[role="status"]')
+    expect(status.text()).toContain('Loading forecast data')
+    expect(status.classes()).toContain('text-muted')
+
+    const failing = buildUseForecastDataReturn([])
+    failing.error = computed(() => new Error('boom'))
+    useForecastDataMock.mockReturnValue(failing)
+    const errored = mount(ForecastLayout)
+    await flushPromises()
+    const alert = errored.get('[role="alert"]')
+    expect(alert.text()).toContain('boom')
+    expect(alert.classes()).toContain('text-negative')
+  })
+
+  it('orders results first, assumptions as a closed disclosure, advanced controls last', async () => {
+    useForecastDataMock.mockReturnValue(buildUseForecastDataReturn([]))
+    const wrapper = mount(ForecastLayout)
+    await flushPromises()
+    const html = wrapper.html()
+    const order = [
+      'summary-panel-stub',
+      'basic-controls',
+      'forecast-chart-stub',
+      'data-testid="assumptions"',
+      'data-testid="advanced-controls"',
+    ].map((marker) => html.indexOf(marker))
+    expect(order.every((i) => i >= 0)).toBe(true)
+    expect([...order].sort((a, b) => a - b)).toEqual(order)
+    expect(wrapper.get('[data-testid="assumptions"]').attributes('open')).toBeUndefined()
+    expect(wrapper.get('[data-testid="advanced-controls"]').attributes('open')).toBeUndefined()
+  })
+
+  it('aligns control fields with a shared label/select pattern and nests at most one card level in assumptions', async () => {
+    useForecastDataMock.mockReturnValue(buildUseForecastDataReturn([]))
+    const wrapper = mount(ForecastLayout)
+    await flushPromises()
+    const fields = wrapper.findAll('.control-field')
+    expect(fields.length).toBeGreaterThanOrEqual(2)
+    fields.forEach((field) => {
+      expect(field.find('.control-field__label').exists()).toBe(true)
+      expect(field.find('select').classes()).toContain('select')
+    })
+    expect(wrapper.find('[data-testid="assumptions"] .card .card').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="assumptions"] .adjustments-grid.card').exists()).toBe(false)
+  })
 })

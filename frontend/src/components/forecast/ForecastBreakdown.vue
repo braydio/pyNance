@@ -111,7 +111,7 @@ const emit = defineEmits<{
 
 .drivers-note,
 .data-quality {
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   color: var(--text-muted);
   margin: 0.5rem 0;
 }
@@ -134,7 +134,7 @@ const emit = defineEmits<{
 
 .driver-origin {
   grid-column: 2 / 3;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--text-muted);
 }
 

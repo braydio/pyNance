@@ -2,20 +2,34 @@
   <div class="adjustments-form">
     <h3 class="form-title">Add Adjustment</h3>
     <form @submit.prevent="submitAdjustment" class="form-grid">
-      <input v-model="label" type="text" class="input" placeholder="Label" required />
-      <input v-model.number="amount" type="number" class="input" placeholder="Amount" required />
-      <select v-model="frequency" class="input">
+      <input
+        v-model="label"
+        type="text"
+        class="input"
+        aria-label="Label"
+        placeholder="Label"
+        required
+      />
+      <input
+        v-model.number="amount"
+        type="number"
+        class="input"
+        aria-label="Amount in dollars"
+        placeholder="Amount ($)"
+        required
+      />
+      <select v-model="frequency" class="input select" aria-label="Frequency">
         <option value="once">One-time</option>
         <option value="daily">Daily</option>
         <option value="weekly">Weekly</option>
         <option value="monthly">Monthly</option>
       </select>
-      <select v-model="distribution" class="input">
+      <select v-model="distribution" class="input select" aria-label="Distribution">
         <option value="single">Single date</option>
         <option value="spread">Spread over range</option>
       </select>
-      <input v-model="rangeStart" type="date" class="input" />
-      <input v-model="rangeEnd" type="date" class="input" />
+      <input v-model="rangeStart" type="date" class="input" aria-label="Range start" />
+      <input v-model="rangeEnd" type="date" class="input" aria-label="Range end" />
       <button type="submit" class="submit-button">Add</button>
     </form>
   </div>

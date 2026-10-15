@@ -111,10 +111,13 @@
 
     <details class="manual-inputs" data-testid="manual-inputs">
       <summary class="manual-inputs__summary">Manual baseline inputs</summary>
+      <p id="manual-inputs-note" class="manual-inputs__note">
+        Both values are dollars per day, not percentages, and apply to the forecast as you type.
+      </p>
       <div class="summary-grid">
         <div class="field-group">
           <label class="label tooltip-label" for="manual-income-input">
-            Manual Income
+            Manual Income ($ per day)
             <span class="tooltip-affordance">
               <button type="button" class="tooltip-trigger" aria-label="Explain Manual Income">
                 ?
@@ -128,6 +131,7 @@
             id="manual-income-input"
             type="number"
             class="input"
+            aria-describedby="manual-inputs-note"
             :value="localIncome"
             inputmode="decimal"
             @input="handleManualIncomeInput"
@@ -135,7 +139,7 @@
         </div>
         <div class="field-group">
           <label class="label tooltip-label" for="liability-rate-input">
-            Liability Rate
+            Liability Rate ($ per day)
             <span class="tooltip-affordance">
               <button type="button" class="tooltip-trigger" aria-label="Explain Liability Rate">
                 ?
@@ -149,6 +153,7 @@
             id="liability-rate-input"
             type="number"
             class="input"
+            aria-describedby="manual-inputs-note"
             :value="localRate"
             inputmode="decimal"
             @input="handleLiabilityRateInput"
@@ -463,6 +468,12 @@ function toggleExcluded(accountId) {
   font-size: 1.1rem;
 }
 
+.manual-inputs__note {
+  margin: 0.5rem 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
 .manual-inputs__summary {
   cursor: pointer;
   font-size: 0.85rem;
@@ -493,12 +504,12 @@ function toggleExcluded(accountId) {
 
 .summary-intro {
   margin-top: 0.25rem;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   color: var(--text-muted);
 }
 
 .selector-toggle {
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   border: 1px solid var(--divider);
   border-radius: 0.5rem;
   padding: 0.4rem 0.7rem;
@@ -542,7 +553,7 @@ function toggleExcluded(accountId) {
 }
 
 .liquidity-cell dt {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--text-muted);
 }
 
@@ -553,13 +564,13 @@ function toggleExcluded(accountId) {
 }
 
 .liquidity-muted {
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   font-weight: 400;
   color: var(--text-muted);
 }
 
 .liquidity-warn {
-  color: var(--color-error, #b91c1c);
+  color: var(--text-negative);
 }
 
 .risk-copy {
@@ -587,7 +598,7 @@ function toggleExcluded(accountId) {
   border: 1px solid var(--divider);
   background: var(--surface-muted, var(--surface));
   color: var(--text-muted);
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   line-height: 1;
   cursor: help;
 }
@@ -604,7 +615,7 @@ function toggleExcluded(accountId) {
   background: var(--surface);
   color: var(--theme-fg);
   box-shadow: 0 10px 25px rgb(15 23 42 / 0.12);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   line-height: 1.4;
   opacity: 0;
   pointer-events: none;
@@ -668,7 +679,7 @@ function toggleExcluded(accountId) {
 .selector-empty,
 .account-meta,
 .shortcut-label {
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   color: var(--text-muted);
 }
 
@@ -711,17 +722,17 @@ function toggleExcluded(accountId) {
   border-radius: 999px;
   padding: 0.35rem 0.7rem;
   background: var(--surface-muted, var(--surface));
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
 }
 
 .chip.active {
-  border-color: var(--accent, #2563eb);
-  color: var(--accent, #2563eb);
+  border-color: var(--accent-primary);
+  color: var(--text-link);
 }
 
 .chip-exclude.active {
-  border-color: #dc2626;
-  color: #dc2626;
+  border-color: var(--text-negative);
+  color: var(--text-negative);
 }
 
 .summary-footer {

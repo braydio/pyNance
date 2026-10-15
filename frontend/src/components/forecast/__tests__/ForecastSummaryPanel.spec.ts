@@ -126,4 +126,21 @@ describe('ForecastSummaryPanel', () => {
     expect(wrapper.find('#manual-income-input').exists()).toBe(true)
     expect(wrapper.get('[data-testid="summary-lead"]').text()).toContain('Net change')
   })
+
+  it('labels the manual inputs with their dollars-per-day units and explains they apply live', () => {
+    const wrapper = mount(ForecastSummaryPanel, { props: baseProps })
+    const income = wrapper.get('label[for="manual-income-input"]').text()
+    const rate = wrapper.get('label[for="liability-rate-input"]').text()
+    expect(income).toContain('$ per day')
+    expect(rate).toContain('$ per day')
+    const note = wrapper.get('#manual-inputs-note')
+    expect(note.text()).toContain('dollars per day')
+    expect(note.text()).toContain('apply to the forecast as you type')
+    expect(wrapper.get('#manual-income-input').attributes('aria-describedby')).toBe(
+      'manual-inputs-note',
+    )
+    expect(wrapper.get('#liability-rate-input').attributes('aria-describedby')).toBe(
+      'manual-inputs-note',
+    )
+  })
 })

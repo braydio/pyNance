@@ -122,7 +122,7 @@ function toggle(id: string) {
 }
 
 .scenario-legend {
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   color: var(--text-muted);
   margin-bottom: 0.25rem;
 }
@@ -174,10 +174,10 @@ function toggle(id: string) {
 }
 
 .scenario-up {
-  color: var(--color-success, #15803d);
+  color: var(--text-positive);
 }
 
 .scenario-down {
-  color: var(--color-error, #b91c1c);
+  color: var(--text-negative);
 }
 </style>
