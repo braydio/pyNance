@@ -363,10 +363,12 @@
       @click.self="closeCashflowModal"
     >
       <section
+        ref="cashflowDialogRef"
         class="forecast-item-modal"
         role="dialog"
         aria-modal="true"
         aria-label="Cashflow source details"
+        tabindex="-1"
       >
         <header class="forecast-item-modal__header">
           <div>
@@ -453,6 +455,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useModalA11y } from '@/composables/useModalA11y'
 import ForecastAdjustmentsForm from './ForecastAdjustmentsForm.vue'
 import ForecastScenarioComparison from './ForecastScenarioComparison.vue'
 import {
@@ -887,6 +890,16 @@ function closeCashflowModal() {
   selectedCashflowItem.value = null
 }
 
+const cashflowDialogRef = ref<HTMLElement | null>(null)
+useModalA11y({
+  dialogRef: cashflowDialogRef,
+  active: computed(() => selectedCashflowItem.value !== null),
+  onEscape: () => {
+    closeCashflowModal()
+    return true
+  },
+})
+
 /**
  * Format signed currency values for forecast adjustment summaries.
  *
@@ -1114,8 +1127,9 @@ function summarizeMatchingFields(fields?: SourceTransactionMatchingFields) {
 
 .forecast-item-modal {
   width: min(640px, 100%);
-  max-height: 85vh;
+  max-height: calc(100dvh - 2rem);
   overflow: auto;
+  overscroll-behavior: contain;
   background: var(--surface);
   border-radius: 0.75rem;
   border: 1px solid var(--divider);

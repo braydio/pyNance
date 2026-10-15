@@ -10,10 +10,13 @@
       @click.self="emitClose"
     >
       <div
+        ref="reviewDialogRef"
         class="review-modal-shell relative w-full max-w-4xl mx-auto p-0 rounded-2xl shadow-2xl bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)]/60 flex flex-col overflow-hidden"
+        style="max-height: calc(100dvh - 2rem)"
         role="dialog"
         aria-modal="true"
         aria-label="Review Transactions Modal"
+        tabindex="-1"
       >
         <div
           class="flex items-center justify-between px-6 py-4 bg-[var(--color-bg-dark)] border-b-2 border-[var(--color-accent-cyan)]/50 shadow-lg"
@@ -51,7 +54,7 @@
           </div>
         </div>
 
-        <div class="flex-1 p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+        <div class="flex-1 min-h-0 p-6 space-y-4 overflow-y-auto">
           <div v-if="isLoading" class="text-center text-[var(--color-text-muted)]">
             Loading transactions…
           </div>
@@ -194,10 +197,12 @@
     @click.self="resolveRulePrompt(false)"
   >
     <div
+      ref="ruleDialogRef"
       class="w-full max-w-lg rounded-xl border border-[var(--divider)] bg-[var(--color-bg-sec)] p-5 shadow-2xl"
       role="dialog"
       aria-modal="true"
       aria-label="Save rule confirmation"
+      tabindex="-1"
     >
       <h3 class="text-lg font-bold text-[var(--color-accent-cyan)]">
         Save rule for future matches?
@@ -211,8 +216,10 @@
         >?
       </p>
       <div class="mt-5 flex justify-end gap-2">
-        <button class="btn btn-outline" @click="resolveRulePrompt(false)">No, skip rule</button>
-        <button class="btn" @click="resolveRulePrompt(true)">Yes, save rule</button>
+        <button type="button" class="btn btn-outline" @click="resolveRulePrompt(false)">
+          No, skip rule
+        </button>
+        <button type="button" class="btn" @click="resolveRulePrompt(true)">Yes, save rule</button>
       </div>
     </div>
   </div>
@@ -233,6 +240,7 @@ import { useTransactions } from '@/composables/useTransactions'
 import { createTransactionRule, fetchTagSuggestions, updateTransaction } from '@/api/transactions'
 import { fetchCategoryTree } from '@/api/categories'
 import { formatAmount } from '@/utils/format'
+import { useModalA11y } from '@/composables/useModalA11y'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -819,7 +827,8 @@ function emitClose() {
  * @param {KeyboardEvent} event - Keydown event.
  */
 function handleKeydown(event) {
-  if (!props.show || batchComplete.value) return
+  // Hidden modal, finished batch, or the nested rule confirmation owns the keyboard.
+  if (!props.show || batchComplete.value || rulePrompt.value.visible) return
   const target = event.target
   const isEditableTarget =
     target &&
@@ -828,6 +837,9 @@ function handleKeydown(event) {
       target.tagName === 'TEXTAREA' ||
       target.tagName === 'SELECT' ||
       target.isContentEditable)
+
+  // Printable-character shortcuts must never fire while typing in a field.
+  if (isEditableTarget && event.key.length === 1) return
 
   if (event.key === '0') {
     event.preventDefault()
@@ -866,6 +878,16 @@ function handleKeydown(event) {
   }
 
   if (isEditableTarget) return
+  // Arrow shortcuts are for the review surface itself, not a focused button/link or a
+  // modified key combination (e.g. browser navigation).
+  if (event.ctrlKey || event.metaKey || event.altKey) return
+  if (
+    target instanceof HTMLElement &&
+    (['BUTTON', 'A', 'SUMMARY'].includes(target.tagName) ||
+      target.getAttribute('role') === 'button')
+  ) {
+    return
+  }
 
   if (event.key === 'ArrowLeft') {
     event.preventDefault()
@@ -877,6 +899,29 @@ function handleKeydown(event) {
     handleApprove()
   }
 }
+
+const reviewDialogRef = ref(null)
+const ruleDialogRef = ref(null)
+
+// Focus trap, Escape (top-most dialog only), scroll lock and focus return.
+useModalA11y({
+  dialogRef: reviewDialogRef,
+  active: computed(() => props.show),
+  // Escape while editing cancels the edit (handled below); otherwise it closes the modal.
+  onEscape: () => {
+    if (batchComplete.value || isEditing.value) return false
+    emitClose()
+    return true
+  },
+})
+useModalA11y({
+  dialogRef: ruleDialogRef,
+  active: computed(() => rulePrompt.value.visible),
+  onEscape: () => {
+    resolveRulePrompt(false)
+    return true
+  },
+})
 
 watch(
   () => props.show,

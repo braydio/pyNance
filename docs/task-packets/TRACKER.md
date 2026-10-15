@@ -9,7 +9,7 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 | TP-20261014-010 | Theme Contrast and Typography | Complete | High | None | main | 2026-10-14 | [packet](completed/TP-20261014-010-theme-contrast-typography.md) |
 | TP-20261014-011 | Shared Fields, Buttons, Date and Select Geometry | Complete | High | TP-20261014-010 | main | 2026-10-14 | [packet](completed/TP-20261014-011-shared-controls-geometry.md) |
 | TP-20261014-012 | Dropdowns, Popovers and Expandable State | Complete | High | TP-20261014-010, TP-20261014-011 | main | 2026-10-14 | [packet](completed/TP-20261014-012-popovers-dropdowns-expandables.md) |
-| TP-20261014-013 | Modal Overlay Focus, Stacking and Scroll | Ready | High | TP-20261014-010, TP-20261014-011 | main | 2026-10-14 | [packet](active/TP-20261014-013-modal-viewport-focus.md) |
+| TP-20261014-013 | Modal Overlay Focus, Stacking and Scroll | Complete | High | TP-20261014-010, TP-20261014-011 | main | 2026-10-14 | [packet](completed/TP-20261014-013-modal-viewport-focus.md) |
 | TP-20261014-014 | Navbar, Responsive Tabs and Shared Spacing | Ready | High | TP-20261014-010, TP-20261014-011 | main | 2026-10-14 | [packet](active/TP-20261014-014-navigation-shell-layout.md) |
 | TP-20261014-015 | Dashboard and Direct Chart Route Detail Polish | Ready | High | TP-20261014-010, TP-20261014-011, TP-20261014-012, TP-20261014-014 | main | 2026-10-14 | [packet](active/TP-20261014-015-dashboard-charts-standalone-pages.md) |
 | TP-20261014-016 | Transactions Data Grid, Filters and Import | Ready | High | TP-20261014-010, TP-20261014-011, TP-20261014-012, TP-20261014-013 | main | 2026-10-14 | [packet](active/TP-20261014-016-transactions-workbench-fields.md) |

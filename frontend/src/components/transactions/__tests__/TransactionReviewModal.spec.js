@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import TransactionReviewModal from '../TransactionReviewModal.vue'
@@ -47,6 +47,23 @@ vi.mock('@/api/categories', () => ({
   fetchCategoryTree: vi.fn(() => Promise.resolve({ status: 'success', data: [] })),
 }))
 
+const mountedWrappers = []
+function mountTracked(...args) {
+  const wrapper = mount(...args)
+  mountedWrappers.push(wrapper)
+  return wrapper
+}
+
+afterEach(() => {
+  while (mountedWrappers.length) {
+    try {
+      mountedWrappers.pop().unmount()
+    } catch {
+      // already unmounted
+    }
+  }
+})
+
 function findInputByLabel(wrapper, labelText) {
   const labelWrapper = wrapper
     .findAll('label')
@@ -61,7 +78,7 @@ describe('TransactionReviewModal.vue', () => {
   })
 
   it('seeds edit inputs with the active transaction values when entering edit mode', async () => {
-    const wrapper = mount(TransactionReviewModal, {
+    const wrapper = mountTracked(TransactionReviewModal, {
       props: { show: true, filters: {} },
     })
 
@@ -81,7 +98,7 @@ describe('TransactionReviewModal.vue', () => {
   })
 
   it('supports keyboard-first editing shortcuts and save flow', async () => {
-    const wrapper = mount(TransactionReviewModal, {
+    const wrapper = mountTracked(TransactionReviewModal, {
       props: { show: true, filters: {} },
       attachTo: document.body,
     })
@@ -122,7 +139,7 @@ describe('TransactionReviewModal.vue', () => {
   })
 
   it('allows skipping rule creation when declining the save rule prompt', async () => {
-    const wrapper = mount(TransactionReviewModal, {
+    const wrapper = mountTracked(TransactionReviewModal, {
       props: { show: true, filters: {} },
       attachTo: document.body,
     })
@@ -150,7 +167,7 @@ describe('TransactionReviewModal.vue', () => {
   })
 
   it('supports keyboard shortcuts for next batch and close', async () => {
-    const wrapper = mount(TransactionReviewModal, {
+    const wrapper = mountTracked(TransactionReviewModal, {
       props: { show: true, filters: {} },
       attachTo: document.body,
     })
@@ -163,5 +180,60 @@ describe('TransactionReviewModal.vue', () => {
     await flushPromises()
 
     expect(wrapper.emitted('close')).toBeTruthy()
+  })
+
+  it('does not treat typed characters in a field as shortcuts', async () => {
+    const wrapper = mountTracked(TransactionReviewModal, {
+      props: { show: true, filters: {} },
+      attachTo: document.body,
+    })
+    await flushPromises()
+    await wrapper.get('.btn-outline').trigger('click') // enter edit mode
+    await flushPromises()
+
+    const amount = wrapper.get('input[type="number"]').element
+    amount.focus()
+    amount.dispatchEvent(new KeyboardEvent('keydown', { key: '0', bubbles: true }))
+    amount.dispatchEvent(new KeyboardEvent('keydown', { key: '3', bubbles: true }))
+    await flushPromises()
+    expect(wrapper.emitted('close')).toBeUndefined()
+    expect(document.activeElement).toBe(amount)
+    wrapper.unmount()
+  })
+
+  it('ignores arrow shortcuts from a focused button or with modifier keys', async () => {
+    const wrapper = mountTracked(TransactionReviewModal, {
+      props: { show: true, filters: {} },
+      attachTo: document.body,
+    })
+    await flushPromises()
+    const button = wrapper.get('button').element
+    button.focus()
+    button.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowRight', altKey: true, bubbles: true }),
+    )
+    await flushPromises()
+    expect(updateTransaction).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('labels the dialog, locks scroll while shown and ignores shortcuts while hidden', async () => {
+    document.body.style.overflow = ''
+    const wrapper = mountTracked(TransactionReviewModal, {
+      props: { show: true, filters: {} },
+      attachTo: document.body,
+    })
+    await flushPromises()
+    const dialog = wrapper.get('[role="dialog"]')
+    expect(dialog.attributes('aria-modal')).toBe('true')
+    expect(document.body.style.overflow).toBe('hidden')
+
+    await wrapper.setProps({ show: false })
+    await flushPromises()
+    expect(document.body.style.overflow).toBe('')
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: '0', bubbles: true }))
+    expect(wrapper.emitted('close')).toBeUndefined()
+    wrapper.unmount()
   })
 })

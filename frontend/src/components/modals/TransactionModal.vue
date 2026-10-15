@@ -4,15 +4,15 @@
       v-if="show"
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4 py-6"
       @click.self="emitClose"
-      @keyup.esc="emitClose"
-      tabindex="0"
     >
       <div
+        ref="dialogRef"
         class="relative w-full max-w-5xl mx-auto p-0 rounded-2xl shadow-2xl bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)]/60 animate-fadeInUp flex flex-col overflow-hidden"
         role="dialog"
         aria-modal="true"
         aria-label="Transactions Modal"
-        style="min-height: 220px"
+        tabindex="-1"
+        style="min-height: 220px; max-height: calc(100dvh - 2rem)"
       >
         <!-- Header -->
         <div
@@ -46,6 +46,7 @@
             </div>
           </div>
           <button
+            type="button"
             class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-[var(--color-accent-cyan)] border border-[var(--color-accent-cyan)]/40 hover:bg-[var(--color-accent-cyan)] hover:text-[var(--color-bg-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-cyan)] transition"
             @click="emitClose"
             aria-label="Close Transactions Modal"
@@ -100,7 +101,7 @@
           </div>
         </div>
         <!-- END SUMMARY BAR -->
-        <div class="flex-1 p-6 overflow-y-auto max-h-[65vh]">
+        <div class="flex-1 min-h-0 p-6 overflow-y-auto">
           <ModalTransactionsDisplay
             :transactions="transactions"
             :title-date="''"
@@ -117,7 +118,8 @@
 </template>
 
 <script setup>
-import { onMounted, nextTick, computed } from 'vue'
+import { onMounted, nextTick, computed, ref } from 'vue'
+import { useModalA11y } from '@/composables/useModalA11y'
 import { useRouter } from 'vue-router'
 import ModalTransactionsDisplay from '../tables/ModalTransactionsDisplay.vue'
 import { formatAmount } from '@/utils/format'
@@ -134,6 +136,16 @@ const props = defineProps({
   kind: { type: String, default: 'date' }, // 'date' | 'category' | 'merchant'
   showDateColumn: { type: Boolean, default: true },
   hideCategoryVisuals: { type: Boolean, default: true },
+})
+
+const dialogRef = ref(null)
+useModalA11y({
+  dialogRef,
+  active: computed(() => props.show),
+  onEscape: () => {
+    emitClose()
+    return true
+  },
 })
 
 const emit = defineEmits(['close'])
