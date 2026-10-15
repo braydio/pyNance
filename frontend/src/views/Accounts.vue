@@ -23,8 +23,8 @@
             :disabled="accountsLoading || !hasAccounts"
             @change="handleAccountSelection"
           >
-            <option value="" :disabled="hasAccounts">
-              {{ hasAccounts ? 'Select an account' : 'No accounts available' }}
+            <option value="">
+              {{ hasAccounts ? 'All accounts' : 'No accounts available' }}
             </option>
 
             <option
@@ -94,10 +94,48 @@
         </Card>
 
         <template v-else>
-          <Card class="accounts-card accounts-card--primary space-y-6 rounded-2xl p-6 shadow-xl">
+          <Card class="accounts-card accounts-card--secondary rounded-2xl p-4 shadow-xl">
+            <AccountPortfolioOverview
+              :accounts="accounts"
+              :group="portfolioFilters.group"
+              :include-hidden="portfolioFilters.includeHidden"
+              @update:group="setPortfolioGroup"
+            />
+          </Card>
+
+          <Card class="accounts-card accounts-card--secondary rounded-2xl p-4 shadow-xl">
+            <AccountPortfolioList
+              :accounts="accounts"
+              :filters="portfolioFilters"
+              :selected-id="accountId"
+              @update:filters="portfolioFilters = $event"
+              @reset="resetPortfolioFilters"
+              @select="selectAccount"
+            />
+          </Card>
+
+          <header
+            v-if="selectedAccount"
+            id="account-details"
+            ref="detailsRef"
+            class="accounts-details-header"
+            data-testid="account-details-header"
+          >
+            <h2 class="accounts-subpanel-title">
+              {{ selectedAccount.display_name || selectedAccount.name }}
+            </h2>
+            <UiButton variant="outline" class="btn-sm" @click="clearSelectedAccount">
+              Back to all accounts
+            </UiButton>
+          </header>
+
+          <Card
+            v-if="selectedAccount"
+            class="accounts-card accounts-card--secondary space-y-6 rounded-2xl p-6 shadow-xl"
+          >
             <header class="flex justify-between items-center">
               <div>
-                <h2 class="accounts-panel-title">Net Change Summary</h2>
+                <h2 class="accounts-subpanel-title">Net Change Summary</h2>
                 <p class="text-sm text-muted">Performance for the selected date range.</p>
               </div>
             </header>
@@ -125,9 +163,12 @@
             </div>
           </Card>
 
-          <Card class="accounts-card accounts-card--secondary space-y-6 rounded-2xl p-6 shadow-xl">
+          <Card
+            v-if="selectedAccount"
+            class="accounts-card accounts-card--secondary space-y-6 rounded-2xl p-6 shadow-xl"
+          >
             <div class="flex items-center justify-between">
-              <h2 class="accounts-panel-title">Balance History</h2>
+              <h2 class="accounts-subpanel-title">Balance History</h2>
 
               <select v-model="selectedRange" class="input w-32" :disabled="!canFetchAccountData">
                 <option v-for="range in ranges" :key="range" :value="range">
@@ -284,7 +325,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, nextTick, onMounted, watch } from 'vue'
 import { useToast } from 'vue-toastification'
 import { useRoute } from 'vue-router'
 import { Wallet } from 'lucide-vue-next'
@@ -309,6 +350,8 @@ import AssetsBarTrended from '@/components/charts/AssetsBarTrended.vue'
 import AccountsReorderChart from '@/components/charts/AccountsReorderChart.vue'
 import AccountBalanceHistoryChart from '@/components/charts/AccountBalanceHistoryChart.vue'
 import LinkedAccountsSection from '@/components/accounts/LinkedAccountsSection.vue'
+import AccountPortfolioOverview from '@/components/accounts/AccountPortfolioOverview.vue'
+import AccountPortfolioList from '@/components/accounts/AccountPortfolioList.vue'
 import AccountActionsSidebar from '@/components/forms/AccountActionsSidebar.vue'
 
 const route = useRoute()
@@ -346,6 +389,40 @@ const activityBreakdownError = ref(null)
 const accountActivityBreakdown = ref([])
 
 const activeTab = ref('Summary')
+
+const DEFAULT_PORTFOLIO_FILTERS = {
+  query: '',
+  group: 'all',
+  institution: 'all',
+  connection: 'all',
+  sort: 'name',
+  includeHidden: false,
+}
+const portfolioFilters = ref({ ...DEFAULT_PORTFOLIO_FILTERS })
+const detailsRef = ref(null)
+
+function setPortfolioGroup(group) {
+  portfolioFilters.value = {
+    ...portfolioFilters.value,
+    group: portfolioFilters.value.group === group ? 'all' : group,
+  }
+}
+
+function resetPortfolioFilters() {
+  portfolioFilters.value = { ...DEFAULT_PORTFOLIO_FILTERS }
+}
+
+/** Select an account from the ledger without leaving the all-accounts context. */
+async function selectAccount(id) {
+  accountId.value = id ? String(id) : null
+  activeTab.value = 'Summary'
+  await nextTick()
+  detailsRef.value?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+}
+
+function clearSelectedAccount() {
+  accountId.value = null
+}
 
 const hasAccounts = computed(() => accounts.value.length > 0)
 const linkedAccounts = computed(() =>
@@ -593,9 +670,6 @@ function handleAddPromotion() {
 
 onMounted(async () => {
   await loadAccounts()
-  if (!accountId.value && accounts.value.length) {
-    accountId.value = accounts.value[0].account_id
-  }
   await Promise.all([loadData(), loadActivityBreakdown()])
 })
 
@@ -677,6 +751,15 @@ watch(selectedRange, loadActivityBreakdown)
 .accounts-card--tertiary {
   background: var(--table-surface-strong);
   border-color: var(--table-border);
+}
+
+.accounts-details-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  scroll-margin-top: 1rem;
 }
 
 .accounts-kpi-card {

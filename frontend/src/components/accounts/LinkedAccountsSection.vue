@@ -110,9 +110,10 @@
                   </div>
 
                   <div class="grid grid-cols-2 gap-4 text-sm md:text-right">
-                    <div>
+                    <div v-if="aprFor(account).applicable" :data-testid="`apr-${account.id}`">
                       <p class="text-xs uppercase tracking-wide text-muted-foreground">APR</p>
-                      <p class="font-semibold">{{ formatApr(account.apr) }}</p>
+                      <p class="font-semibold">{{ formatApr(aprFor(account).value) }}</p>
+                      <p class="text-xs text-muted-foreground">{{ aprFor(account).label }}</p>
                     </div>
                     <div v-if="account.balance !== undefined">
                       <p class="text-xs uppercase tracking-wide text-muted-foreground">Balance</p>
@@ -131,7 +132,11 @@
                   </div>
                 </div>
 
-                <details class="mt-4 space-y-3" open>
+                <details
+                  v-if="(promotionEntries[account.id] || []).length || enablePromotionEditor"
+                  class="mt-4 space-y-3"
+                  open
+                >
                   <summary class="cursor-pointer text-sm font-semibold">
                     Rewards & Promotions
                   </summary>
@@ -240,6 +245,7 @@ import Card from '@/components/ui/Card.vue'
 import UiButton from '@/components/ui/Button.vue'
 import { formatAmount } from '@/utils/format'
 import { uniqueReconnectConnections } from '@/utils/plaidConnectionStatus'
+import { aprInfo, classifyAccount } from '@/utils/accountPortfolio'
 
 const promotionCategories = [
   { value: 'Groceries', label: 'Groceries' },
@@ -255,10 +261,19 @@ const promotionCategories = [
 const accountTypeLabels = {
   'Credit Card': 'Credit Cards',
   'Deposit Account': 'Checking & Savings',
+  Loan: 'Loans & Lines',
   Investment: 'Investments',
 }
 
-const typeSortOrder = ['Credit Card', 'Deposit Account', 'Investment']
+// Shared classification maps provider types ('credit', 'depository', ...) onto these groups.
+const legacyTypeByGroup = {
+  credit: 'Credit Card',
+  depository: 'Deposit Account',
+  loan: 'Loan',
+  investment: 'Investment',
+}
+
+const typeSortOrder = ['Credit Card', 'Deposit Account', 'Loan', 'Investment']
 
 const defaultAccounts = [
   {
@@ -286,7 +301,6 @@ const defaultAccounts = [
     type: 'Deposit Account',
     subtype: 'Checking',
     mask: '0341',
-    apr: 0,
     balance: 2435.11,
     status: 'Primary',
     promotions: [],
@@ -298,7 +312,6 @@ const defaultAccounts = [
     type: 'Investment',
     subtype: 'Retirement',
     mask: '5221',
-    apr: 0,
     balance: 18450.55,
     status: 'Active',
     promotions: [],
@@ -327,9 +340,14 @@ const emit = defineEmits(['add-promotion', 'reconnect'])
 const promotionEntries = reactive({})
 const promotionForms = reactive({})
 
+function withGroupedType(account) {
+  const group = classifyAccount(account)
+  return { ...account, type: legacyTypeByGroup[group] || account.type || 'Other' }
+}
+
 const resolvedAccounts = computed(() => {
   if (props.accounts?.length) {
-    return [...props.accounts].sort((a, b) => {
+    return props.accounts.map(withGroupedType).sort((a, b) => {
       const aIndex = typeSortOrder.indexOf(a.type)
       const bIndex = typeSortOrder.indexOf(b.type)
 
@@ -433,6 +451,10 @@ watch(
   },
   { immediate: true },
 )
+
+function aprFor(account) {
+  return aprInfo(account)
+}
 
 function formatApr(apr) {
   if (apr === undefined || apr === null) return '—'

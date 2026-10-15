@@ -141,3 +141,18 @@ describe('Accounts summary', () => {
     cy.get('[data-testid="history-range-select"]').should('have.value', '90d')
   })
 })
+
+describe('Accounts portfolio overview', () => {
+  it('shows the all-accounts overview before any account is selected', () => {
+    mountPage({
+      accounts: [
+        { account_id: 'acc1', name: 'Checking', type: 'depository', balance: 100 },
+        { account_id: 'acc2', name: 'Card', type: 'credit', balance: -50, credit_limit: 500 },
+      ],
+    })
+    cy.get('[data-testid="portfolio-overview"]').should('be.visible')
+    cy.get('[data-testid="kpi-utilization"]').should('contain', '10%')
+    cy.get('[data-testid="type-chip-credit"]').click()
+    cy.get('[data-testid="portfolio-shown-count"]').should('contain', 'Showing 1 of 2')
+  })
+})

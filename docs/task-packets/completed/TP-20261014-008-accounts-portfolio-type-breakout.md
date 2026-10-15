@@ -1,12 +1,12 @@
 # TP-20261014-008: Accounts portfolio hierarchy and type breakouts
 
 **Packet ID:** TP-20261014-008  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-14  
 **Last updated:** 2026-10-14  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261014-008-accounts-portfolio-type-breakout.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261014-008-accounts-portfolio-type-breakout.md`  
 **Workstream size:** One independently testable implementation packet  
 **Depends on:** TP-20261014-005, TP-20261014-006  
 **Priority:** High  
@@ -46,3 +46,12 @@ Header title + compact actionable reconnection warning (no duplicated reconnect 
 
 ## Do not rediscover
 Avoid broad repo archaeology. Only inspect explicitly named paths, directly imported helpers/tests, and exact migrations/route registrations needed to implement this packet.
+
+## Completion report
+
+- New `frontend/src/utils/accountPortfolio.js` (classifyAccount, portfolioTotals, creditUtilization, accountUtilization, filter/sort/group helpers, aprInfo provenance). Unknown limits/balances stay `null`; overdraft limits are never card lines; refunds on cards reduce owed rather than count as assets; hidden accounts excluded by default; mixed currencies make aggregates unavailable.
+- New `AccountPortfolioOverview.vue` (assets, liabilities, net, utilization with "X of Y credit lines have known limits", type chips with counts/aggregates) and `AccountPortfolioList.vue` (search incl. mask digits, institution/connection/sort filters, include-hidden, active chips + Reset, shown/total, ledger by type then institution with owed/limit/usage/available/APR source/sync status and View details). Both consume the parent-owned `accounts`; no fetch or hide/delete controls.
+- `Accounts.vue`: overview and ledger render first on Overview even with a selected account; the first account is no longer auto-selected ("All accounts" option, View details selects and scrolls to a details header with "Back to all accounts"); deep-linked `accountId` still works; per-account cards are subdued and shown only with a selection. Tabs/sidebar/reconnect unchanged.
+- `LinkedAccountsSection.vue`: groups provider-style types through shared classification (adds Loans & Lines), APR only on credit/loan with provenance label ("APR unknown" instead of fabricated values), demo 0% APR removed, empty Rewards & Promotions disclosure suppressed.
+- Tests: `utils/__tests__/accountPortfolio.spec.js` (25), `components/accounts/__tests__/AccountPortfolio.spec.js`, updated `LinkedAccountsSection.spec.js` and `views/__tests__/Accounts.spec.js` (+snapshot); full vitest 55 files / 339 tests pass, lint 0 errors, build OK.
+- Not run: Cypress (`AccountsSummary.cy.js` gained one overview case; the file's pre-existing cases reference selectors that no longer exist and were not touched). No browser visual check at 360px/1280px.

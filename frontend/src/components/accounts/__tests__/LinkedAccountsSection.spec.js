@@ -94,4 +94,65 @@ describe('LinkedAccountsSection', () => {
       rate: 4.5,
     })
   })
+
+  it('groups provider-style types, shows APR only on credit and loans, and labels its source', () => {
+    const wrapper = mountComponent({
+      accounts: [
+        {
+          id: 'c',
+          account_id: 'c',
+          name: 'Card',
+          institution: 'B',
+          type: 'credit',
+          apr: 24.99,
+          apr_source: 'provider',
+          promotions: [],
+        },
+        {
+          id: 'k',
+          account_id: 'k',
+          name: 'Checking',
+          institution: 'B',
+          type: 'depository',
+          apr: 0,
+          promotions: [],
+        },
+        {
+          id: 'i',
+          account_id: 'i',
+          name: 'Brokerage',
+          institution: 'B',
+          type: 'brokerage',
+          is_investment: true,
+          apr: 0,
+          promotions: [],
+        },
+      ],
+    })
+    expect(wrapper.find('[data-testid="account-type-Credit Card"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="apr-c"]').text()).toContain('24.99%')
+    expect(wrapper.get('[data-testid="apr-c"]').text()).toContain('Provider-reported')
+    expect(wrapper.find('[data-testid="apr-k"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="apr-i"]').exists()).toBe(false)
+  })
+
+  it('suppresses the empty Rewards & Promotions disclosure and does not show a demo 0% APR', () => {
+    const wrapper = mountComponent({
+      accounts: [
+        {
+          id: 'c',
+          account_id: 'c',
+          name: 'Card',
+          institution: 'B',
+          type: 'credit',
+          promotions: [],
+        },
+      ],
+    })
+    expect(wrapper.text()).not.toContain('Rewards & Promotions')
+    expect(wrapper.get('[data-testid="apr-c"]').text()).toContain('APR unknown')
+
+    const demo = mountComponent({ accounts: [], useDemoFallback: true })
+    expect(demo.find('[data-testid="apr-wells-checking"]').exists()).toBe(false)
+  })
 })

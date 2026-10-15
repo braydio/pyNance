@@ -22,7 +22,7 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 | TP-20261014-005 | Account balance, limit and freshness contract | Complete | High | None | main | 2026-10-14 | [packet](completed/TP-20261014-005-account-balance-limit-contract.md) |
 | TP-20261014-006 | APR provenance and interest inference guardrails | Complete | High | TP-20261014-005 | main | 2026-10-14 | [packet](completed/TP-20261014-006-apr-provenance-interest-estimator.md) |
 | TP-20261014-007 | Optional Plaid Liabilities APR and payment metadata | Complete | Normal | TP-20261014-005, TP-20261014-006 | main | 2026-10-14 | [packet](completed/TP-20261014-007-plaid-liabilities-enrichment.md) |
-| TP-20261014-008 | Accounts portfolio hierarchy and type breakouts | Complete | High | TP-20261014-005, TP-20261014-006 | main | 2026-10-14 | [packet](active/TP-20261014-008-accounts-portfolio-type-breakout.md) |
+| TP-20261014-008 | Accounts portfolio hierarchy and type breakouts | Complete | High | TP-20261014-005, TP-20261014-006 | main | 2026-10-14 | [packet](completed/TP-20261014-008-accounts-portfolio-type-breakout.md) |
 | TP-20261014-009 | Account drill-in, truthful activity and range integrity | Ready | High | TP-20261014-008 | main | 2026-10-14 | [packet](active/TP-20261014-009-accounts-account-detail-activity.md) |
 | TP-20261014-001 | Financial Detail: Decision Hierarchy and Honest Metrics | Complete | High | None | main | 2026-10-14 | [packet](completed/TP-20261014-001-financial-detail-decision-hierarchy.md) |
 | TP-20261014-002 | Upcoming Recurring: Due-First and Coverage-Aware | Complete | High | TP-20261014-001 | main | 2026-10-14 | [packet](completed/TP-20261014-002-upcoming-recurring-action-order.md) |

@@ -6,6 +6,8 @@ import { ref } from 'vue'
 import Accounts from '../Accounts.vue'
 import api from '@/services/api'
 import { fetchNetChanges } from '@/api/accounts'
+import AccountPortfolioOverview from '@/components/accounts/AccountPortfolioOverview.vue'
+import AccountPortfolioList from '@/components/accounts/AccountPortfolioList.vue'
 
 const normalizedHistory = ref([
   { date: '2024-01-01', balance: 120 },
@@ -21,8 +23,10 @@ const useAccountHistoryMock = vi.fn(() => ({
   loadHistory: loadHistoryMock,
 }))
 
+const mockRoute = vi.hoisted(() => ({ query: { accountId: 'acc-1' } }))
+
 vi.mock('vue-router', () => ({
-  useRoute: () => ({ params: {}, query: {} }),
+  useRoute: () => ({ params: {}, query: mockRoute.query }),
   useRouter: () => ({}),
 }))
 
@@ -62,6 +66,7 @@ vi.mock('@/api/accounts', () => ({
 
 describe('Accounts.vue', () => {
   beforeEach(() => {
+    mockRoute.query = { accountId: 'acc-1' }
     vi.clearAllMocks()
     loadHistoryMock.mockResolvedValue(normalizedHistory.value)
     normalizedHistory.value = [
@@ -523,5 +528,97 @@ describe('Accounts.vue', () => {
     await flushPromises()
     const labels = wrapper.findAll('.tab-label').map((node) => node.text())
     expect(labels).toEqual(['Overview', 'Activity', 'Trends', 'Connections'])
+  })
+
+  describe('portfolio overview', () => {
+    const portfolioAccounts = [
+      {
+        account_id: 'chk',
+        name: 'Checking',
+        type: 'depository',
+        balance: 1000,
+        institution_name: 'Bank A',
+      },
+      {
+        account_id: 'cc',
+        name: 'Card',
+        type: 'credit',
+        balance: -250,
+        credit_limit: 1000,
+        institution_name: 'Bank B',
+      },
+    ]
+
+    it('renders the all-accounts overview and ledger before account details and does not auto-select', async () => {
+      mockRoute.query = {}
+      fetchNetChanges.mockClear()
+      const wrapper = mountWith(portfolioAccounts)
+      await flushPromises()
+
+      expect(wrapper.findComponent(AccountPortfolioOverview).exists()).toBe(true)
+      expect(wrapper.findComponent(AccountPortfolioList).exists()).toBe(true)
+      expect(wrapper.find('[data-testid="account-details-header"]').exists()).toBe(false)
+      expect(fetchNetChanges).not.toHaveBeenCalled()
+      expect(wrapper.get('#accounts-selector').element.value).toBe('')
+      const html = wrapper.html()
+      expect(html.indexOf('account-portfolio-overview')).toBeLessThan(
+        html.indexOf('account-portfolio-list'),
+      )
+      expect(html.indexOf('account-portfolio-list')).toBeLessThan(
+        html.indexOf('Most Active Accounts'),
+      )
+    })
+
+    it('keeps the portfolio first when an account is selected and supports deep links', async () => {
+      mockRoute.query = { accountId: 'cc' }
+      const wrapper = mountWith(portfolioAccounts)
+      await flushPromises()
+
+      const html = wrapper.html()
+      expect(html.indexOf('account-portfolio-list')).toBeLessThan(
+        html.indexOf('account-details-header'),
+      )
+      expect(html.indexOf('account-details-header')).toBeLessThan(
+        html.indexOf('Net Change Summary'),
+      )
+      expect(fetchNetChanges).toHaveBeenCalledWith('cc', expect.any(Object))
+    })
+
+    it('selecting from the ledger sets the account and back returns to all accounts', async () => {
+      mockRoute.query = {}
+      const wrapper = mountWith(portfolioAccounts)
+      await flushPromises()
+
+      wrapper.findComponent(AccountPortfolioList).vm.$emit('select', 'cc')
+      await flushPromises()
+      expect(wrapper.get('#accounts-selector').element.value).toBe('cc')
+      expect(wrapper.find('[data-testid="account-details-header"]').exists()).toBe(true)
+
+      await wrapper.get('[data-testid="account-details-header"] button').trigger('click')
+      expect(wrapper.get('#accounts-selector').element.value).toBe('')
+      expect(wrapper.find('[data-testid="account-details-header"]').exists()).toBe(false)
+    })
+
+    it('type chips toggle the shared filter and reset restores defaults', async () => {
+      mockRoute.query = {}
+      const wrapper = mountWith(portfolioAccounts)
+      await flushPromises()
+
+      wrapper.findComponent(AccountPortfolioOverview).vm.$emit('update:group', 'credit')
+      await flushPromises()
+      expect(wrapper.findComponent(AccountPortfolioList).props('filters').group).toBe('credit')
+      wrapper.findComponent(AccountPortfolioOverview).vm.$emit('update:group', 'credit')
+      await flushPromises()
+      expect(wrapper.findComponent(AccountPortfolioList).props('filters').group).toBe('all')
+
+      wrapper.findComponent(AccountPortfolioList).vm.$emit('update:filters', {
+        ...wrapper.findComponent(AccountPortfolioList).props('filters'),
+        query: 'card',
+      })
+      await flushPromises()
+      wrapper.findComponent(AccountPortfolioList).vm.$emit('reset')
+      await flushPromises()
+      expect(wrapper.findComponent(AccountPortfolioList).props('filters').query).toBe('')
+    })
   })
 })
