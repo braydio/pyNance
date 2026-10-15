@@ -194,8 +194,10 @@ def list_investment_transactions():
     except ValueError as exc:
         return jsonify({"status": "error", "error": str(exc)}), 400
 
-    q = InvestmentTransaction.query.join(Account, InvestmentTransaction.account_id == Account.account_id).join(
-        PlaidAccount, Account.account_id == PlaidAccount.account_id
+    q = (
+        db.session.query(InvestmentTransaction, Account, PlaidAccount)
+        .join(Account, InvestmentTransaction.account_id == Account.account_id)
+        .join(PlaidAccount, Account.account_id == PlaidAccount.account_id)
     )
     account_id = filters["account_id"]
     if account_id:
