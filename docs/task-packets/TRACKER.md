@@ -6,7 +6,7 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 
 | Packet ID | Title | Status | Priority | Depends on | Target | Last updated | Packet |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| TP-20261014-010 | Theme Contrast and Typography | Ready | High | None | main | 2026-10-14 | [packet](active/TP-20261014-010-theme-contrast-typography.md) |
+| TP-20261014-010 | Theme Contrast and Typography | Complete | High | None | main | 2026-10-14 | [packet](completed/TP-20261014-010-theme-contrast-typography.md) |
 | TP-20261014-011 | Shared Fields, Buttons, Date and Select Geometry | Ready | High | TP-20261014-010 | main | 2026-10-14 | [packet](active/TP-20261014-011-shared-controls-geometry.md) |
 | TP-20261014-012 | Dropdowns, Popovers and Expandable State | Ready | High | TP-20261014-010, TP-20261014-011 | main | 2026-10-14 | [packet](active/TP-20261014-012-popovers-dropdowns-expandables.md) |
 | TP-20261014-013 | Modal Overlay Focus, Stacking and Scroll | Ready | High | TP-20261014-010, TP-20261014-011 | main | 2026-10-14 | [packet](active/TP-20261014-013-modal-viewport-focus.md) |

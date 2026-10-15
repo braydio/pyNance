@@ -66,7 +66,14 @@
   --theme-fg: #cdcecf;
   --text-primary: #cdcecf;
   --text-secondary: color-mix(in srgb, var(--text-primary) 78%, #9fb1c7 22%);
-  --text-muted: #71839b;
+  --text-muted: #9aabc1; /* 5.0:1+ on page and card surfaces (was #71839b, 4.09:1) */
+  /* Foreground roles for text/state: contrast-verified, separate from chart/decorative accents. */
+  --text-positive: #81b29a;
+  --text-negative: #ef8fa8;
+  --text-warning: #f4a261;
+  --text-link: #63cdcf;
+  /* Essential control outline (>= 3:1 against the control and its surface). */
+  --control-border: #8196b0;
   --color-text-dark: #000000;
   --color-text-light: var(--text-primary);
   --color-text-muted: var(--text-muted);
@@ -158,10 +165,15 @@
   --chart-shell-border: #abb59b;
   --chart-shell-bg: rgba(244, 240, 217, 0.9);
   --chart-shell-bg-strong: #eee9d1;
-  --theme-fg: #4f5b55;
-  --text-primary: #4f5b55;
-  --text-secondary: #66736b;
-  --text-muted: #829181;
+  --theme-fg: #3c4943;
+  --text-primary: #3c4943;
+  --text-secondary: #4b5750;
+  --text-muted: #586758; /* 4.7:1+ on every light surface (was #829181, 3.08:1) */
+  --text-positive: #4d6200;
+  --text-negative: #b32f2c;
+  --text-warning: #9a4700;
+  --text-link: #1d6e50;
+  --control-border: #707e63;
   --color-text-dark: #fdf6e3;
   --color-text-light: var(--text-primary);
   --color-text-muted: var(--text-muted);

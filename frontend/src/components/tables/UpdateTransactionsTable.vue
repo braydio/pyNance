@@ -1340,11 +1340,11 @@ async function loadCategoryData() {
 }
 
 .amount-positive {
-  color: var(--color-accent-green);
+  color: var(--text-positive);
 }
 
 .amount-negative {
-  color: var(--color-accent-red);
+  color: var(--text-negative);
 }
 
 .amount-neutral {

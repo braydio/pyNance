@@ -90,16 +90,40 @@
   color: var(--text-muted);
 }
 
+/* Amounts use the contrast-verified text roles, not the decorative chart accents. */
 @utility amount-positive {
-  color: var(--color-accent-green);
+  color: var(--text-positive);
+  font-variant-numeric: tabular-nums;
 }
 
 @utility amount-negative {
-  color: var(--color-accent-red);
+  color: var(--text-negative);
+  font-variant-numeric: tabular-nums;
 }
 
 @utility amount-neutral {
   color: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+@utility text-positive {
+  color: var(--text-positive);
+}
+
+@utility text-negative {
+  color: var(--text-negative);
+}
+
+@utility text-warning {
+  color: var(--text-warning);
+}
+
+@utility text-link {
+  color: var(--text-link);
+}
+
+@utility tabular-currency {
+  font-variant-numeric: tabular-nums;
 }
 
 @utility hover-surface {
@@ -188,7 +212,7 @@
 @utility ui-control-input {
   @apply ui-radius-2 border px-3 py-1.5 text-sm focus:outline-none disabled:cursor-not-allowed disabled:opacity-70;
   background-color: var(--surface-1);
-  border-color: var(--border-subtle);
+  border-color: var(--control-border);
   color: var(--text-secondary);
 
   &:focus {
@@ -572,7 +596,7 @@
   @apply w-full px-2 py-1 border text-sm;
   border-radius: var(--radius-1);
   background-color: var(--color-bg-dark);
-  border-color: var(--divider);
+  border-color: var(--control-border);
   color: var(--color-text-light);
   font-family: var(--font-sans);
 }
@@ -656,7 +680,7 @@ tr:nth-child(even) {
 
 .heading-md {
   @apply text-center text-xl font-bold mb-3;
-  color: var(--color-accent-cyan);
+  color: var(--text-link);
   text-shadow: 0 0 6px var(--color-accent-purple);
 }
 
@@ -681,12 +705,11 @@ tr:nth-child(even) {
 
 .dashboard-panel-kicker {
   font-family: var(--font-display);
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--color-accent-cyan);
-  opacity: 0.9;
+  color: var(--text-link);
 }
 
 .dashboard-panel-title {
@@ -713,9 +736,9 @@ tr:nth-child(even) {
   background: color-mix(in srgb, var(--color-bg-dark) 80%, transparent);
   padding: 0.45rem 0.8rem;
   font-family: var(--font-display);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--color-text-light);
 }
@@ -742,8 +765,8 @@ tr:nth-child(even) {
   justify-content: center;
   gap: 1rem;
   font-family: var(--font-display);
-  font-size: 0.72rem;
-  letter-spacing: 0.16em;
+  font-size: 0.8125rem;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-text-muted);
 }
@@ -757,12 +780,12 @@ tr:nth-child(even) {
 }
 
 .dashboard-footer-link:hover {
-  color: var(--color-accent-cyan);
+  color: var(--text-link);
   text-shadow: 0 0 12px rgba(99, 205, 207, 0.35);
 }
 
 .dashboard-footer-version {
-  color: var(--color-accent-yellow);
+  color: var(--text-warning);
 }
 
 .success-badge,

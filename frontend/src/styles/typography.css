@@ -1,3 +1,8 @@
+/* NOTE (TP-20261014-010): this stylesheet is not imported by main.js, assets/css/main.css or
+   global-colors.css, so its element rules do not apply at runtime. Its custom properties are
+   the reference scale; runtime type sizes live in assets/css/main.css. Import it deliberately
+   (with a visual review of h1-h6 and p) before relying on the rules below. */
+
 /* ==============================================
    TYPOGRAPHY & SPACING SYSTEM
    ============================================== */

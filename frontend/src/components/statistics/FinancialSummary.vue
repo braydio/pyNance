@@ -1345,11 +1345,11 @@ function clampDateString(value, min, max) {
 }
 
 .stat-value.amount-positive {
-  color: var(--color-accent-green);
+  color: var(--text-positive);
 }
 
 .stat-value.amount-negative {
-  color: var(--color-accent-red);
+  color: var(--text-negative);
 }
 
 .outlier-value {
