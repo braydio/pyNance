@@ -14,6 +14,12 @@ from app.config import logger
 from app.extensions import db
 from app.helpers.plaid_helpers import extract_plaid_error_payload
 from app.models import Account, PlaidItem, RecurringTransaction, Transaction
+from app.services.account_interest_rates import (
+    estimate_effective_rate,
+    is_credit_card_account,
+    load_verified_cycles,
+    recent_interest_by_account,
+)
 from app.services.accounts_service import fetch_accounts
 from app.sql.account_logic import (
     canonicalize_plaid_products,
@@ -696,6 +702,16 @@ def list_accounts():
             query = query.filter(Account.is_hidden.is_(False))
         accounts = query.all()
         plaid_items = _plaid_items_for_accounts(accounts)
+        interest_recent = recent_interest_by_account(accounts)
+        estimates = {}
+        for card in accounts:
+            if is_credit_card_account(card):
+                result = estimate_effective_rate(load_verified_cycles(card))
+                estimates[card.account_id] = (
+                    {k: result[k] for k in ("estimated_rate", "confidence", "sample_cycles", "kind")}
+                    if result["estimated_rate"] is not None
+                    else None
+                )
         data = []
         for a in accounts:
             try:
@@ -740,6 +756,12 @@ def list_accounts():
                         "available_balance": _optional_float(a.available_balance),
                         "balance_as_of": _to_iso(a.balance_as_of),
                         "apr": _optional_float(a.apr),
+                        "apr_source": a.apr_source if a.apr is not None else None,
+                        "apr_as_of": _to_iso(a.apr_as_of),
+                        "apr_details": a.apr_details,
+                        # Effective annualized charge rate; null unless >= 2 verified cycles exist.
+                        "estimated_rate": estimates.get(a.account_id),
+                        "interest_paid_recent": interest_recent.get(a.account_id),
                         "link_type": a.link_type,
                         "last_refreshed": _to_iso(last_refreshed),
                         "is_hidden": a.is_hidden,

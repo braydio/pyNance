@@ -1,12 +1,12 @@
 # TP-20261014-006: APR provenance and interest inference guardrails
 
 **Packet ID:** TP-20261014-006  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-14  
 **Last updated:** 2026-10-14  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261014-006-apr-provenance-interest-estimator.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261014-006-apr-provenance-interest-estimator.md`  
 **Workstream size:** One independently testable implementation packet  
 **Depends on:** TP-20261014-005  
 **Priority:** High  
@@ -44,3 +44,13 @@ APR provenance and interest inference guardrails. Implement against current main
 
 ## Do not rediscover
 Avoid broad repo archaeology. Only inspect explicitly named paths, directly imported helpers/tests, and exact migrations/route registrations needed to implement this packet.
+
+## Completion report
+
+- `plaid_sync._upsert_transaction` no longer mutates `Account.apr`; the single-charge estimator and its helpers were removed.
+- New columns `apr_source`, `apr_as_of`, `apr_confidence`, `apr_sample_cycles`, `apr_details` (migration `b2d6e8f0c4a3`, revises `a1c5d7e9b3f2`; existing non-null APRs become `legacy_unverified`), plus migration and service docs; `plaid_sync.md` updated.
+- New `app/services/account_interest_rates.py`: conservative interest classification, exact-period observed interest, guarded `estimate_effective_rate`, provenance precedence (`apply_apr`).
+- `list_accounts` adds `apr_source`, `apr_as_of`, `apr_details`, `estimated_rate`, `interest_paid_recent` (cards only; loans null).
+- Tests: replaced the flawed 24.4898% assertion in `tests/test_merchant_normalization.py` (now also covers replay not overwriting a provider rate); new `tests/test_account_interest_rates.py`. `pytest -q tests/test_account_interest_rates.py tests/test_merchant_normalization.py tests/test_plaid_ingestion_integrity.py` -> 62 passed with the 005 tests. ruff/black clean.
+- Deviation: `estimated_rate` is always `null` in the API for now because no verified interest-bearing ADB source exists (reconstructed history is explicitly disallowed); the estimator is implemented and tested for when TP-007 provides statement data.
+- Not run: migration against a live dev DB.

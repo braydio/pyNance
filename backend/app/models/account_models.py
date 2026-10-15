@@ -51,7 +51,15 @@ class Account(db.Model, TimestampMixin):
         server_default=db.text("false"),
     )
     product_provenance = db.Column(db.String(64), nullable=True)
+    # Percentage units (23.49 means 23.49%), never a fraction.
     apr = db.Column(db.Numeric(7, 4), nullable=True)
+    # provider | manual | estimated | legacy_unverified (null when apr is null)
+    apr_source = db.Column(db.String(32), nullable=True)
+    apr_as_of = db.Column(db.DateTime(timezone=True), nullable=True)
+    apr_confidence = db.Column(db.String(16), nullable=True)
+    apr_sample_cycles = db.Column(db.Integer, nullable=True)
+    # Per-bucket rates for multi-APR cards (purchase, cash, balance transfer, penalty, promo...).
+    apr_details = db.Column(db.JSON, nullable=True)
     # Provider-reported credit line (credit products only; never an overdraft limit).
     credit_limit = db.Column(db.Numeric(18, 2), nullable=True)
     # Provider "available" figure exactly as reported; distinct from the current balance.

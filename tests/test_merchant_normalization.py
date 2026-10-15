@@ -301,8 +301,8 @@ def test_sync_paths_share_transfer_classifier_for_brokerage_funding(app_context,
     assert via_refresh.is_internal is True
 
 
-def test_upsert_transaction_estimates_apr_from_interest_charges(app_context):
-    """Credit-card interest charges should backfill account APR estimates."""
+def test_upsert_transaction_does_not_infer_apr_from_interest_charges(app_context):
+    """A single interest charge must never establish or overwrite an APR."""
 
     account = Account(
         account_id="acc-apr-1",
@@ -338,7 +338,19 @@ def test_upsert_transaction_estimates_apr_from_interest_charges(app_context):
 
     refreshed = Account.query.filter_by(account_id="acc-apr-1").first()
     assert refreshed is not None
-    assert float(refreshed.apr) == pytest.approx(24.4898, abs=1e-4)
+    assert refreshed.apr is None  # the old 24.4898% single-charge extrapolation is gone
+    assert refreshed.apr_source is None
+
+    # Replaying the sync (or a second charge) must not mutate a reported rate either.
+    refreshed.apr = Decimal("19.99")
+    refreshed.apr_source = "provider"
+    db.session.commit()
+    plaid_sync._upsert_transaction(dict(tx, transaction_id="tx-apr-1b", amount=35.0), refreshed, plaid_account)
+    plaid_sync._upsert_transaction(tx, refreshed, plaid_account)
+    db.session.commit()
+    again = Account.query.filter_by(account_id="acc-apr-1").first()
+    assert float(again.apr) == pytest.approx(19.99)
+    assert again.apr_source == "provider"
 
 
 def test_upsert_transaction_does_not_set_apr_for_non_interest_categories(app_context):

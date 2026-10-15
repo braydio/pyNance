@@ -20,7 +20,7 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 | TP-20261014-021 | Settings, RSA Monitor and Auxiliary Page UX | Ready | Normal | TP-20261014-010, TP-20261014-011, TP-20261014-013, TP-20261014-014 | main | 2026-10-14 | [packet](active/TP-20261014-021-settings-system-utility-pages.md) |
 | TP-20261014-022 | Every Route Visual and Keyboard QA Gate | Ready | High | TP-20261014-010 through TP-20261014-021 | main | 2026-10-14 | [packet](active/TP-20261014-022-full-route-visual-regression.md) |
 | TP-20261014-005 | Account balance, limit and freshness contract | Complete | High | None | main | 2026-10-14 | [packet](completed/TP-20261014-005-account-balance-limit-contract.md) |
-| TP-20261014-006 | APR provenance and interest inference guardrails | Complete | High | TP-20261014-005 | main | 2026-10-14 | [packet](active/TP-20261014-006-apr-provenance-interest-estimator.md) |
+| TP-20261014-006 | APR provenance and interest inference guardrails | Complete | High | TP-20261014-005 | main | 2026-10-14 | [packet](completed/TP-20261014-006-apr-provenance-interest-estimator.md) |
 | TP-20261014-007 | Optional Plaid Liabilities APR and payment metadata | Complete | Normal | TP-20261014-005, TP-20261014-006 | main | 2026-10-14 | [packet](active/TP-20261014-007-plaid-liabilities-enrichment.md) |
 | TP-20261014-008 | Accounts portfolio hierarchy and type breakouts | Complete | High | TP-20261014-005, TP-20261014-006 | main | 2026-10-14 | [packet](active/TP-20261014-008-accounts-portfolio-type-breakout.md) |
 | TP-20261014-009 | Account drill-in, truthful activity and range integrity | Ready | High | TP-20261014-008 | main | 2026-10-14 | [packet](active/TP-20261014-009-accounts-account-detail-activity.md) |
