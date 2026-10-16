@@ -44,8 +44,6 @@ def create_app():
     from app.routes.manual_io import manual_up
     from app.routes.plaid_investments import plaid_investments
     from app.routes.plaid_transactions import plaid_transactions
-    from app.routes.plaid_webhook import plaid_webhooks
-    from app.routes.plaid_webhook_admin import plaid_webhook_admin
     from app.routes.planning import planning
     from app.routes.recurring import recurring
     from app.routes.rsa_monitor import rsa_monitor
@@ -69,8 +67,6 @@ def create_app():
     app.register_blueprint(rsa_monitor, url_prefix="/api/rsa-monitor")
     app.register_blueprint(goals, url_prefix="/api/goals")
     app.register_blueprint(plaid_transactions, url_prefix="/api/plaid/transactions")
-    app.register_blueprint(plaid_webhooks, url_prefix="/api/webhooks")
-    app.register_blueprint(plaid_webhook_admin, url_prefix="/api/plaid/webhook")
     app.register_blueprint(plaid_investments, url_prefix="/api/plaid/investments")
     app.register_blueprint(investments, url_prefix="/api/investments")
     app.register_blueprint(planning, url_prefix="/api/planning")
