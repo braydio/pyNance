@@ -6,6 +6,17 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 
 | Packet ID | Title | Status | Priority | Depends on | Target | Last updated | Packet |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| TP-20261016-001 | Forecast Transaction Sign Contract and Reconciliation | Ready | P0 | None | main | 2026-10-16 | [packet](active/TP-20261016-001-forecast-transaction-sign-contract.md) |
+| TP-20261016-002 | Recurring Stream Persistence, Account Scope and Legacy API Repair | Ready | P0 | None | main | 2026-10-16 | [packet](active/TP-20261016-002-recurring-schema-api-integrity.md) |
+| TP-20261016-003 | Transfer Matching Security, Scope, Evidence and Review | Ready | P0 | TP-20261016-001 | main | 2026-10-16 | [packet](active/TP-20261016-003-transfer-review-scan-safety.md) |
+| TP-20261016-004 | Unify Recurrence Detector with Forecast Pattern Evidence | Ready | P1 | TP-20261016-001, TP-20261016-002 | main | 2026-10-16 | [packet](active/TP-20261016-004-recurring-pattern-detection-unified.md) |
+| TP-20261016-005 | Recurring Review API, Durable Decisions and Usable UI | Ready | P1 | TP-20261016-002, TP-20261016-004 | main | 2026-10-16 | [packet](active/TP-20261016-005-recurring-review-api-workflow.md) |
+| TP-20261016-006 | Forecast Debt Payments vs Purchases: Settlement-Aware Cash Ledger | Ready | P1 | TP-20261016-001, TP-20261016-003, TP-20261016-005 | main | 2026-10-16 | [packet](active/TP-20261016-006-forecast-debt-settlement-cashflows.md) |
+| TP-20261016-007 | Accounts Classification and Financial Coverage Integrity | Ready | P0 | None | main | 2026-10-16 | [packet](active/TP-20261016-007-account-classification-coverage-truth.md) |
+| TP-20261016-008 | Accounts Overview Hierarchy, Width, Period and Connection Styling | Ready | P2 | TP-20261016-007 | main | 2026-10-16 | [packet](active/TP-20261016-008-accounts-command-center-hierarchy.md) |
+| TP-20261016-009 | Transactions Insights, Review Queue, Sorting and Filtering | Ready | P1 | TP-20261016-001, TP-20261016-003, TP-20261016-005 | main | 2026-10-16 | [packet](active/TP-20261016-009-transactions-insights-review-workbench.md) |
+| TP-20261016-010 | Forecast Driver Groups, Currency Formatting and Debt Coverage Clarity | Ready | P1 | TP-20261016-006 | main | 2026-10-16 | [packet](active/TP-20261016-010-forecast-explained-breakdown-currency.md) |
+| TP-20261016-011 | Cross-Page Financial Truth and Interaction Regression Gate | Ready | P1 | TP-20261016-001 through TP-20261016-010 | main | 2026-10-16 | [packet](active/TP-20261016-011-end-to-end-financial-ux-regression.md) |
 | TP-20261014-010 | Theme Contrast and Typography | Complete | High | None | main | 2026-10-14 | [packet](completed/TP-20261014-010-theme-contrast-typography.md) |
 | TP-20261014-011 | Shared Fields, Buttons, Date and Select Geometry | Complete | High | TP-20261014-010 | main | 2026-10-14 | [packet](completed/TP-20261014-011-shared-controls-geometry.md) |
 | TP-20261014-012 | Dropdowns, Popovers and Expandable State | Complete | High | TP-20261014-010, TP-20261014-011 | main | 2026-10-14 | [packet](completed/TP-20261014-012-popovers-dropdowns-expandables.md) |
