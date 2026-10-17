@@ -9,7 +9,7 @@
 **Canonical path:** `docs/task-packets/active/TP-20261017-002-safe-to-spend-obligation-explanation-ui.md`  
 **Workstream size:** One UI/verification packet  
 **Priority:** P1  
-**Depends on:** TP-20261017-001, TP-20261016-005  
+**Depends on:** TP-20261017-001, TP-20261017-007, TP-20261016-005  
 **Series:** Follow-on packet 2/2; only integrate, do not reimplement scanner or safe-spend math.  
 
 ## Objective
@@ -27,12 +27,12 @@ Show exactly why a monthly bill is / is not reserved in the selected Safe-to-Spe
 
 ## Exact implementation
 1. **Keep the existing simple card.** Under the existing "Upcoming bills" figure add a single expandable "What's reserved?" disclosure with grouped totals `Planned`, `Confirmed recurring`, `Provisional recurring`, with `due_date`, account display, amounts, and date-sorted source rows. Render `estimated` as "estimated", do not call provisional "confirmed". Use packet 001 `upcoming_bills` and component splits; no second client computation. Show a compact "Needs review" amount/count (not included in reserve), linking to the 005 Recurring review UI via its existing tab flow. Avoid leaking raw transaction/account IDs in visible labels.
-2. **Explain horizon vs detection.** For `today`, copy: "Only obligations due today are deducted"; if known recurring next due Oct 21, display "Next recurring debit: Oct 21" informationally without subtracting it. For `week`, due inside `as_of..as_of+6 days` is deducted; until payday ends on the inferred date (fallback next 14 days as 001 contract). If a known obligation is not reserved, display a precise reason from `obligation_coverage` or candidate `reason_codes`: insufficient history, missing owner/account, pending-only, ignored, outside window, candidate needs review, or stale import. Never say "no recurring bills" merely because none were imported.
+2. **Explain horizon vs detection.** For `today`, distinguish **due today** vs **future bills protected before payday**. If a recurring debit is due Oct 21, not today, display its next date and protected reserve as a future obligation when in TP-20261017-007's protection window. For `week` the display covers `as_of..as_of+6d`, while protection may extend beyond it; until payday protects through the day *before* an inferred posted-paycheck date (fallback is explicitly labeled 14 inclusive days as in TP-20261017-007). If a known obligation is not reserved, display a precise reason from `obligation_coverage` or candidate `reason_codes`: insufficient history, missing owner/account, pending-only, ignored, outside window, candidate needs review, or stale import. Never say "no recurring bills" merely because none were imported.
 3. **Ensure refresh.** Re-fetch Safe-to-Spend on horizon change and after Confirm/Ignore/Edit in existing recurring UI. Reuse existing events/store rather than periodic polling, extra API, or page reload; show loading and error. No new global state store unless existing flow makes it necessary.
 4. **Accessibility/design scope.** Use existing card tokens and spacing, native `button` disclosure with `aria-expanded`, keyboard behavior, overflow-safe mobile 390px. Do not change the dashboard's overall color palette or layout. Keep core numeric amount prominent.
 
 ## Fixtures and acceptance
-- Synthetic posted $700 monthly recurrence due 2026-10-21, as_of 2026-10-17: Today shows Oct 21 informationally and $0 charged today; Week shows **-$700** in provisional or confirmed split, date/amount in disclosure; stable total matches server `upcoming_outflows_cents`.
+- Synthetic posted $700 monthly recurrence due 2026-10-21, as_of 2026-10-17: Today shows Oct 21 as future and **-$700 reserved toward the pre-payday protected total**, $0 due today; Week also shows **-$700** in provisional or confirmed split, date/amount in disclosure; stable total matches server `upcoming_outflows_cents`.
 - Both `PlannedBill` and recurrence present: exactly one $700 row; user rejects candidate: reserve disappears next fetch, reason "ignored"; no history: coverage warning rather than false "none".
 - 390px and 1280px; no truncated amounts; server error; zero bills; reader accessible; no client double addition.
 
