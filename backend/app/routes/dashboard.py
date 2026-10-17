@@ -12,9 +12,12 @@ from app.services.account_snapshot import (
 )
 from app.services.dashboard_activity_status import generate_activity_status
 from app.services.llm_settings import get_llm_settings_payload, update_llm_settings
+from app.services.recurring_repository import RecurringError
 from app.services.safe_to_spend import (
     DEFAULT_BUFFER_CENTS,
     SafeToSpendInputs,
+    _payday_owner,
+    _payday_prediction,
     build_safe_to_spend_payload,
 )
 
@@ -57,6 +60,36 @@ def get_safe_to_spend():
     except Exception as exc:  # pragma: no cover - defensive logging
         logger.error("Failed to build safe-to-spend payload: %s", exc, exc_info=True)
         return jsonify({"status": "error", "message": str(exc)}), 500
+
+
+@dashboard.route("/payday-evidence", methods=["GET"])
+def get_payday_evidence():
+    """Read-only evidence behind the predicted next payday for the trusted owner.
+
+    The owner is the server-configured ``PYNANCE_OWNER_USER_ID``; a ``user_id`` query arg can never
+    select another owner. Only dates, positive amounts, cadence, a one-word payer label, confidence
+    and reason codes are returned: no memos, transaction ids, account ids or tokens.
+    """
+
+    try:
+        as_of = _parse_iso_date_arg("as_of") or date.today()
+    except ValueError:
+        return jsonify({"status": "error", "message": "as_of must use YYYY-MM-DD"}), 400
+    owner, refusal = _payday_owner(request.args.get("user_id"))
+    if refusal == "owner_not_configured":
+        return jsonify({"status": "error", "code": refusal, "message": "PYNANCE_OWNER_USER_ID is not configured"}), 503
+    if refusal:
+        return jsonify({"status": "error", "code": refusal, "message": "Not available"}), 403
+    try:
+        prediction = _payday_prediction(as_of, owner)
+    except RecurringError as exc:
+        return jsonify({"status": "error", "code": exc.code, "message": str(exc)}), exc.status
+    except Exception as exc:  # pragma: no cover - defensive logging
+        logger.error("Failed to build payday evidence: %s", exc, exc_info=True)
+        return jsonify({"status": "error", "message": "Unable to build payday evidence"}), 500
+    prediction["validated"] = prediction["next_payday"] is not None
+    prediction["receipt_count"] = len(prediction["observed_dates"])
+    return jsonify({"status": "success", "data": prediction}), 200
 
 
 @dashboard.route("/account_snapshot", methods=["GET"])

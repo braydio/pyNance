@@ -49,7 +49,7 @@ def database():
 
 
 @pytest.mark.parametrize("provider,expense,income", [("plaid", "42.50", "-1500"), ("manual", "-42.50", "1500")])
-def test_provider_signs_and_account_ownership(database, provider, expense, income):
+def test_provider_signs_and_account_ownership(database, provider, expense, income, monkeypatch):
     db, models, service, _ = database
     for txn_id, amount, day in [("expense", expense, 12), ("income-1", income, 1), ("income-2", income, 8)]:
         db.session.add(
@@ -66,7 +66,9 @@ def test_provider_signs_and_account_ownership(database, provider, expense, incom
     db.session.commit()
     assert service._spent_between(date(2026, 7, 1), date(2026, 7, 12), "user-a") == 4250
     assert service._spent_between(date(2026, 7, 1), date(2026, 7, 12), "user-b") == 0
-    assert service._next_income_date(date(2026, 7, 12), "user-a") == date(2026, 7, 15)
+    # Two keyword-matching credits are no longer enough to claim a payday.
+    monkeypatch.setenv("PYNANCE_OWNER_USER_ID", "user-a")
+    assert service._next_income_date(date(2026, 7, 12), "user-a") is None
     assert service._next_income_date(date(2026, 7, 12), "user-b") is None
 
 
@@ -101,3 +103,105 @@ def test_real_safe_to_spend_route(database):
         "spent_today_cents": 4250,
     }
     assert payload["data"]["upcoming_bills"][0]["name"] == "Power"
+
+
+def _pay(db, models, txid, account, day, amount="-1500", **extra):
+    db.session.add(
+        models.Transaction(
+            transaction_id=txid,
+            account_id=account,
+            user_id=None,
+            provider="plaid",
+            amount=Decimal(amount),
+            date=day,
+            description="ACME PAYROLL PPD ID 123",
+            personal_finance_category={"primary": "INCOME", "detailed": "INCOME_WAGES"},
+            **extra,
+        )
+    )
+
+
+def _seed_biweekly(db, models, account="a", prefix="p"):
+    for i, day in enumerate([date(2026, 9, 4), date(2026, 9, 18), date(2026, 10, 2), date(2026, 10, 16)]):
+        _pay(db, models, f"{prefix}{i}", account, day)
+
+
+def test_payday_evidence_route_is_owner_scoped_read_only_and_redacted(database, monkeypatch):
+    db, models, service, client = database
+    _seed_biweekly(db, models, "a", "a")
+    _seed_biweekly(db, models, "b", "b")
+    db.session.commit()
+    before = db.session.query(models.Transaction).count()
+    monkeypatch.setenv("PYNANCE_OWNER_USER_ID", "user-a")
+
+    body = client.get("/api/dashboard/payday-evidence?as_of=2026-10-17").get_json()["data"]
+    assert body["validated"] is True and body["next_payday"] == "2026-10-30"
+    assert body["cadence"] == "biweekly" and body["receipt_count"] == 4
+    assert body["payer_label"] == "Acme"
+    dumped = str(body).lower()
+    for leaked in ("ppd", "123", "a0", "txid", "transaction_id", "user-a", "user-b"):
+        assert leaked not in dumped
+
+    # A request cannot choose another owner.
+    other = client.get("/api/dashboard/payday-evidence?as_of=2026-10-17&user_id=user-b")
+    assert other.status_code == 403
+    assert db.session.query(models.Transaction).count() == before
+
+
+def test_payday_evidence_fails_closed_without_a_configured_owner(database, monkeypatch):
+    _, _, _, client = database
+    monkeypatch.delenv("PYNANCE_OWNER_USER_ID", raising=False)
+    response = client.get("/api/dashboard/payday-evidence")
+    assert response.status_code == 503
+    assert client.get("/api/dashboard/payday-evidence?as_of=nope").status_code == 400
+
+
+def test_pending_internal_and_other_owner_credits_never_make_a_payday(database, monkeypatch):
+    db, models, service, _ = database
+    monkeypatch.setenv("PYNANCE_OWNER_USER_ID", "user-a")
+    _pay(db, models, "ok0", "a", date(2026, 10, 2))
+    _pay(db, models, "ok1", "a", date(2026, 10, 16))
+    _pay(db, models, "pend", "a", date(2026, 9, 18), pending=True)
+    _pay(db, models, "xfer", "a", date(2026, 9, 4), is_internal=True)
+    _seed_biweekly(db, models, "b", "b")
+    db.session.commit()
+    assert service._next_income_date(date(2026, 10, 17), "user-a") is None
+    assert service._next_income_date(date(2026, 10, 17), "user-b") is None  # not the configured owner
+
+
+def test_safe_to_spend_exposes_payday_prediction_metadata(database, monkeypatch):
+    db, models, service, client = database
+    _seed_biweekly(db, models, "a", "a")
+    db.session.commit()
+    monkeypatch.setenv("PYNANCE_OWNER_USER_ID", "user-a")
+    data = client.get("/api/dashboard/safe-to-spend?as_of=2026-10-17&user_id=user-a").get_json()["data"]
+    assert data["next_income_date"] == "2026-10-30"
+    assert data["payday_prediction"]["source"] == "inferred_stream"
+    assert "candidates" not in data["payday_prediction"]
+
+    monkeypatch.delenv("PYNANCE_OWNER_USER_ID")
+    data = client.get("/api/dashboard/safe-to-spend?as_of=2026-10-17&user_id=user-a").get_json()["data"]
+    assert data["next_income_date"] is None
+    assert data["payday_prediction"]["reason_codes"] == ["owner_not_configured"]
+
+
+def test_confirmed_income_stream_is_used_when_present(database, monkeypatch):
+    db, models, service, _ = database
+    monkeypatch.setenv("PYNANCE_OWNER_USER_ID", "user-a")
+    db.session.add(
+        models.RecurringStream(
+            user_id="user-a",
+            account_id="a",
+            display_name="Acme Payroll",
+            amount_cash_delta=Decimal("1500"),
+            cadence="biweekly",
+            anchor_date=date(2026, 10, 30),
+            status="confirmed",
+            source="manual",
+            event_role="income",
+        )
+    )
+    db.session.commit()
+    prediction = service._payday_prediction(date(2026, 10, 17), "user-a")
+    assert prediction["source"] == "confirmed_stream" and prediction["next_payday"] == "2026-10-30"
+    assert prediction["needs_review"] is False

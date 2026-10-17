@@ -29,7 +29,6 @@ CASH_ACCOUNT_TOKENS = {
     "money market",
     "money_market",
 }
-INCOME_CATEGORY_TOKENS = {"income", "payroll", "paycheck", "wages", "salary"}
 
 
 def _outflow_filter():
@@ -163,49 +162,99 @@ def _spent_between(start: date, end: date, user_id: str | None = None) -> int:
     return _to_cents(query.scalar())
 
 
-def _looks_like_income(transaction: Transaction) -> bool:
-    """Return True when recent transaction metadata suggests wage income."""
+_NOT_WAGE_REASONS = ("interest", "dividend", "investment_income", "tax_refund", "retirement")
+PAYDAY_LOOKBACK_DAYS = 400
 
-    fields = [transaction.category, transaction.category_slug, transaction.category_display, transaction.description]
-    pfc = transaction.personal_finance_category if isinstance(transaction.personal_finance_category, dict) else {}
-    fields.extend([pfc.get("primary"), pfc.get("detailed")])
-    haystack = " ".join(str(field or "").lower() for field in fields)
-    return any(token in haystack for token in INCOME_CATEGORY_TOKENS)
+
+def _payday_owner(user_id: str | None) -> tuple[str | None, str | None]:
+    """Return ``(owner_id, refusal_reason)``; payday data is only ever read for the trusted owner."""
+
+    from app.services.recurring_repository import OwnerNotConfigured, trusted_owner_id
+
+    try:
+        owner = trusted_owner_id()
+    except OwnerNotConfigured:
+        return None, "owner_not_configured"
+    if user_id and user_id != owner:
+        return None, "owner_mismatch"
+    return owner, None
+
+
+def payday_events_for_owner(owner_id: str, as_of: date) -> tuple[list, date | None]:
+    """Load posted wage-like cash inflows plus the newest activity date for ``owner_id``.
+
+    Only classified ``income`` on depository accounts counts: internal transfers, refunds, debt and
+    brokerage movements, interest/dividends and pending rows are excluded by the shared classifier.
+    """
+
+    from app.services.account_portfolio_metrics import classify_account_group
+    from app.services.payday_inference import PayEvent, payer_key_for
+    from app.services.transaction_flow_classification import load_classified_flows
+
+    flows = load_classified_flows(owner_id, as_of - timedelta(days=PAYDAY_LOOKBACK_DAYS), as_of)
+    events = []
+    for flow in flows:
+        if flow.flow_kind != "income" or classify_account_group(flow.account) != "depository":
+            continue
+        if any(token in code for code in flow.reason_codes for token in _NOT_WAGE_REASONS):
+            continue
+        tx = flow.tx
+        events.append(
+            PayEvent(
+                day=flow.day,
+                amount=abs(flow.signed_account_delta),
+                payer_key=payer_key_for(tx.merchant_name, tx.description),
+                account_id=str(tx.account_id),
+            )
+        )
+    return events, (max(f.day for f in flows) if flows else None)
+
+
+def confirmed_income_streams(owner_id: str, as_of: date) -> list[dict]:
+    """Owner-confirmed income streams as detector inputs (next due on/after ``as_of``)."""
+
+    from app.services import recurring_repository as repo
+
+    out = []
+    for stream in repo.list_streams(owner_id, statuses=["confirmed"]):
+        if stream.event_role != "income" or Decimal(str(stream.amount_cash_delta)) <= 0:
+            continue
+        if stream.cadence not in {"weekly", "biweekly", "semimonthly", "monthly"}:
+            continue
+        next_due = repo.next_due_date(stream, as_of)
+        if next_due:
+            out.append(
+                {
+                    "name": stream.display_name,
+                    "amount": abs(Decimal(str(stream.amount_cash_delta))),
+                    "cadence": stream.cadence,
+                    "next_due": next_due,
+                }
+            )
+    return out
+
+
+def _payday_prediction(as_of: date, user_id: str | None = None) -> dict:
+    """Run the payday detector against the trusted owner's stored data (no provider calls)."""
+
+    from app.services.payday_inference import infer_payday
+
+    owner, refusal = _payday_owner(user_id)
+    if refusal:
+        result = infer_payday([], as_of)
+        result["reason_codes"] = [refusal]
+        return result
+    events, data_through = payday_events_for_owner(owner, as_of)
+    return infer_payday(
+        events, as_of, confirmed_streams=confirmed_income_streams(owner, as_of), data_through=data_through
+    )
 
 
 def _next_income_date(as_of: date, user_id: str | None = None) -> date | None:
-    """Infer the next payday from recent income cadence when possible."""
+    """Legacy adapter: the validated next payday, or ``None`` when evidence is too thin."""
 
-    lookback = as_of - timedelta(days=90)
-    query = (
-        Transaction.query.join(Account, Account.account_id == Transaction.account_id)
-        .filter(or_(Account.is_hidden.is_(False), Account.is_hidden.is_(None)))
-        .filter(Transaction.date >= lookback, Transaction.date <= as_of)
-        .filter(_inflow_filter())
-        .order_by(Transaction.date.asc())
-    )
-    if user_id:
-        query = query.filter(Account.user_id == user_id)
-
-    income_dates = []
-    for transaction in query.all():
-        if _looks_like_income(transaction):
-            raw_date = transaction.date.date() if isinstance(transaction.date, datetime) else transaction.date
-            income_dates.append(raw_date)
-
-    if len(income_dates) < 2:
-        return None
-
-    intervals = [
-        (right - left).days for left, right in zip(income_dates, income_dates[1:]) if 1 <= (right - left).days <= 45
-    ]
-    if not intervals:
-        return None
-    cadence = round(sum(intervals) / len(intervals))
-    next_date = income_dates[-1]
-    while next_date <= as_of:
-        next_date += timedelta(days=cadence)
-    return next_date
+    value = _payday_prediction(as_of, user_id)["next_payday"]
+    return date.fromisoformat(value) if value else None
 
 
 def _horizon_end(mode: str, as_of: date, next_income_date: date | None) -> date:
@@ -262,7 +311,8 @@ def build_safe_to_spend_payload(inputs: SafeToSpendInputs | None = None) -> dict
     buffer_cents = max(int(inputs.buffer_cents or 0), 0)
     accounts = _visible_accounts(inputs.user_id)
     spendable_cash_cents, account_payload = _cash_account_payload(accounts)
-    next_income = _next_income_date(as_of, inputs.user_id)
+    payday = _payday_prediction(as_of, inputs.user_id)
+    next_income = date.fromisoformat(payday["next_payday"]) if payday["next_payday"] else None
     horizon_end = _horizon_end(mode, as_of, next_income)
     upcoming_outflows_cents, bills = _upcoming_bill_payload(as_of, horizon_end, inputs.user_id)
     spent_today_cents = _spent_between(as_of, as_of, inputs.user_id)
@@ -299,6 +349,7 @@ def build_safe_to_spend_payload(inputs: SafeToSpendInputs | None = None) -> dict
         "as_of": as_of.isoformat(),
         "horizon_end": horizon_end.isoformat(),
         "next_income_date": next_income.isoformat() if next_income else None,
+        "payday_prediction": {k: v for k, v in payday.items() if k != "candidates"},
         "confidence": confidence,
         "components": {
             "spendable_cash_cents": spendable_cash_cents,

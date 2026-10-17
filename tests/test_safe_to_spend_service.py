@@ -75,7 +75,11 @@ def test_build_safe_to_spend_payload_today(monkeypatch):
         lambda as_of, horizon_end, user_id=None: (15_000, [{"name": "Power", "amount_cents": 15_000}]),
     )
     monkeypatch.setattr(service, "_spent_between", lambda start, end, user_id=None: 2_500)
-    monkeypatch.setattr(service, "_next_income_date", lambda as_of, user_id=None: date(2026, 7, 19))
+    monkeypatch.setattr(
+        service,
+        "_payday_prediction",
+        lambda as_of, user_id=None: {"next_payday": "2026-07-19", "source": "inferred_stream"},
+    )
 
     payload = service.build_safe_to_spend_payload(
         service.SafeToSpendInputs(as_of=date(2026, 7, 12), buffer_cents=25_000)
@@ -96,7 +100,11 @@ def test_build_safe_to_spend_payload_until_payday_per_day(monkeypatch):
     monkeypatch.setattr(service, "_visible_accounts", lambda user_id=None: [Account(balance=Decimal("300.00"))])
     monkeypatch.setattr(service, "_upcoming_bill_payload", lambda as_of, horizon_end, user_id=None: (10_000, []))
     monkeypatch.setattr(service, "_spent_between", lambda start, end, user_id=None: 0)
-    monkeypatch.setattr(service, "_next_income_date", lambda as_of, user_id=None: date(2026, 7, 14))
+    monkeypatch.setattr(
+        service,
+        "_payday_prediction",
+        lambda as_of, user_id=None: {"next_payday": "2026-07-14", "source": "inferred_stream"},
+    )
 
     payload = service.build_safe_to_spend_payload(
         service.SafeToSpendInputs(mode="until_payday", as_of=date(2026, 7, 12), buffer_cents=5_000)

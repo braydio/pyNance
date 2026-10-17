@@ -1,12 +1,12 @@
 # TP-20261017-005: Payday Detection with Sources, Confidence and Read-only Evidence
 
 **Packet ID:** TP-20261017-005  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-17  
 **Last updated:** 2026-10-17  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261017-005-payday-inference-evidence.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261017-005-payday-inference-evidence.md`  
 **Workstream size:** One payday-inference/evidence implementation packet  
 **Priority:** P0  
 **Depends on:** TP-20261016-001, TP-20261016-002, TP-20261016-004, TP-20261016-005, TP-20261017-003  
@@ -31,3 +31,13 @@ With synthetic payroll on Sep 4, Sep 18, Oct 2, Oct 16, as_of Oct 17 => next Oct
 
 ## Tests / handoff
 `pytest tests/test_payday_inference.py tests/test_safe_to_spend_service.py tests/test_safe_to_spend_integration.py -q`; verify read-only endpoint with development auth fixture. No migration, bank mutations, new provider calls, or unrelated forecast rewrite. Read AGENTS and packet index/tracker; set In Progress then Complete/move to completed and update index+tracker on validated commit. Report qualifying receipts and confidence for synthetic fixtures.
+
+## Completion report (2026-10-17)
+
+- **Detector** `backend/app/services/payday_inference.py` (new, pure): `infer_payday(posted_events, as_of, confirmed_streams=(), user_schedule=None, *, data_through=None)` returns `{next_payday, confidence, source, source_label, amount_cents, cadence, observed_dates, observed_amount_cents, history_start, history_end, reason_codes, needs_review, candidates}`. Events are grouped per payer; distinct pay dates (same-day duplicates collapse) need `MIN_CYCLES = 3`. Cadences: weekly, biweekly (with a `skipped_cycle` allowance), semimonthly (needs 4 dates because 3 alternating dates are ambiguous with drifting biweekly, so it returns `ambiguous_cadence`), monthly with month-end clamp. History older than two periods yields no date. Precedence: user schedule > confirmed income stream > inferred; inferred is always `needs_review` and never "confirmed".
+- **Adapter** `safe_to_spend._next_income_date` now calls `_payday_prediction`, which reads only the configured owner's data via `load_classified_flows` (so `canonical_account_delta`, pending/hidden/internal exclusion and the shared flow classifier apply): classified `income` on depository accounts, minus interest/dividend/tax-refund/retirement. Confirmed `RecurringStream` income streams are passed in. The keyword scan (`_looks_like_income`) is gone. No claimed date when evidence is thin: `next_income_date` is `null` with reason codes.
+- **API:** `/api/dashboard/safe-to-spend` keeps `next_income_date` and adds `payday_prediction` (candidates omitted). New read-only `GET /api/dashboard/payday-evidence?as_of=` returns the prediction with `validated`, `receipt_count`, dates, positive amounts, cadence, one-word payer label and reason codes only (no memo, transaction or account ids). Owner comes from `PYNANCE_OWNER_USER_ID`; unset => 503 `owner_not_configured`; a differing `user_id` => 403.
+- **Tests (synthetic):** `tests/test_payday_inference.py` (17) plus new integration cases in `tests/test_safe_to_spend_integration.py` (route owner isolation and redaction, fail-closed, pending/internal/other-owner credits, payload metadata, confirmed stream). The old integration assertion that two keyword credits imply a payday was inverted. `pytest tests/test_payday_inference.py tests/test_safe_to_spend_service.py tests/test_safe_to_spend_integration.py -q` => 27 passed. Recurring, flow-classification and debt-settlement suites still pass.
+- **Acceptance:** synthetic payroll Sep 4/18, Oct 2/16 with `as_of` Oct 17 => `2026-10-30`, `biweekly`, medium confidence. Two cycles or unrelated payers => `null`.
+- **Real-data check (read-only):** the owner's history gives a biweekly payer with 28 cycles, last posted 2026-10-15, next `2026-10-29` (low confidence because past amounts vary by more than 30%, so no amount is claimed).
+- **Not changed:** no migration, no provider calls, no forecast changes. Without `PYNANCE_OWNER_USER_ID` the Safe-to-Spend payday is now `null` (restart Flask after setting it).
