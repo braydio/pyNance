@@ -28,6 +28,7 @@
       :liquidity="liquidity"
       :uncertainty="uncertainty"
       :net-worth="netWorth"
+      :debt-payment-coverage="debtPaymentCoverage"
       @update:manualIncome="manualIncome = $event"
       @update:liabilityRate="liabilityRate = $event"
       @update:includedAccountIds="includedAccountIds = $event"
@@ -599,6 +600,7 @@ const uncertainty = computed(() => forecastData.uncertainty?.value ?? null)
 const netWorth = computed(() => forecastData.netWorth?.value ?? null)
 const drivers = computed(() => forecastData.drivers?.value ?? [])
 const dataQuality = computed(() => forecastData.dataQuality?.value ?? null)
+const debtPaymentCoverage = computed(() => forecastData.debtPaymentCoverage?.value ?? null)
 const scenarioResults = computed(() => forecastData.scenarioResults?.value ?? [])
 const scenarioLines = computed(() =>
   scenarioResults.value.filter((scenario) => scenario.id !== 'baseline'),

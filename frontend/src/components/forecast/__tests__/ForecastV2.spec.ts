@@ -74,9 +74,12 @@ describe('ForecastSummaryPanel (V2)', () => {
     expect(wrapper.get('[data-testid="risk-copy"]').text()).toContain('2%')
     expect(wrapper.get('[data-testid="risk-copy"]').text()).toContain('21%')
     expect(wrapper.get('[data-testid="risk-copy"]').text()).toContain('not a guarantee')
+    expect(wrapper.get('[data-testid="debt-outstanding"]').text()).toContain(
+      'Outstanding debt tracked separately: $700.00',
+    )
     const note = wrapper.get('[data-testid="net-worth-note"]').text()
-    expect(note).toContain('debt $700.00')
-    expect(note).toContain('investments $5,000.00')
+    expect(note).toContain('Investments $5,000.00')
+    expect(note).toContain('not part of this cash forecast')
     expect(wrapper.text()).not.toContain('Current Balance')
   })
 
@@ -159,7 +162,7 @@ describe('ForecastBreakdown (V2)', () => {
     expect(rows).toHaveLength(2)
     expect(rows[0].text()).toContain('landlord properties')
     expect(rows[0].text()).toContain('Detected pattern')
-    expect(rows[0].text()).toContain('-$1,500.00')
+    expect(rows[0].text()).toContain('\u2212$1,500.00')
     expect(rows[1].text()).toContain('Your rule')
     expect(rows[1].text()).toContain('+$2,000.00')
     const quality = wrapper.get('[data-testid="data-quality"]').text()

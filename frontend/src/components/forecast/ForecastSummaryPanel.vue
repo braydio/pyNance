@@ -53,12 +53,32 @@
       <p v-else class="risk-copy" data-testid="risk-unavailable">
         {{ uncertaintyUnavailableCopy }}
       </p>
-      <p v-if="netWorth" class="liquidity-muted" data-testid="net-worth-note">
-        Not part of this cash forecast: debt {{ money(netWorth.liabilities.starting) }} ·
-        investments {{ money(netWorth.investments.starting) }} · net worth
-        {{ money(netWorth.starting) }}
-      </p>
+      <div v-if="netWorth" class="debt-coverage" data-testid="debt-coverage">
+        <p class="liquidity-muted" data-testid="debt-outstanding">
+          Outstanding debt tracked separately: {{ money(netWorth.liabilities.starting) }}. This is
+          what you owe, not a cash event.
+        </p>
+        <p class="liquidity-muted" data-testid="debt-payments-included">
+          {{ debtPaymentsCopy }}
+        </p>
+        <p
+          class="liquidity-muted"
+          :class="{ 'debt-coverage__caution': debtCoverageMode !== 'settlement' }"
+          data-testid="debt-coverage-status"
+        >
+          {{ debtCoverageCopy }}
+        </p>
+        <p class="liquidity-muted" data-testid="net-worth-note">
+          Investments {{ money(netWorth.investments.starting) }} and net worth
+          {{ money(netWorth.starting) }} are shown separately and are not part of this cash
+          forecast.
+        </p>
+      </div>
     </div>
+
+    <p v-if="!isV2" class="liquidity-muted" data-testid="v1-debt-note">
+      Debt totals are separate from modeled bank cash.
+    </p>
 
     <div v-if="!isV2" class="summary-grid">
       <div class="field-group">
@@ -72,7 +92,7 @@
           </span>
         </p>
         <button type="button" class="value-link" @click="isSelectorOpen = true">
-          ${{ assetBalance.toFixed(2) }}
+          {{ money(assetBalance) }}
         </button>
       </div>
       <div class="field-group">
@@ -88,7 +108,7 @@
           </span>
         </p>
         <button type="button" class="value-link" @click="isSelectorOpen = true">
-          ${{ liabilityBalance.toFixed(2) }}
+          {{ money(liabilityBalance) }}
         </button>
       </div>
       <div class="field-group">
@@ -104,7 +124,7 @@
           </span>
         </p>
         <button type="button" class="value-link" @click="isSelectorOpen = true">
-          ${{ netBalance.toFixed(2) }}
+          {{ money(netBalance) }}
         </button>
       </div>
     </div>
@@ -239,6 +259,7 @@
 
 <script setup>
 import { computed, ref, toRef } from 'vue'
+import { formatForecastMoney, formatSignedCashflow } from '@/utils/format'
 
 const props = defineProps({
   assetBalance: {
@@ -305,6 +326,11 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+  /** Additive `metadata.debt_payment_coverage` from the V2 forecast. */
+  debtPaymentCoverage: {
+    type: Object,
+    default: null,
+  },
 })
 
 const emit = defineEmits([
@@ -315,8 +341,8 @@ const emit = defineEmits([
 ])
 
 const isV2 = computed(() => props.modelVersion === 'v2')
-const currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
-const money = (value) => currency.format(Number(value ?? 0))
+// Missing data reads "Unavailable", never $0.00.
+const money = formatForecastMoney
 const percent = (value) => `${Math.round(Number(value ?? 0) * 100)}%`
 const shortfallCopy = computed(() =>
   props.liquidity?.first_shortfall_date
@@ -348,10 +374,37 @@ const availableGroupOptions = computed(() =>
  */
 const netDelta = computed(() => {
   const fromForecast = Number(props.netChange)
-  if (Number.isFinite(fromForecast)) {
-    return fromForecast.toFixed(2)
+  if (props.netChange !== null && Number.isFinite(fromForecast)) {
+    return formatSignedCashflow(fromForecast)
   }
-  return ((localIncome.value || 0) - (localRate.value || 0)).toFixed(2)
+  return formatSignedCashflow((localIncome.value || 0) - (localRate.value || 0))
+})
+
+const debtCoverageMode = computed(() => props.debtPaymentCoverage?.mode ?? 'proxy')
+
+/** Scheduled debt payments that actually reduce cash in this forecast, and how many plans they come from. */
+const debtPaymentsCopy = computed(() => {
+  const included = props.debtPaymentCoverage?.included ?? []
+  const streams = new Set(included.map((payment) => payment.stream_id))
+  const total = included.reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
+  if (!included.length) {
+    return 'Scheduled debt payments included: none. No verified payment plan reduces cash in this forecast.'
+  }
+  return `Scheduled debt payments included: ${money(total)} across ${streams.size} verified ${streams.size === 1 ? 'stream' : 'streams'}.`
+})
+
+const debtCoverageCopy = computed(() => {
+  const coverage = props.debtPaymentCoverage
+  if (!coverage) return 'Other debt payment coverage: unverified.'
+  if (coverage.mode === 'settlement') {
+    return 'Debt payment coverage: every tracked card and loan has a verified payment plan.'
+  }
+  const unmodeled = Number(coverage.unmodeled_account_count || 0)
+  const noun = unmodeled === 1 ? 'account has' : 'accounts have'
+  if (coverage.mode === 'mixed') {
+    return `Other debt payment coverage: incomplete. ${unmodeled} ${noun} no verified payment plan, so card purchases there still count as cash spending.`
+  }
+  return 'Other debt payment coverage: unverified. Card purchases are counted as cash spending until a payment plan is confirmed.'
 })
 
 /**
@@ -364,8 +417,8 @@ const tooltipCopy = computed(() => {
     props.computeMeta?.includesAutoDetectedAdjustments,
   )
   const autoDetectedAdjustmentCount = Number(props.computeMeta?.autoDetectedAdjustmentCount ?? 0)
-  const incomeValue = Number(localIncome.value || 0).toFixed(2)
-  const liabilityValue = Number(localRate.value || 0).toFixed(2)
+  const incomeValue = formatForecastMoney(Number(localIncome.value || 0))
+  const liabilityValue = formatForecastMoney(Number(localRate.value || 0))
   const forecastScope =
     includedSet.value.size > 0
       ? `${includedSet.value.size} included account${includedSet.value.size === 1 ? '' : 's'}`
@@ -375,8 +428,8 @@ const tooltipCopy = computed(() => {
     assets: `Assets total the positive-balance accounts currently included in the forecast. Click the amount to review ${forecastScope}.`,
     liabilities: `Liabilities total included debt balances that reduce the starting position. Click the amount to review ${forecastScope}.`,
     currentBalance: `Current Balance is assets minus liabilities across ${forecastScope} before projected cashflow changes are applied.`,
-    manualIncome: `Manual Income adds $${incomeValue} per day to the projection in ${props.viewType} view. Use it for steady income not captured automatically.`,
-    liabilityRate: `Liability Rate subtracts $${liabilityValue} per day from the projection in ${props.viewType} view to model recurring debt growth or payments.`,
+    manualIncome: `Manual Income adds ${incomeValue} per day to the projection in ${props.viewType} view. Use it for steady income not captured automatically.`,
+    liabilityRate: `Liability Rate subtracts ${liabilityValue} per day from the projection in ${props.viewType} view to model recurring debt growth or payments.`,
     netDelta: Number.isFinite(Number(props.netChange))
       ? `Net Delta is the forecasted change between the starting and ending balance. It uses a ${movingAverageWindow || 'current'}-day moving average${lookbackDays ? ` across the latest ${lookbackDays} days of history` : ''}${includesAutoDetectedAdjustments ? ` and includes ${autoDetectedAdjustmentCount} auto-detected adjustment${autoDetectedAdjustmentCount === 1 ? '' : 's'}` : ''}.`
       : 'Net Delta falls back to manual income minus liability rate until computed forecast output is available.',
@@ -568,6 +621,21 @@ function toggleExcluded(accountId) {
   font-size: 0.8125rem;
   font-weight: 400;
   color: var(--text-muted);
+}
+
+.debt-coverage {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.debt-coverage p {
+  margin: 0;
+}
+
+.debt-coverage__caution {
+  color: var(--color-text-light);
+  padding-left: 0.6rem;
+  border-left: 3px solid color-mix(in srgb, var(--color-warning) 70%, transparent);
 }
 
 .liquidity-warn {

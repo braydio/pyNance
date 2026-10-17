@@ -195,3 +195,29 @@ def test_roles_only_apply_to_the_right_streams_and_update_revalidates(database):
     )
     assert income.status_code == 400
     assert Account.query.filter_by(account_id="chk").one().user_id == "alice"
+
+
+def test_cashflow_rows_carry_the_true_cash_effect_and_sum_to_the_ledger_net_change(database):
+    add_payment()
+    result = compute()
+    payments = [c for c in result["cashflows"] if c["category"] == "liability_payment"]
+    assert [p["amount"] for p in payments] == [-500.0, -500.0]  # cash leaves: never shown as income
+    assert {(p["type"], p["direction"]) for p in payments} == {("expense", "outflow")}
+    assert not [c for c in result["cashflows"] if c["category"] == "liability_charge"]  # no cash effect
+    total = round(sum(c["amount"] for c in result["cashflows"]), 2)
+    assert abs(total - result["summary"]["net_change"]) <= 0.01
+
+
+def test_cashflow_rows_also_reconcile_without_any_payment_plan(database):
+    result = compute()
+    total = round(sum(c["amount"] for c in result["cashflows"]), 2)
+    assert abs(total - result["summary"]["net_change"]) <= 0.01
+
+
+def test_drivers_show_a_payment_as_cash_leaving_and_skip_card_charges(database):
+    add_payment()
+    result = compute()
+    drivers = result["drivers"]
+    payments = [d for d in drivers if d["kind"] == "liability_payment"]
+    assert payments and all(d["amount"] == -500.0 for d in payments)
+    assert not [d for d in drivers if d["kind"] == "liability_charge"]
