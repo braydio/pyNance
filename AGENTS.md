@@ -127,3 +127,21 @@ These rules adapt the useful task-ownership and closeout conventions from CUSTOD
 - **Report a bounded closeout.** End the task with `Workstream`, `Status`, `Commit` (with GitHub URL), `Validation` (exact commands/results), `Known issues / blocker`, `Next packet`, and the exact authoring-chat link when provided. Keep longer evidence in the canonical packet or a linked summary, not a parallel planning system.
 
 Use one implementation packet per scoped assignment. No mandatory CUSTODIAN dispatch scripts, dual-agent reviews, repeated context scans, or worktree ceremony are required for pyNance.
+
+## Dev Watcher: Pause It For Every Agent Session
+
+`scripts/dev-watcher.sh` (usually the `dev-watcher` tmux window) periodically checkpoints the working tree into `chore: dev-watcher checkpoint` commits and rebases onto `origin`. While an agent is editing, that can commit half-finished files, revert uncommitted work, or re-add files an agent just removed. It has done all three, so every agent session pauses it first.
+
+- **At session start, before the first edit:** pause the watcher without killing the frontend dev server it started.
+
+  ```bash
+  pkill -STOP -f 'scripts/dev-watcher.sh' || true     # freeze the checkpoint/pull loop
+  pgrep -af 'scripts/dev-watcher.sh' | grep -v pgrep   # confirm it is still listed (now stopped)
+  ps -o pid,stat,cmd -p "$(pgrep -f 'scripts/dev-watcher.sh' | head -1)" 2>/dev/null   # STAT should show T
+  ```
+
+  If nothing matches, the watcher is not running and no action is needed.
+- **Do not kill it** (`kill`, `pkill` without `-STOP`, closing the tmux window): the user may rely on its dev server. Pause only.
+- **During the session:** treat any `chore: dev-watcher checkpoint` commit that appears as a red flag. Inspect it (`git show --stat`) and, if it reverted or re-added files, repair with a normal commit from the last good commit rather than rewriting history.
+- **At session end (or when the user asks):** resume it with `pkill -CONT -f 'scripts/dev-watcher.sh' || true`, and say so in the closeout.
+- Never run commands whose pattern matches the agent's own shell command line (for example `pkill -f vite` inside a command that contains the word `vite`); match on the script path as above.
