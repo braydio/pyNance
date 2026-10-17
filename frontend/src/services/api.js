@@ -105,8 +105,12 @@ export default {
     return response.data
   },
 
-  async scanInternalTransfers() {
-    const response = await apiClient.post('/transactions/scan-internal')
+  /**
+   * Scan for internal transfer pairs (read-only). Optional params: start_date, end_date,
+   * account_id, allow_same_account.
+   */
+  async scanInternalTransfers(params = {}) {
+    const response = await apiClient.post('/transactions/scan-internal', null, { params })
     return response.data
   },
 

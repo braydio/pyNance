@@ -155,7 +155,7 @@
       </Card>
     </template>
 
-    <!-- Scanner Tab -->
+    <!-- Transfer Review Tab (slot id stays `Scanner`) -->
     <template #Scanner>
       <Card class="p-6 ui-radius-3 card-surface">
         <InternalTransferScanner />
@@ -306,7 +306,7 @@ export default {
     )
 
     const recurringFormRef = ref(null)
-    const tabs = ['Activity', 'Recurring', 'Scanner']
+    const tabs = ['Activity', 'Recurring', { label: 'Transfer Review', slot: 'Scanner' }]
     const activeTab = ref('Activity')
 
     /**

@@ -1,12 +1,12 @@
 # TP-20261016-003: Transfer Matching Security, Scope, Evidence and Review
 
 **Packet ID:** TP-20261016-003  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-16  
-**Last updated:** 2026-10-17  
+**Last updated:** 2026-10-17
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261016-003-transfer-review-scan-safety.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261016-003-transfer-review-scan-safety.md`  
 **Workstream size:** One targeted implementation packet  
 **Priority:** P0  
 **Depends on:** TP-20261016-001  
@@ -49,3 +49,14 @@ No general transaction anomaly detector; no automatic transfer flagging; no glob
 
 ## Implementation/handoff
 Read `AGENTS.md`, `docs/task-packets/README.md`, `INDEX.md`, `TRACKER.md`; validate only named symbols against latest main. Set In Progress in tracker before coding. Treat prerequisite packets as implemented, do not re-implement their features. Run focused tests then lint/build; commit only this workstream to main without force, mark Complete, move this packet to completed and update INDEX/TRACKER atomically. Report changed files, test output, fixture/behavior evidence, and deviations. If principal is not trusted, fail closed on new owner-scoped endpoints, not permissive fallback. Do not use Plaid Enrich/new billable APIs.
+
+## Completion report (2026-10-17)
+
+- `backend/app/services/internal_transfer_review.py` (new): scoring helpers moved out of `routes/transactions.py`; `find_candidates(owner_id, start_date, end_date, account_ids, max_rows=2000, allow_same_account=False, ...)` filters in SQL on account owner AND transaction owner, posted and not-yet-internal rows, default 90 / max 365 days, 2000 rows and 100 pairs with `truncated` flags; compares canonical account deltas (TP-001) and skips unknown-sign rows (`skipped_unknown_sign`). Same-account pairs need explicit opt-in, exact amounts and a transfer keyword on both rows. Existing index `ix_transactions_user_date` already covers `(user_id, date)`; no migration.
+- `POST /api/transactions/scan-internal`: read-only, owner from `PYNANCE_OWNER_USER_ID` (503 `owner_not_configured` otherwise). Response keeps top-level `pairs`, each now `{pair_id, left, right, evidence{amount_gap_cents, day_gap, shared_tokens, transfer_keyword, low_confidence}, confidence_label strong|review}` plus `range`, `scanned_rows`, `truncated`. No user ids or raw scores returned. Client adapted in the same change.
+- `PUT /api/transactions/update`: `is_internal` changes are authorized BEFORE any mutation (`authorize_internal_flag`): both legs owned by the trusted owner (403), counterpart exists (404), not pending, opposite canonical signs, one-to-one linkage (409), same-account needs `allow_same_account`. Both legs are updated together; an already-confirmed pair is a no-op replay; unflagging clears both legs.
+- Frontend: tab shown as **Transfer Review** (slot id still `Scanner`); `InternalTransferScanner.vue` rewritten (purpose sentence, scanned range, result count, paired Money out / Money in cards, evidence bullets, Confirm Pair, Not a Transfer (session-only), error / done / truncated states); `api.scanInternalTransfers(params)`; sidebar label updated.
+- Tests: `tests/test_internal_transfer_review.py` (23: tenant isolation, pending, amount mismatch, unknown sign, same-account refund, caps/truncation, cross-owner 403 with no partial change, duplicate-confirm replay, one-to-one, fail-closed); `InternalTransferScanner.spec.js` (9); `Transactions.spec.js` unchanged and passing. `npm run build` passes; ESLint 0 errors.
+- Reporting-cache invalidation: confirmed pairs go through the existing `account_logic.invalidate_tx_cache()` at the end of `/update`; no reporting computation was added (TP-20261017-003/004).
+- Deviations: `tests/test_internal_transfer_detection.py` has 4 failures that pre-date this packet (its module stubs omit `app.services`); they exercise `detect_internal_transfer`, not the scan route, so they were left alone. The new coverage lives in `test_internal_transfer_review.py`.
+- Action required: `PYNANCE_OWNER_USER_ID` must be set (see TP-20261016-002) or Transfer Review shows "not set up on this server".

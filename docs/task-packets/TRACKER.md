@@ -8,7 +8,7 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | TP-20261016-001 | Forecast Transaction Sign Contract and Reconciliation | Complete | P0 | None | main | 2026-10-17 | [packet](completed/TP-20261016-001-forecast-transaction-sign-contract.md) |
 | TP-20261016-002 | Recurring Stream Persistence, Account Scope and Legacy API Repair | Complete | P0 | None | main | 2026-10-17 | [packet](completed/TP-20261016-002-recurring-schema-api-integrity.md) |
-| TP-20261016-003 | Transfer Matching Security, Scope, Evidence and Review | Ready | P0 | TP-20261016-001 | main | 2026-10-16 | [packet](active/TP-20261016-003-transfer-review-scan-safety.md) |
+| TP-20261016-003 | Transfer Matching Security, Scope, Evidence and Review | Complete | P0 | TP-20261016-001 | main | 2026-10-17 | [packet](completed/TP-20261016-003-transfer-review-scan-safety.md) |
 | TP-20261016-004 | Unify Recurrence Detector with Forecast Pattern Evidence | Ready | P1 | TP-20261016-001, TP-20261016-002 | main | 2026-10-16 | [packet](active/TP-20261016-004-recurring-pattern-detection-unified.md) |
 | TP-20261016-005 | Recurring Review API, Durable Decisions and Usable UI | Ready | P1 | TP-20261016-002, TP-20261016-004 | main | 2026-10-16 | [packet](active/TP-20261016-005-recurring-review-api-workflow.md) |
 | TP-20261016-006 | Forecast Debt Payments vs Purchases: Settlement-Aware Cash Ledger | Ready | P1 | TP-20261016-001, TP-20261016-003, TP-20261016-005 | main | 2026-10-16 | [packet](active/TP-20261016-006-forecast-debt-settlement-cashflows.md) |
