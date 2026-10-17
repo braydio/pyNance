@@ -135,13 +135,14 @@ Use one implementation packet per scoped assignment. No mandatory CUSTODIAN disp
 - **At session start, before the first edit:** pause the watcher without killing the frontend dev server it started.
 
   ```bash
-  pkill -STOP -f 'scripts/dev-watcher.sh' || true     # freeze the checkpoint/pull loop
-  pgrep -af 'scripts/dev-watcher.sh' | grep -v pgrep   # confirm it is still listed (now stopped)
-  ps -o pid,stat,cmd -p "$(pgrep -f 'scripts/dev-watcher.sh' | head -1)" 2>/dev/null   # STAT should show T
+  # Match only the watcher script itself (not the kitty/tmux launcher or an agent shell that mentions it).
+  PIDS=$(pgrep -f '^bash (.*/)?scripts/dev-watcher\.sh' || true)
+  [ -n "$PIDS" ] && kill -STOP $PIDS                 # freeze the checkpoint/pull loop
+  ps -o pid,stat,cmd -p ${PIDS:-0}                    # STAT should show T when paused
   ```
 
-  If nothing matches, the watcher is not running and no action is needed.
+  If `PIDS` is empty, the watcher is not running and no action is needed.
 - **Do not kill it** (`kill`, `pkill` without `-STOP`, closing the tmux window): the user may rely on its dev server. Pause only.
 - **During the session:** treat any `chore: dev-watcher checkpoint` commit that appears as a red flag. Inspect it (`git show --stat`) and, if it reverted or re-added files, repair with a normal commit from the last good commit rather than rewriting history.
-- **At session end (or when the user asks):** resume it with `pkill -CONT -f 'scripts/dev-watcher.sh' || true`, and say so in the closeout.
-- Never run commands whose pattern matches the agent's own shell command line (for example `pkill -f vite` inside a command that contains the word `vite`); match on the script path as above.
+- **At session end (or when the user asks):** resume it with `kill -CONT $(pgrep -f '^bash (.*/)?scripts/dev-watcher\.sh')`, and say so in the closeout.
+- Never run commands whose pattern matches the agent's own shell command line (for example `pkill -f vite` inside a command that contains the word `vite`); use the anchored `pgrep` pattern above.
