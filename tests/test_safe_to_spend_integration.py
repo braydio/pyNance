@@ -72,7 +72,8 @@ def test_provider_signs_and_account_ownership(database, provider, expense, incom
     assert service._next_income_date(date(2026, 7, 12), "user-b") is None
 
 
-def test_real_safe_to_spend_route(database):
+def test_real_safe_to_spend_route(database, monkeypatch):
+    monkeypatch.setenv("PYNANCE_OWNER_USER_ID", "user-a")
     db, models, _, client = database
     scenario = models.PlanningScenario(name="Budget", account_id="a")
     db.session.add(scenario)
@@ -96,12 +97,13 @@ def test_real_safe_to_spend_route(database):
     assert response.status_code == 200
     payload = response.get_json()
     assert payload["status"] == "success"
-    assert payload["data"]["components"] == {
+    components = payload["data"]["components"]
+    assert {k: components[k] for k in ("spendable_cash_cents", "upcoming_outflows_cents", "required_buffer_cents")} == {
         "spendable_cash_cents": 100000,
         "upcoming_outflows_cents": 15000,
         "required_buffer_cents": 25000,
-        "spent_today_cents": 4250,
     }
+    assert components["spent_today_cents"] == 4250  # visible, not subtracted again
     assert payload["data"]["upcoming_bills"][0]["name"] == "Power"
 
 
@@ -180,9 +182,9 @@ def test_safe_to_spend_exposes_payday_prediction_metadata(database, monkeypatch)
     assert "candidates" not in data["payday_prediction"]
 
     monkeypatch.delenv("PYNANCE_OWNER_USER_ID")
-    data = client.get("/api/dashboard/safe-to-spend?as_of=2026-10-17&user_id=user-a").get_json()["data"]
-    assert data["next_income_date"] is None
-    assert data["payday_prediction"]["reason_codes"] == ["owner_not_configured"]
+    assert client.get("/api/dashboard/safe-to-spend?as_of=2026-10-17&user_id=user-a").status_code == 503
+    monkeypatch.setenv("PYNANCE_OWNER_USER_ID", "user-a")
+    assert client.get("/api/dashboard/safe-to-spend?as_of=2026-10-17&user_id=user-b").status_code == 403
 
 
 def test_confirmed_income_stream_is_used_when_present(database, monkeypatch):

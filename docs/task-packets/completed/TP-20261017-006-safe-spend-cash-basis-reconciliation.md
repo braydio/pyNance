@@ -1,12 +1,12 @@
 # TP-20261017-006: Correct Safe-to-Spend Cash Basis and Remove Double Charges
 
 **Packet ID:** TP-20261017-006  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-17  
 **Last updated:** 2026-10-17  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261017-006-safe-spend-cash-basis-reconciliation.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261017-006-safe-spend-cash-basis-reconciliation.md`  
 **Workstream size:** One cash-basis reconciliation packet  
 **Priority:** P0  
 **Depends on:** TP-20261016-001, TP-20261016-003, TP-20261016-007, TP-20261017-003  
@@ -30,3 +30,14 @@ Ensure Safe-to-Spend starts with *real accessible liquid cash*, excludes deficit
 
 ## Non-goals / validation
 No provider refresh, bill projection, payday algorithms, account-balance DB schema changes or mutation, new paid APIs. Do not change global `normalize_account_balance` semantics in unrelated charts. `pytest tests/test_safe_to_spend_cash_basis.py tests/test_safe_to_spend_service.py tests/test_safe_to_spend_integration.py tests/test_transaction_semantics.py -q`. Update packet state INDEX/TRACKER on completion, report cash-basis fixture outputs and coverage cases.
+
+## Completion report (2026-10-17)
+
+- **Cash eligibility:** `_is_cash_account` now uses the shared portfolio classification (`depository` group), so names never qualify an account. Credit cards, loans, brokerage, hidden accounts and CDs are excluded.
+- **Balances:** `_cash_account_payload` no longer uses `abs()`; it returns `(usable_cents, sources, coverage)`. Per account the usable amount is `min(current, available)` when both are reported, else `current` with `availability_unverified`. Deficits across eligible accounts are deducted from positive cash before the clamp at zero (checking -$100 + savings +$200 => $100).
+- **No double debit:** `spendable - bills - buffer` only. `_spent_between` is a posted-cash-outflow diagnostic on cash accounts (no card spend, internal transfers or pending); `components.spent_today_cents` stays for history, with `spent_today_included_in_balance: "unknown"` and a separate unsubtracted `pending_cash_outflow_cents`.
+- **Payload additions:** `opening_cash_sources` (current/available/deficit/`balance_as_of`/`balance_status`/warnings per account) and `cash_coverage` (`accounts_counted`, `availability_unverified`, `stale_balances`, `unknown_freshness`, `deficit_accounts`, `deficit_cents`). Unverified or stale data lowers `confidence` from `ready` to `estimated` (never reports a verified zero). Legacy keys are unchanged.
+- **Route:** `/api/dashboard/safe-to-spend` takes the owner from `PYNANCE_OWNER_USER_ID` (503 `owner_not_configured` when unset; 403 when `user_id` names someone else), so it can no longer return all owners' accounts.
+- **UI:** `SafeToSpendCard` labels the row "Spent today (already in balance)" and no longer shows it as a deduction (TP-007 owns the wider display contract).
+- **Tests (synthetic):** new `tests/test_safe_to_spend_cash_basis.py` (9: deficit, clamp, available cap, stale/unknown age, name and noncash exclusion, posted spend not re-deducted, pending separate, internal and cross-owner, cent rounding); updated service and integration tests. Each file passes when run alone (service 2, integration 8, cash basis 9, payday 17, semantics 23).
+- **Not changed:** no provider refresh, bill projection, payday logic, schema or global `normalize_account_balance`.

@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from decimal import ROUND_HALF_UP, Decimal
 
 from sqlalchemy import and_, func, or_
 
 from app.extensions import db
 from app.models import Account, PlannedBill, PlanningScenario, Transaction
-from app.utils.finance_utils import normalize_account_balance
 
 TWOPLACES = Decimal("0.01")
 DEFAULT_BUFFER_CENTS = 25_000
@@ -19,15 +18,6 @@ MODE_WINDOWS = {
     "today": 0,
     "week": 6,
     "until_payday": 14,
-}
-CASH_ACCOUNT_TOKENS = {
-    "cash",
-    "checking",
-    "savings",
-    "depository",
-    "prepaid",
-    "money market",
-    "money_market",
 }
 
 
@@ -85,13 +75,20 @@ def _coerce_date(value: date | datetime | str | None) -> date:
     return datetime.strptime(str(value), "%Y-%m-%d").date()
 
 
-def _is_cash_account(account: Account) -> bool:
-    """Return True when an account should count toward daily spendable cash."""
+_NON_SPENDABLE_SUBTYPES = {"cd", "certificate of deposit"}
+STALE_BALANCE_AFTER = timedelta(hours=48)
 
-    if account.is_investment:
+
+def _is_cash_account(account: Account) -> bool:
+    """Return True for owned checking/savings-style accounts; names never qualify an account."""
+
+    from app.services.account_portfolio_metrics import classify_account_group
+
+    if getattr(account, "is_investment", False):
         return False
-    fields = {str(account.type or "").lower(), str(account.subtype or "").lower(), str(account.name or "").lower()}
-    return any(token in field for field in fields for token in CASH_ACCOUNT_TOKENS)
+    if str(getattr(account, "subtype", "") or "").strip().lower() in _NON_SPENDABLE_SUBTYPES:
+        return False
+    return classify_account_group(account) == "depository"
 
 
 def _visible_accounts(user_id: str | None = None) -> list[Account]:
@@ -103,29 +100,78 @@ def _visible_accounts(user_id: str | None = None) -> list[Account]:
     return query.all()
 
 
-def _cash_account_payload(accounts: list[Account]) -> tuple[int, list[dict]]:
-    """Build spendable-cash cents and source account metadata."""
+def _balance_freshness(account: Account, now: datetime) -> str:
+    as_of = getattr(account, "balance_as_of", None)
+    if as_of is None:
+        return "unknown"
+    if as_of.tzinfo is None:
+        as_of = as_of.replace(tzinfo=timezone.utc)
+    return "stale" if now - as_of > STALE_BALANCE_AFTER else "fresh"
 
-    total_cents = 0
+
+def _cash_account_payload(accounts: list[Account], now: datetime | None = None) -> tuple[int, list[dict], dict]:
+    """Build usable-cash cents, per-account sources and a coverage summary.
+
+    Asset balances keep their sign (an overdraft is a deficit, never ``abs``). Each account
+    contributes ``min(current, available)`` when the provider reports both, else ``current`` with an
+    ``availability_unverified`` warning. Deficits across eligible accounts are deducted from the
+    positive cash before the total is clamped at zero.
+    """
+
+    now = now or datetime.now(timezone.utc)
+    positive_cents = 0
+    deficit_cents = 0
     payload = []
+    coverage = {
+        "accounts_counted": 0,
+        "availability_unverified": 0,
+        "stale_balances": 0,
+        "unknown_freshness": 0,
+        "deficit_accounts": 0,
+    }
     for account in accounts:
         if not _is_cash_account(account):
             continue
-        normalized = normalize_account_balance(
-            account.balance, account.type, account_id=account.account_id, subtype=account.subtype
-        )
-        balance_cents = max(_to_cents(normalized), 0)
-        total_cents += balance_cents
+        current_cents = _to_cents(account.balance)
+        available = getattr(account, "available_balance", None)
+        warnings = []
+        if available is None:
+            usable_cents = current_cents
+            warnings.append("availability_unverified")
+            coverage["availability_unverified"] += 1
+        else:
+            usable_cents = min(current_cents, _to_cents(available))
+        freshness = _balance_freshness(account, now)
+        if freshness == "stale":
+            coverage["stale_balances"] += 1
+            warnings.append("stale_balance")
+        elif freshness == "unknown":
+            coverage["unknown_freshness"] += 1
+            warnings.append("balance_age_unknown")
+        if usable_cents < 0:
+            deficit_cents += -usable_cents
+            coverage["deficit_accounts"] += 1
+        else:
+            positive_cents += usable_cents
+        coverage["accounts_counted"] += 1
+        as_of = getattr(account, "balance_as_of", None)
         payload.append(
             {
                 "account_id": account.account_id,
                 "name": account.display_name,
                 "type": account.type,
                 "subtype": account.subtype,
-                "balance_cents": balance_cents,
+                "balance_cents": max(usable_cents, 0),
+                "current_balance_cents": current_cents,
+                "available_balance_cents": None if available is None else _to_cents(available),
+                "deficit_cents": max(-usable_cents, 0),
+                "balance_as_of": as_of.isoformat() if as_of else None,
+                "balance_status": freshness,
+                "warnings": warnings,
             }
         )
-    return total_cents, payload
+    coverage["deficit_cents"] = deficit_cents
+    return max(positive_cents - deficit_cents, 0), payload, coverage
 
 
 def _outflow_filter():
@@ -146,19 +192,27 @@ def _inflow_filter():
     )
 
 
-def _spent_between(start: date, end: date, user_id: str | None = None) -> int:
-    """Return posted non-internal outflows between inclusive date boundaries."""
+def _spent_between(start: date, end: date, user_id: str | None = None, *, pending: bool = False) -> int:
+    """Return posted (or, with ``pending``, pending) non-internal outflows on cash accounts.
 
+    This is a diagnostic: current balances already include posted activity, so it is never
+    subtracted from spendable cash. Card purchases and investment accounts are excluded.
+    """
+
+    cash_ids = [a.account_id for a in _visible_accounts(user_id) if _is_cash_account(a)]
+    if not cash_ids:
+        return 0
     query = (
         db.session.query(func.coalesce(func.sum(func.abs(Transaction.amount)), 0))
-        .join(Account, Account.account_id == Transaction.account_id)
-        .filter(or_(Account.is_hidden.is_(False), Account.is_hidden.is_(None)))
+        .filter(Transaction.account_id.in_(cash_ids))
         .filter(Transaction.date >= start, Transaction.date <= end)
         .filter(_outflow_filter())
         .filter(or_(Transaction.is_internal.is_(False), Transaction.is_internal.is_(None)))
     )
-    if user_id:
-        query = query.filter(Account.user_id == user_id)
+    if pending:
+        query = query.filter(Transaction.pending.is_(True))
+    else:
+        query = query.filter(or_(Transaction.pending.is_(False), Transaction.pending.is_(None)))
     return _to_cents(query.scalar())
 
 
@@ -310,14 +364,15 @@ def build_safe_to_spend_payload(inputs: SafeToSpendInputs | None = None) -> dict
     as_of = _coerce_date(inputs.as_of)
     buffer_cents = max(int(inputs.buffer_cents or 0), 0)
     accounts = _visible_accounts(inputs.user_id)
-    spendable_cash_cents, account_payload = _cash_account_payload(accounts)
+    spendable_cash_cents, account_payload, cash_coverage = _cash_account_payload(accounts)
     payday = _payday_prediction(as_of, inputs.user_id)
     next_income = date.fromisoformat(payday["next_payday"]) if payday["next_payday"] else None
     horizon_end = _horizon_end(mode, as_of, next_income)
     upcoming_outflows_cents, bills = _upcoming_bill_payload(as_of, horizon_end, inputs.user_id)
     spent_today_cents = _spent_between(as_of, as_of, inputs.user_id)
+    pending_outflow_cents = _spent_between(as_of, as_of, inputs.user_id, pending=True)
 
-    raw_amount = spendable_cash_cents - upcoming_outflows_cents - buffer_cents - spent_today_cents
+    raw_amount = spendable_cash_cents - upcoming_outflows_cents - buffer_cents
     amount_cents = max(raw_amount, 0)
     days = max((horizon_end - as_of).days + 1, 1)
     per_day_cents = amount_cents // days
@@ -338,6 +393,12 @@ def build_safe_to_spend_payload(inputs: SafeToSpendInputs | None = None) -> dict
     confidence = "ready" if account_payload else "limited"
     if not bills:
         confidence = "estimated"
+    if confidence == "ready" and (
+        cash_coverage["availability_unverified"]
+        or cash_coverage["stale_balances"]
+        or cash_coverage["unknown_freshness"]
+    ):
+        confidence = "estimated"
 
     return {
         "amount_cents": amount_cents if mode == "today" else per_day_cents,
@@ -356,8 +417,13 @@ def build_safe_to_spend_payload(inputs: SafeToSpendInputs | None = None) -> dict
             "upcoming_outflows_cents": upcoming_outflows_cents,
             "required_buffer_cents": buffer_cents,
             "spent_today_cents": spent_today_cents,
+            # Balances already include posted activity; it is shown for history, never deducted twice.
+            "spent_today_included_in_balance": "unknown",
+            "pending_cash_outflow_cents": pending_outflow_cents,
         },
         "accounts": account_payload,
+        "opening_cash_sources": account_payload,
+        "cash_coverage": cash_coverage,
         "upcoming_bills": bills,
         "message": message,
     }

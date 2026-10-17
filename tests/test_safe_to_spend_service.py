@@ -67,14 +67,22 @@ sys.modules["app.services.safe_to_spend"] = service
 spec.loader.exec_module(service)
 
 
+def _cash_only(monkeypatch):
+    """The stubbed module graph cannot import the classifier; checking accounts are cash."""
+    monkeypatch.setattr(service, "_is_cash_account", lambda account: True)
+
+
 def test_build_safe_to_spend_payload_today(monkeypatch):
+    _cash_only(monkeypatch)
     monkeypatch.setattr(service, "_visible_accounts", lambda user_id=None: [Account(balance=Decimal("500.00"))])
     monkeypatch.setattr(
         service,
         "_upcoming_bill_payload",
         lambda as_of, horizon_end, user_id=None: (15_000, [{"name": "Power", "amount_cents": 15_000}]),
     )
-    monkeypatch.setattr(service, "_spent_between", lambda start, end, user_id=None: 2_500)
+    monkeypatch.setattr(
+        service, "_spent_between", lambda start, end, user_id=None, pending=False: 0 if pending else 2_500
+    )
     monkeypatch.setattr(
         service,
         "_payday_prediction",
@@ -85,21 +93,26 @@ def test_build_safe_to_spend_payload_today(monkeypatch):
         service.SafeToSpendInputs(as_of=date(2026, 7, 12), buffer_cents=25_000)
     )
 
-    assert payload["amount_cents"] == 7_500
+    # Posted spending is already inside the balance, so it is shown but not deducted again.
+    assert payload["amount_cents"] == 10_000
     assert payload["components"] == {
         "spendable_cash_cents": 50_000,
         "upcoming_outflows_cents": 15_000,
         "required_buffer_cents": 25_000,
         "spent_today_cents": 2_500,
+        "spent_today_included_in_balance": "unknown",
+        "pending_cash_outflow_cents": 0,
     }
     assert payload["status"] == "comfortable"
-    assert payload["confidence"] == "ready"
+    assert payload["confidence"] == "estimated"  # availability and balance age are unverified
+    assert payload["cash_coverage"]["availability_unverified"] == 1
 
 
 def test_build_safe_to_spend_payload_until_payday_per_day(monkeypatch):
+    _cash_only(monkeypatch)
     monkeypatch.setattr(service, "_visible_accounts", lambda user_id=None: [Account(balance=Decimal("300.00"))])
     monkeypatch.setattr(service, "_upcoming_bill_payload", lambda as_of, horizon_end, user_id=None: (10_000, []))
-    monkeypatch.setattr(service, "_spent_between", lambda start, end, user_id=None: 0)
+    monkeypatch.setattr(service, "_spent_between", lambda start, end, user_id=None, pending=False: 0)
     monkeypatch.setattr(
         service,
         "_payday_prediction",

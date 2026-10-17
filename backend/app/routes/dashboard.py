@@ -48,8 +48,14 @@ def get_safe_to_spend():
     except ValueError:
         return jsonify({"status": "error", "message": "buffer_cents must be an integer"}), 400
 
+    owner, refusal = _payday_owner(request.args.get("user_id"))
+    if refusal == "owner_not_configured":
+        return jsonify({"status": "error", "code": refusal, "message": "PYNANCE_OWNER_USER_ID is not configured"}), 503
+    if refusal:
+        return jsonify({"status": "error", "code": refusal, "message": "Not available"}), 403
+
     inputs = SafeToSpendInputs(
-        user_id=request.args.get("user_id"),
+        user_id=owner,
         mode=request.args.get("mode") or "today",
         as_of=as_of,
         buffer_cents=buffer_cents,

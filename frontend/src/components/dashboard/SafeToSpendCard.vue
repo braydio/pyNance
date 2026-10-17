@@ -55,8 +55,8 @@
           <dd>-{{ formatCents(payload.components?.required_buffer_cents) }}</dd>
         </div>
         <div>
-          <dt>Spent today</dt>
-          <dd>-{{ formatCents(payload.components?.spent_today_cents) }}</dd>
+          <dt>Spent today (already in balance)</dt>
+          <dd>{{ formatCents(payload.components?.spent_today_cents) }}</dd>
         </div>
       </dl>
 
