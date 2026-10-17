@@ -490,6 +490,7 @@ def _tx_cache_key(
     recent,
     limit,
     include_transfers=False,
+    sort="date_desc",
 ):
     ids = None
     if account_ids:
@@ -515,6 +516,7 @@ def _tx_cache_key(
         bool(recent),
         limit,
         bool(include_transfers),
+        sort or "date_desc",
     )
 
 
@@ -546,6 +548,12 @@ def invalidate_tx_cache():
     global TX_CACHE_VERSION
     TX_PAGE_CACHE.clear()
     TX_CACHE_VERSION = int(time.time())
+    try:  # insights are derived from the same rows, so an edit or refresh must drop them too
+        from app.services.transaction_insights import invalidate_insights_cache
+
+        invalidate_insights_cache()
+    except ImportError:  # pragma: no cover - minimal stub environments
+        pass
 
 
 def process_transaction_amount(amount):
@@ -1094,6 +1102,7 @@ def get_paginated_transactions(
     include_running_balance=False,
     merchant=None,
     include_transfers=False,
+    sort="date_desc",
 ):
     """Return paginated transaction rows with optional filtering.
 
@@ -1129,6 +1138,11 @@ def get_paginated_transactions(
         When ``True`` keep confirmed internal transfers in the result (used by the daily modal so
         its history matches the Daily Net reconciliation). The default explorer view still hides them.
 
+    sort : str, default ``"date_desc"``
+        Server-side ordering across ALL matching rows (not just the loaded page): ``date_desc``,
+        ``date_asc``, ``spend_desc`` (largest money-out first), ``amount_desc`` (largest absolute
+        amount), ``merchant_asc`` or ``category_asc``. Unknown values fall back to newest first.
+
     Every serialized row also carries ``reporting_flow_kind``, ``flow_confidence`` and
     ``flow_reason_codes`` from the shared economic-flow classifier.
 
@@ -1144,7 +1158,7 @@ def get_paginated_transactions(
         .join(Account, Transaction.account_id == Account.account_id)
         .outerjoin(Category, Transaction.category_id == Category.id)
         .filter(Account.is_hidden.is_(False))
-        .order_by(Transaction.date.desc(), Transaction.transaction_id.desc())
+        .order_by(*_transaction_order(sort))
     )
     if not include_transfers:
         query = query.filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
@@ -1209,6 +1223,7 @@ def get_paginated_transactions(
             recent,
             limit,
             include_transfers,
+            sort,
         )
         cached = _get_cached_tx_page(cache_key)
         if cached:
@@ -1312,6 +1327,25 @@ def get_paginated_transactions(
         _set_cached_tx_page(cache_key, (serialized, total), meta)
 
     return serialized, total, meta
+
+
+_NEWEST_FIRST = ("date_desc",)
+
+
+def _transaction_order(sort):
+    """ORDER BY clauses for the supported ``sort`` keys, always tie-broken newest first."""
+
+    tie = (Transaction.date.desc(), Transaction.transaction_id.desc())
+    amount = func.coalesce(Transaction.amount, 0)
+    clauses = {
+        "date_asc": (Transaction.date.asc(), Transaction.transaction_id.asc()),
+        # Plaid stores money out as positive; largest spend first, credits sink to the bottom.
+        "spend_desc": (amount.desc(), *tie),
+        "amount_desc": (func.abs(amount).desc(), *tie),
+        "merchant_asc": (func.lower(func.coalesce(Transaction.merchant_name, "")).asc(), *tie),
+        "category_asc": (func.lower(func.coalesce(Transaction.category, "")).asc(), *tie),
+    }
+    return clauses.get(sort or "date_desc", tie)
 
 
 def _running_balance_expression():

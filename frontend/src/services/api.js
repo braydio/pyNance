@@ -114,6 +114,19 @@ export default {
     return response.data
   },
 
+  /**
+   * Summaries and a short review queue over ALL transactions matching the scope (not the loaded page).
+   * Params: start_date, end_date, account_ids (array or comma list), category, refresh.
+   */
+  async getTransactionInsights(params = {}) {
+    const { account_ids, ...rest } = params
+    const query = { ...rest }
+    if (Array.isArray(account_ids) && account_ids.length) query.account_ids = account_ids.join(',')
+    else if (account_ids) query.account_ids = account_ids
+    const response = await apiClient.get('/transactions/insights', { params: query })
+    return response.data
+  },
+
   async setAccountHidden(account_id, hidden) {
     const response = await apiClient.put(`/accounts/${account_id}/hidden`, { hidden })
     return response.data

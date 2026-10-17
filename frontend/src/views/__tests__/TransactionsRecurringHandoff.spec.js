@@ -10,6 +10,12 @@ vi.mock('@/composables/useTransactions.js', () => ({
   useTransactions: (...args) => useTransactionsMock(...args),
 }))
 vi.mock('vue-router', () => ({ useRoute: () => ({ query: {} }) }))
+vi.mock('@/services/api', () => ({
+  default: {
+    getTransactionInsights: vi.fn().mockResolvedValue({ status: 'success', data: null }),
+    getAccounts: vi.fn().mockResolvedValue({ accounts: [] }),
+  },
+}))
 
 const openFromTransaction = vi.fn()
 

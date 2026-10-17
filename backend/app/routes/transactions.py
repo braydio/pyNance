@@ -24,6 +24,7 @@ transactions = Blueprint("transactions", __name__)
 UTC = timezone.utc
 TWOPLACES = Decimal("0.01")
 AMOUNT_EPSILON = TWOPLACES
+TRANSACTION_SORTS = ("date_desc", "date_asc", "spend_desc", "amount_desc", "merchant_asc", "category_asc")
 
 
 def _ensure_utc(dt: datetime | None) -> datetime | None:
@@ -616,7 +617,8 @@ def get_transactions_paginated():
     (YYYY-MM-DD), ``account_id`` or ``account_ids`` (comma-delimited or
     repeated parameters), ``transaction_id`` for a specific lookup and
     ``tx_type``/``transaction_type`` with values ``credit`` or ``debit``.
-    ``include_transfers=true`` keeps confirmed internal transfers (bound to the trusted server owner,
+    ``sort`` orders ALL matching rows server-side (``date_desc`` default, ``date_asc``, ``spend_desc``,
+    ``amount_desc``, ``merchant_asc``, ``category_asc``). ``include_transfers=true`` keeps confirmed internal transfers (bound to the trusted server owner,
     503 when none is configured). Tag filters can be supplied through ``tag`` or ``tags`` parameters.
     Unknown or empty parameters are ignored.
     """
@@ -645,6 +647,9 @@ def get_transactions_paginated():
         except ValueError as exc:
             return jsonify({"status": "error", "message": str(exc)}), 400
 
+        sort = request.args.get("sort") or "date_desc"
+        if sort not in TRANSACTION_SORTS:
+            return jsonify({"status": "error", "message": f"sort must be one of {', '.join(TRANSACTION_SORTS)}"}), 400
         include_transfers = _truthy_param(request.args.get("include_transfers"), default=False)
         owner_id = None
         if include_transfers:
@@ -670,6 +675,7 @@ def get_transactions_paginated():
             tags=tags or None,
             include_running_balance=include_running_balance,
             include_transfers=include_transfers,
+            sort=sort,
         )
 
         return (
@@ -689,6 +695,46 @@ def get_transactions_paginated():
     except Exception as e:
         logger.error("Error in get_transactions_paginated: %s", e, exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@transactions.route("/insights", methods=["GET"])
+def get_transaction_insights():
+    """Summaries and a short review queue over ALL matching transactions (not the loaded page).
+
+    Query parameters: ``start_date`` / ``end_date`` (YYYY-MM-DD, default last 30 days, at most 366
+    days), ``account_ids`` (comma-delimited or repeated), ``category`` (repeatable) and ``refresh=true``
+    to bypass the ten-minute cache. Bound to the trusted server owner; 503 without one, 400 for bad
+    scope. Read-only: nothing is edited and no external service is called.
+    """
+    from app.services import recurring_repository, transaction_insights
+
+    try:
+        try:
+            owner_id = recurring_repository.trusted_owner_id()
+        except recurring_repository.OwnerNotConfigured as exc:
+            return jsonify({"status": "error", "code": exc.code, "message": str(exc)}), exc.status
+        try:
+            start = _parse_iso_date(request.args.get("start_date"))
+            end = _parse_iso_date(request.args.get("end_date"))
+        except (TypeError, ValueError):
+            return jsonify({"status": "error", "message": "Dates must be YYYY-MM-DD"}), 400
+        start = start.date() if isinstance(start, datetime) else start
+        end = end.date() if isinstance(end, datetime) else end
+        try:
+            data = transaction_insights.get_insights(
+                owner_id,
+                start,
+                end,
+                account_ids=_parse_account_ids(request.args) or None,
+                categories=request.args.getlist("category") or None,
+                refresh=_truthy_param(request.args.get("refresh"), default=False),
+            )
+        except transaction_insights.InsightsError as exc:
+            return jsonify({"status": "error", "message": str(exc)}), exc.status
+        return jsonify({"status": "success", "data": data}), 200
+    except Exception as e:
+        logger.error("Error building transaction insights: %s", e, exc_info=True)
+        return jsonify({"status": "error", "message": "Unable to build transaction insights"}), 500
 
 
 @transactions.route("/<account_id>/transactions", methods=["GET"])
