@@ -3,7 +3,7 @@
 **Packet ID:** TP-20261016-004  
 **Status:** Ready  
 **Created:** 2026-10-16  
-**Last updated:** 2026-10-16  
+**Last updated:** 2026-10-17  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
 **Canonical path:** `docs/task-packets/active/TP-20261016-004-recurring-pattern-detection-unified.md`  
@@ -35,6 +35,17 @@ Legacy `RecurringDetector` keys on exact 2dp amount + first 16 cleaned descripti
 2. Extend cadence handling and `v2_core.CADENCES` / `expand_scheduled_events` to support `quarterly` and `yearly`, and distinguish semimonthly vs biweekly. For monthly day 29/30/31 clamp to valid last day; month starts/ends and 28-34 day gaps should match. Annual/quarterly patterns need 400-800+ day lookback if available; if not, return `insufficient_history`/proposed, not fabricated confidence. Allow variable bills up to configurable dispersion without merging unrelated subscriptions; merchant_slug fallback, account_id+sign grouping; return explanation signals and evidence.
 3. `detect_candidate_streams` returns deterministic records `{candidate_key, user/account, merchant_key, label, signed_median, amount_min/max, amount_mode, cadence, expected_next_date, observations, confidence, reason_codes, evidence:[transaction_id,date,amount]}`. Candidate key SHA-256 of `(user,account,merchant,sign,cadence,amount_cluster_version)` stable across rescans and pending-to-posted; use version marker and deterministic clustering, do not use volatile cluster ordinal alone. Exclude pending, transfers, duplicate rows, non-cash/non-liability and no-owner; preserve user corrections.
 4. Persist candidates via `recurring_repository.py:upsert_detected_candidate`; upsert by candidate_key with DB unique `(user_id,candidate_key)` added as nullable column if needed. NEVER overwrite `confirmed`, `ignored`, or `ended` with `proposed` on rescan; update latest evidence for proposed, preserve review decision. Candidate engine output used by Forecast V2 inference rather than its own second detector; explain and avoid double claiming.
+
+## 2026-10-17 evidence refresh: real scan payload loses identity (must fix in THIS packet)
+`backend/app/routes/recurring.py::scan_account_for_recurring` currently passes only `amount`, `description`, `date` to `RecurringBridge(txs)`, **omitting `account_id`, `transaction_id`, `pending`, `provider`, `is_internal`**. The bridge tries to recover `account_id` from those dictionaries and therefore can pass `None` to the old `upsert_recurring`. The route converts amount for display before detection, while the Forecast V2 adapter currently forwards raw Plaid amounts (001 repairs that mismatch). The seven-day GET reminders route separately groups exact description/amount and never constitutes the candidate inventory.
+
+**Mandatory additions to step 1 and tests:**
+- Change `scan_account_for_recurring` to an owner-checked adapter into `detect_candidate_streams` with *transaction_id, account_id, date, raw_amount, provider, merchant_name, description, pending, is_internal, transfer linkage* preserved; normalize sign only once using 001. Never use `display_transaction_amount` for inference, and never invent a bank transaction when persisting candidates.
+- Reuse `load_v2_source_data` / existing synced local Transaction history, not the route's fixed 90-day slice; request up to 400 days by default (800+ if configured/available for yearly), with an explicit `history_incomplete` outcome. Expose an idempotent **manual rescan** for already imported accounts through 005; schedule no new background jobs. Trigger re-evaluation on existing *successful* transaction-sync completion only if the current pipeline offers a safe idempotent hook; otherwise document that manual scan is required (do not claim automatic recomputation).
+- Compare consecutive **calendar months** rather than exact 30-day gaps; annual/missing-cycle behavior as above. For just two aligned, non-duplicate posted cycles, preserve candidate evidence with reason `needs_review_insufficient_cycles`, not a fake confirmed bill. For >=3 consistent cycles and sufficient scope, expose robust confidence/last-seen info for provisional reserve policy in TP-20261017-001. Do not claim that proposed streams were automatically confirmed.
+- Add route regression for 3 synthetic $700 debits on Jul/Aug/Sep 21 under one account (not a user data fixture): a repeated scan yields one stable, owner-scoped monthly candidate with next due Oct 21, canonical external cash direction, transaction IDs and evidence count; 2 occurrences remain review-only, changed bank memo doesn't split it, ignored candidate stays ignored, no fabricated Transactions.
+
+**Downstream dependency:** TP-20261017-001 consumes these canonical, persisted candidates in Safe-to-Spend; TP-20261017-002 explains their inclusion / omission in the dashboard. Those packets do not own detection.
 
 ## Exact contracts and acceptance fixtures
 - Test $83/$97/$91 monthly utility across different month lengths; biweekly payroll; twice-monthly paychecks; annual subscription with 12+ months history; 3 different subscription tiers same merchant not merged; transfers and duplicate pending excluded.
