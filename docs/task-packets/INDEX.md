@@ -9,7 +9,7 @@ See [README.md](README.md) for naming, lifecycle, execution, and authoring rules
 | Packet ID | Title | Status | Created | Canonical packet |
 | --- | --- | --- | --- | --- |
 | TP-20261016-001 | Forecast Transaction Sign Contract and Reconciliation | Complete | 2026-10-17 | [completed/TP-20261016-001-forecast-transaction-sign-contract.md](active/TP-20261016-001-forecast-transaction-sign-contract.md) |
-| TP-20261016-002 | Recurring Stream Persistence, Account Scope and Legacy API Repair | Ready | 2026-10-16 | [active/TP-20261016-002-recurring-schema-api-integrity.md](active/TP-20261016-002-recurring-schema-api-integrity.md) |
+| TP-20261016-002 | Recurring Stream Persistence, Account Scope and Legacy API Repair | In Progress | 2026-10-16 | [active/TP-20261016-002-recurring-schema-api-integrity.md](active/TP-20261016-002-recurring-schema-api-integrity.md) |
 | TP-20261016-003 | Transfer Matching Security, Scope, Evidence and Review | Ready | 2026-10-16 | [active/TP-20261016-003-transfer-review-scan-safety.md](active/TP-20261016-003-transfer-review-scan-safety.md) |
 | TP-20261016-004 | Unify Recurrence Detector with Forecast Pattern Evidence | Ready | 2026-10-16 | [active/TP-20261016-004-recurring-pattern-detection-unified.md](active/TP-20261016-004-recurring-pattern-detection-unified.md) |
 | TP-20261016-005 | Recurring Review API, Durable Decisions and Usable UI | Ready | 2026-10-16 | [active/TP-20261016-005-recurring-review-api-workflow.md](active/TP-20261016-005-recurring-review-api-workflow.md) |
