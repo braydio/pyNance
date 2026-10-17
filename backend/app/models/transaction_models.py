@@ -243,6 +243,7 @@ class RecurringStream(db.Model):
             "status IN ('proposed', 'confirmed', 'ignored', 'ended')", name="ck_recurring_streams_status"
         ),
         sa.CheckConstraint("source IN ('manual', 'detected', 'legacy')", name="ck_recurring_streams_source"),
+        sa.UniqueConstraint("user_id", "candidate_key", name="uq_recurring_streams_user_candidate"),
         db.Index("ix_recurring_streams_user_status_anchor", "user_id", "status", "anchor_date"),
         db.Index("ix_recurring_streams_user_account_merchant", "user_id", "account_id", "merchant_key"),
     )
@@ -253,6 +254,7 @@ class RecurringStream(db.Model):
         db.String(64), db.ForeignKey("accounts.account_id", ondelete="CASCADE"), nullable=False, index=True
     )
     merchant_key = db.Column(db.String(160), nullable=True)
+    candidate_key = db.Column(db.String(64), nullable=True)
     display_name = db.Column(db.String(256), nullable=False)
     amount_cash_delta = db.Column(db.Numeric(18, 2), nullable=False)
     amount_mode = db.Column(db.String(16), nullable=False, default="fixed")

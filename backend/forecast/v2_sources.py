@@ -55,6 +55,13 @@ DEFAULT_OPTIONS: dict[str, Any] = {
     "min_weekday_samples": 4,
     "winsor_percentile": 0.05,
     "pending_match_days": 7,
+    # Recurrence inference looks further back than the residual model so quarterly and yearly
+    # patterns can be seen; the residual model still uses ``lookback_days``.
+    "stream_lookback_days": 400,
+    # A variable bill may drift up to this much between its smallest and largest amount.
+    "max_cluster_spread": 0.30,
+    # Amounts within this relative spread are a fixed amount; wider spread is a variable amount.
+    "fixed_amount_tolerance": 0.01,
 }
 ZERO = Decimal("0.00")
 _SUPPORTED_FREQUENCIES = {
@@ -64,6 +71,10 @@ _SUPPORTED_FREQUENCIES = {
     "every_two_weeks": "biweekly",
     "semimonthly": "semimonthly",
     "monthly": "monthly",
+    "quarterly": "quarterly",
+    "yearly": "yearly",
+    "annual": "yearly",
+    "annually": "yearly",
     "once": "once",
 }
 
@@ -222,25 +233,50 @@ def _classify_basic(usable: list[dict[str, Any]], accounts: Mapping[str, str], o
 # --------------------------------------------------------------------------- recurrence
 
 
+def _month_index(day: date) -> int:
+    return day.year * 12 + day.month - 1
+
+
 def _detect_cadence(dates: Sequence[date]) -> Optional[dict[str, Any]]:
-    """Classify the cadence of a sorted list of distinct dates, or ``None`` if irregular."""
+    """Classify the cadence of a sorted list of distinct dates, or ``None`` if irregular.
+
+    Monthly, quarterly and yearly patterns compare **calendar months** (a bill paid on the 31st,
+    then the 28th, then the 31st is still monthly), not a fixed number of days.
+    """
     if len(dates) < 2:
         return None
     gaps = [(b - a).days for a, b in zip(dates, dates[1:])]
+    month_gaps = [_month_index(b) - _month_index(a) for a, b in zip(dates, dates[1:])]
 
     def share(lo: int, hi: int) -> float:
         return sum(lo <= g <= hi for g in gaps) / len(gaps)
+
+    def month_share(months: int, lo: int, hi: int) -> float:
+        return sum(m == months and lo <= g <= hi for m, g in zip(month_gaps, gaps)) / len(gaps)
+
+    def anchored(mode_day: int) -> float:
+        return sum(_near_monthly_anchor(d, mode_day) <= 3 for d in dates) / len(dates)
+
+    def mode_day() -> int:
+        doms = Counter(d.day for d in dates)
+        return sorted(doms.items(), key=lambda kv: (-kv[1], -kv[0]))[0][0]
 
     if share(6, 8) >= 0.8:
         return {"cadence": "weekly", "fit": share(6, 8)}
     if share(13, 15) >= 0.8:
         return {"cadence": "biweekly", "fit": share(13, 15)}
-    if share(27, 34) >= 0.8:
-        doms = Counter(d.day for d in dates)
-        mode_day = sorted(doms.items(), key=lambda kv: (-kv[1], -kv[0]))[0][0]
-        fit = sum(_near_monthly_anchor(d, mode_day) <= 3 for d in dates) / len(dates)
-        if fit >= 0.75:
-            return {"cadence": "monthly", "fit": min(fit, share(27, 34)), "day": mode_day}
+    for cadence, months, lo, hi in (("monthly", 1, 24, 38), ("quarterly", 3, 80, 100)):
+        fit_share = month_share(months, lo, hi)
+        if fit_share >= 0.8:
+            day = mode_day()
+            fit = anchored(day)
+            if fit >= 0.75:
+                return {"cadence": cadence, "fit": min(fit, fit_share), "day": day}
+            return None
+    if month_share(12, 350, 380) >= 0.8:
+        day = mode_day()
+        if anchored(day) >= 0.75:
+            return {"cadence": "yearly", "fit": min(anchored(day), month_share(12, 350, 380)), "day": day}
         return None
     if len(dates) >= 4 and share(12, 18) >= 0.8:
         days = sorted(d.day for d in dates)
@@ -259,18 +295,26 @@ def _detect_cadence(dates: Sequence[date]) -> Optional[dict[str, Any]]:
     return None
 
 
-def _cluster_amounts(items: list[dict[str, Any]], tolerance: float) -> list[list[dict[str, Any]]]:
-    """Split one merchant's transactions into amount clusters (separate subscriptions)."""
+def _cluster_amounts(
+    items: list[dict[str, Any]], tolerance: float, max_spread: float = 0.30
+) -> list[list[dict[str, Any]]]:
+    """Split one merchant's transactions into amount clusters (separate subscriptions / tiers).
+
+    Amounts chain into a cluster while each step is within ``tolerance`` of the previous amount
+    and the whole cluster stays within ``max_spread``, so a variable utility ($83, $91, $97) is one
+    stream while distinct plan tiers ($9.99, $15.49, $22.99) stay separate. Clusters are returned in
+    ascending amount order, which keeps their tier index stable across rescans.
+    """
     clusters: list[list[dict[str, Any]]] = []
+    step, spread = Decimal(1) + Decimal(str(tolerance)), Decimal(1) + Decimal(str(max_spread))
     for item in sorted(items, key=lambda t: (abs(t["_amount"]), t["_date"], t["transaction_id"])):
         magnitude = abs(item["_amount"])
-        for cluster in clusters:
-            anchor = abs(cluster[0]["_amount"])
-            if magnitude <= anchor * (Decimal(1) + Decimal(str(tolerance))):
-                cluster.append(item)
-                break
-        else:
-            clusters.append([item])
+        if clusters:
+            last, first = abs(clusters[-1][-1]["_amount"]), abs(clusters[-1][0]["_amount"])
+            if magnitude <= last * step and magnitude <= first * spread:
+                clusters[-1].append(item)
+                continue
+        clusters.append([item])
     return clusters
 
 
@@ -295,9 +339,11 @@ def _infer_streams(candidates: list[dict[str, Any]], as_of: date, opts: Mapping[
     for tx in candidates:
         if tx["_amount"] != 0:
             groups[(tx["account_id"], tx["_merchant"], 1 if tx["_amount"] > 0 else -1)].append(tx)
+    min_occurrences = int(opts["min_occurrences"])
     streams: list[dict[str, Any]] = []
     for (account_id, merchant, sign), items in sorted(groups.items()):
-        for cluster_index, cluster in enumerate(_cluster_amounts(items, float(opts["amount_tolerance"]))):
+        clusters = _cluster_amounts(items, float(opts["amount_tolerance"]), float(opts["max_cluster_spread"]))
+        for cluster_index, cluster in enumerate(clusters):
             dates = sorted({t["_date"] for t in cluster})
             detected = _detect_cadence(dates) if len(dates) >= 2 else None
             amounts = [t["_amount"] for t in cluster]
@@ -305,13 +351,18 @@ def _infer_streams(candidates: list[dict[str, Any]], as_of: date, opts: Mapping[
             dispersion = (
                 0.0 if median == 0 else round(min(0.25, float(max(abs(a - median) for a in amounts) / abs(median))), 4)
             )
+            spread = 0.0 if median == 0 else float((max(amounts) - min(amounts)) / abs(median))
             stream: dict[str, Any] = {
                 "stream_id": _stream_id(account_id, merchant, sign, cluster_index),
                 "origin": "inferred",
                 "account_id": account_id,
                 "merchant_key": merchant,
                 "sign": sign,
+                "tier": cluster_index,
                 "amount": median,
+                "amount_min": min(amounts),
+                "amount_max": max(amounts),
+                "amount_mode": "fixed" if spread <= float(opts["fixed_amount_tolerance"]) else "variable",
                 "amount_dispersion": dispersion,
                 "transactions": cluster,
                 "dates": dates,
@@ -319,9 +370,11 @@ def _infer_streams(candidates: list[dict[str, Any]], as_of: date, opts: Mapping[
                 "cadence": None,
                 "confidence": 0.0,
                 "reason": "",
+                "reason_codes": [],
             }
             if detected is None or len(dates) < 2:
                 stream["reason"] = "no_regular_cadence" if len(dates) > 1 else "single_occurrence"
+                stream["reason_codes"] = [stream["reason"]]
             else:
                 n = len(dates)
                 evidence = min(0.95, 0.55 + 0.1 * (n - 2))
@@ -331,9 +384,58 @@ def _infer_streams(candidates: list[dict[str, Any]], as_of: date, opts: Mapping[
                     days=detected.get("days"),
                     day=detected.get("day"),
                 )
-                stream["reason"] = f"{n}_occurrences"
+                if n < min_occurrences:
+                    # Two aligned cycles are evidence worth reviewing, never a confirmed bill.
+                    stream["reason"] = "needs_review_insufficient_cycles"
+                    stream["reason_codes"] = [stream["reason"], f"cadence_{detected['cadence']}"]
+                else:
+                    stream["reason"] = f"{n}_occurrences"
+                    stream["reason_codes"] = [stream["reason"], f"cadence_{detected['cadence']}"]
             streams.append(stream)
     return streams
+
+
+def infer_candidate_streams(
+    *,
+    transactions: Iterable[Any],
+    accounts: Iterable[Any],
+    as_of_date: date | str,
+    lookback_days: int = 400,
+    options: Optional[Mapping[str, Any]] = None,
+) -> dict[str, Any]:
+    """Detect recurring-stream candidates from posted history. Pure: no database, no side effects.
+
+    This is the single recurrence detector; ``build_v2_inputs`` uses the same ``_infer_streams`` so
+    the forecast and the review inventory never disagree. Transactions must already be canonical
+    account deltas (``+`` inflow / ``-`` outflow). Pending, duplicate, internal-transfer and non-cash
+    rows are excluded exactly as in the forecast pipeline.
+
+    Returns:
+        ``{"streams", "rejected", "history": {"first_date", "last_date", "days", "requested_days",
+        "complete"}}`` where each stream carries cadence, amount statistics, ``reason_codes`` and its
+        member transactions.
+    """
+    opts = {**DEFAULT_OPTIONS, **(options or {}), "stream_lookback_days": int(lookback_days)}
+    as_of = _to_date(as_of_date, field_name="as_of_date")
+    start = as_of - timedelta(days=int(lookback_days) - 1)
+    account_bucket = {str(_read(a, "account_id")): classify_forecast_account(a) for a in accounts}
+    usable, rejected = _prepare(transactions, account_bucket, as_of, start)
+    _, candidates = _classify_basic(usable, account_bucket, opts)
+    streams = _infer_streams(candidates, as_of, opts)
+    posted = [t["_date"] for t in usable if not t.get("pending")]
+    first = min(posted) if posted else None
+    days = (as_of - first).days + 1 if first else 0
+    return {
+        "streams": streams,
+        "rejected": rejected,
+        "history": {
+            "first_date": first.isoformat() if first else None,
+            "last_date": max(posted).isoformat() if posted else None,
+            "days": days,
+            "requested_days": int(lookback_days),
+            "complete": days >= int(lookback_days),
+        },
+    }
 
 
 def _next_anchor(stream: Mapping[str, Any]) -> date:
@@ -342,13 +444,15 @@ def _next_anchor(stream: Mapping[str, Any]) -> date:
     cadence = stream["cadence"]
     if cadence in {"weekly", "biweekly"}:
         return last
-    if cadence == "monthly":
+    if cadence in {"monthly", "quarterly", "yearly"}:
         return _monthly_anchor(last, stream.get("day") or last.day)
     return last - timedelta(days=45)  # semimonthly rules carry explicit days
 
 
 def _lapsed(stream: Mapping[str, Any], as_of: date) -> bool:
-    gap = {"weekly": 7, "biweekly": 14, "semimonthly": 16, "monthly": 31}.get(stream["cadence"])
+    gap = {"weekly": 7, "biweekly": 14, "semimonthly": 16, "monthly": 31, "quarterly": 92, "yearly": 366}.get(
+        stream["cadence"]
+    )
     return gap is not None and (as_of - stream["last_seen"]).days > gap * 2.5
 
 
@@ -492,10 +596,18 @@ def build_v2_inputs(
     end = start + timedelta(days=horizon_days - 1)
     disabled, confirmed = set(map(str, disabled_source_ids)), set(map(str, confirmed_source_ids))
     window_start = as_of - timedelta(days=int(opts["lookback_days"]) - 1)
+    stream_start = as_of - timedelta(days=max(int(opts["stream_lookback_days"]), int(opts["lookback_days"])) - 1)
 
     account_bucket = {str(_read(a, "account_id")): classify_forecast_account(a) for a in accounts}
-    usable, rejected = _prepare(transactions, account_bucket, as_of, window_start)
+    # Recurrence inference sees ``stream_lookback_days`` of history; allocation, reconciliation and
+    # the residual model keep using the shorter ``lookback_days`` window exactly as before.
+    usable_all, rejected = _prepare(transactions, account_bucket, as_of, stream_start)
+    usable = [t for t in usable_all if t["_date"] >= window_start]
+    rejected["before_window"] += len(usable_all) - len(usable)
     audit_by_key, candidates = _classify_basic(usable, account_bucket, opts)
+    stream_candidates = (
+        candidates if len(usable) == len(usable_all) else _classify_basic(usable_all, account_bucket, opts)[1]
+    )
 
     # Streams: manual > saved rules > inferred. Earlier origins claim their transactions first.
     rule_streams = [_rule_to_stream(r, "manual") for r in manual_rules] + [
@@ -505,7 +617,7 @@ def build_v2_inputs(
     streams: list[dict[str, Any]] = []
     for stream in rule_streams:
         members = []
-        for tx in candidates:
+        for tx in stream_candidates:
             if tx["transaction_id"] in claimed:
                 continue
             by_id = tx["transaction_id"] in stream["source_transaction_ids"]
@@ -531,7 +643,7 @@ def build_v2_inputs(
         streams.append(stream)
     suppressed = {(s["account_id"], s["merchant_key"], s["sign"]) for s in streams if s["merchant_key"]}
 
-    unclaimed = [t for t in candidates if t["transaction_id"] not in claimed]
+    unclaimed = [t for t in stream_candidates if t["transaction_id"] not in claimed]
     for stream in _infer_streams(unclaimed, as_of, opts):
         key = (stream["account_id"], stream["merchant_key"], stream["sign"])
         if key in suppressed or (None, key[1], key[2]) in suppressed:

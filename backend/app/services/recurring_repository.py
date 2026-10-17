@@ -16,7 +16,7 @@ from typing import Any, Iterable, Optional
 from dateutil.relativedelta import relativedelta
 
 from app.extensions import db
-from app.models import Account, RecurringStream
+from app.models import Account, RecurringStream, RecurringStreamEvidence
 
 CADENCES = ("once", "weekly", "biweekly", "semimonthly", "monthly", "quarterly", "yearly")
 AMOUNT_MODES = ("fixed", "variable")
@@ -158,6 +158,8 @@ def create_manual(
     status: str = "confirmed",
     merchant_key: Optional[str] = None,
     confidence: Any = None,
+    candidate_key: Optional[str] = None,
+    commit: bool = True,
 ) -> RecurringStream:
     """Create a stream for an owned account. Validates everything before touching the session."""
     account = owned_account(owner_id, account_id)
@@ -183,9 +185,13 @@ def create_manual(
         confidence=None if confidence is None else Decimal(str(confidence)).quantize(Decimal("0.001")),
         notes=notes,
         confirmed_at=datetime.now(timezone.utc) if status == "confirmed" else None,
+        candidate_key=candidate_key,
     )
     db.session.add(stream)
-    db.session.commit()
+    if commit:
+        db.session.commit()
+    else:
+        db.session.flush()
     return stream
 
 
@@ -371,3 +377,90 @@ def propose_detected(
         source="detected",
         confidence=confidence,
     )
+
+
+def _record_evidence(stream: RecurringStream, evidence: Iterable[dict[str, Any]], decision: str) -> int:
+    """Append evidence rows not already recorded for ``stream``; returns how many were added."""
+    known = {
+        row.transaction_id
+        for row in RecurringStreamEvidence.query.filter_by(stream_id=stream.id).all()
+        if row.transaction_id
+    }
+    added = 0
+    for item in evidence:
+        txid = str(item["transaction_id"])
+        if txid in known:
+            continue
+        raw = item.get("raw_amount")
+        db.session.add(
+            RecurringStreamEvidence(
+                stream_id=stream.id,
+                transaction_id=txid,
+                observed_at=parse_date(item["date"], "date"),
+                raw_amount=None if raw is None else parse_amount(raw),
+                canonical_amount=parse_amount(item["amount"]),
+                merchant_key=stream.merchant_key,
+                decision=decision,
+                reason={"source": "detector"},
+            )
+        )
+        known.add(txid)
+        added += 1
+    return added
+
+
+def upsert_detected_candidate(owner_id: str, candidate: dict[str, Any]) -> tuple[RecurringStream, str]:
+    """Persist one detector candidate idempotently, keyed by ``(user_id, candidate_key)``.
+
+    Returns ``(stream, action)`` with ``action`` one of ``created``, ``updated`` (a still-proposed
+    stream was refreshed) or ``preserved`` (a confirmed, ignored or ended stream kept its decision;
+    only newly observed evidence and ``last_observed`` are recorded). Never creates a transaction and
+    never reads a ``user_id`` from the candidate: ``owner_id`` must be the trusted owner and must own
+    the candidate's account.
+    """
+    key = str(candidate["candidate_key"])
+    owned_account(owner_id, candidate["account_id"])
+    evidence = list(candidate.get("evidence", ()))
+    existing = RecurringStream.query.filter_by(user_id=owner_id, candidate_key=key).first()
+    last_observed = candidate.get("last_observed")
+    if existing is None:
+        amount = parse_amount(candidate["signed_median"])
+        stream = create_manual(
+            owner_id,
+            account_id=candidate["account_id"],
+            display_name=candidate.get("label") or candidate["merchant_key"],
+            merchant_key=candidate["merchant_key"],
+            amount_cash_delta=amount,
+            amount_mode=candidate.get("amount_mode", "fixed"),
+            cadence=candidate["cadence"],
+            anchor_date=candidate["expected_next_date"],
+            status="proposed",
+            source="detected",
+            confidence=candidate.get("confidence"),
+            candidate_key=key,
+            commit=False,
+        )
+        stream.last_observed = parse_date(last_observed, "last_observed") if last_observed else None
+        _record_evidence(stream, evidence, "detected")
+        db.session.commit()
+        return stream, "created"
+
+    if last_observed:
+        observed = parse_date(last_observed, "last_observed")
+        if existing.last_observed is None or observed > existing.last_observed:
+            existing.last_observed = observed
+    if existing.status != "proposed":
+        _record_evidence(existing, evidence, "observed")
+        db.session.commit()
+        return existing, "preserved"
+
+    existing.amount_cash_delta = parse_amount(candidate["signed_median"])
+    existing.amount_mode = candidate.get("amount_mode", existing.amount_mode)
+    existing.cadence = parse_cadence(candidate["cadence"])
+    if candidate.get("expected_next_date"):
+        existing.anchor_date = parse_date(candidate["expected_next_date"])
+    if candidate.get("confidence") is not None:
+        existing.confidence = Decimal(str(candidate["confidence"])).quantize(Decimal("0.001"))
+    _record_evidence(existing, evidence, "detected")
+    db.session.commit()
+    return existing, "updated"

@@ -1,12 +1,12 @@
 # TP-20261016-004: Unify Recurrence Detector with Forecast Pattern Evidence
 
 **Packet ID:** TP-20261016-004  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-16  
-**Last updated:** 2026-10-17  
+**Last updated:** 2026-10-17
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261016-004-recurring-pattern-detection-unified.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261016-004-recurring-pattern-detection-unified.md`  
 **Workstream size:** One targeted implementation packet  
 **Priority:** P1  
 **Depends on:** TP-20261016-001, TP-20261016-002  
@@ -59,3 +59,15 @@ No LLM, Plaid Enrich calls, background scheduler or UI rewrites here. Don't auto
 
 ## Implementation/handoff
 Read `AGENTS.md`, `docs/task-packets/README.md`, `INDEX.md`, `TRACKER.md`; validate only named symbols against latest main. Set In Progress in tracker before coding. Treat prerequisite packets as implemented, do not re-implement their features. Run focused tests then lint/build; commit only this workstream to main without force, mark Complete, move this packet to completed and update INDEX/TRACKER atomically. Report changed files, test output, fixture/behavior evidence, and deviations. If principal is not trusted, fail closed on new owner-scoped endpoints, not permissive fallback. Do not use Plaid Enrich/new billable APIs.
+
+## Completion report (2026-10-17)
+
+- Single detector: `forecast/v2_sources.py` (`_infer_streams`, `_detect_cadence`, `_cluster_amounts`) is the only recurrence engine. New pure `infer_candidate_streams(...)` exposes it; `build_v2_inputs` uses the same functions and now infers over `stream_lookback_days` (default 400) while allocation, reconciliation and the residual model keep `lookback_days` (120).
+- Cadence: calendar-month comparison for monthly (month gap 1, 24-38 days), new `quarterly` and `yearly` in `v2_core.CADENCES` / `_occurrence_dates` (month-end clamped), `_SUPPORTED_FREQUENCIES` and lapse windows; semimonthly vs biweekly kept distinct. Variable bills chain-cluster within a 30% spread ($83/$91/$97 is one stream; $9.99/$15.49/$22.99 stay three). Two aligned cycles => `needs_review_insufficient_cycles`, never ready; `ready` needs >= 3 cycles.
+- `backend/app/services/recurring_candidate_service.py`: `detect_candidate_streams(transactions, accounts, as_of, lookback_days=400)` returns deterministic records (`candidate_key` = SHA-256 of user, account, merchant, sign, cadence, version, tier), plus `history` coverage (`complete` false when less history exists than requested). Pending, internal transfers, duplicates, non-cash and ownerless accounts are excluded.
+- Persistence: `recurring_repository.upsert_detected_candidate` (created / updated / preserved) keyed by `(user_id, candidate_key)`; migration `c4f8a1d3e5b7` adds `recurring_streams.candidate_key` + `uq_recurring_streams_user_candidate` (applied to dev Postgres; downgrade/upgrade round-trip verified). A rescan never overwrites confirmed / ignored / ended; evidence is append-only.
+- `/api/recurring/scan/<account_id>`: owner-checked adapter over `load_v2_source_data` (canonical sign normalized once there; no `display_transaction_amount`), `lookback_days` 30-1000 (default 400), no Plaid calls, no fabricated Transactions; response = legacy reminders + `scan{created,updated,preserved,candidates,history_days,history_incomplete,sign_excluded}`.
+- `RecurringDetector` / `RecurringBridge` are compatibility wrappers over the canonical engine and repository.
+- Tests: `tests/test_recurring_detection.py` (18: utility, biweekly payroll, semimonthly, quarterly, yearly, month-end clamp, tiers, exclusions, key stability, legacy wrapper, route regression with 3 x $700 on Jul/Aug/Sep 21 -> one stable monthly candidate due Oct 21, 2 occurrences review-only, ignored stays ignored, memo-digit change does not split, foreign account 404, no owner 503); forecast V2 suites unchanged (one test updated: yearly is now a supported cadence). Real-data read-only check: 36 candidates from 1,907 rows in 0.39s.
+- Automatic recomputation: no safe idempotent hook exists in the sync pipeline, so manual rescan (`POST /api/recurring/scan/<account_id>`, surfaced by TP-005) is required; nothing claims automatic recomputation and no scheduler was added.
+- Deviations: `tests/test_recurring_bridge.py` remains skipped (needs the full application); wrapper behavior is covered in `test_recurring_detection.py`. Changing bank-memo *words* (not just reference digits) produces a different merchant key; that is existing `normalize_merchant_key` behavior and out of scope.

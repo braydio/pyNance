@@ -284,10 +284,8 @@ def test_legacy_get_returns_confirmed_streams_due_within_a_week_for_the_owner_on
 # ----------------------------------------------------------------------------- migration
 
 
-def _load_migration():
-    path = os.path.join(
-        os.path.dirname(__file__), "..", "backend", "migrations", "versions", "b7d2e4f6a8c1_recurring_streams.py"
-    )
+def _load_migration(filename="b7d2e4f6a8c1_recurring_streams.py"):
+    path = os.path.join(os.path.dirname(__file__), "..", "backend", "migrations", "versions", filename)
     spec = importlib.util.spec_from_file_location("recurring_streams_migration", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -330,12 +328,20 @@ def test_migration_creates_tables_and_copies_only_valid_legacy_rows(app):
     db.session.commit()
     legacy_before = RecurringTransaction.query.count()
 
+    candidate_migration = _load_migration("c4f8a1d3e5b7_recurring_stream_candidate_key.py")
     connection = db.engine.connect()
     with Operations.context(MigrationContext.configure(connection)):
         migration.upgrade()
         migration.upgrade()  # idempotent: second run copies nothing new
     connection.commit()
     connection.close()
+    # The candidate_key revision is a no-op when the column already exists (fresh create_all schemas).
+    connection = db.engine.connect()
+    with Operations.context(MigrationContext.configure(connection)):
+        candidate_migration.upgrade()
+    connection.commit()
+    connection.close()
+    assert "candidate_key" in {c["name"] for c in sa.inspect(db.engine).get_columns("recurring_streams")}
 
     streams = RecurringStream.query.all()
     assert len(streams) == 1

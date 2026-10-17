@@ -1,66 +1,67 @@
-"""Database bridge for recurring transaction detection.
+"""Compatibility bridge from detector results to recurring streams.
 
-This module links recurring transaction patterns detected in raw
-transactions with database persistence utilities. Imports are deferred
-until synchronization to avoid loading heavy dependencies at import time.
+The old bridge guessed a 30-day cadence and wrote through a fabricated-transaction path. It now
+runs the canonical detector and stores ``proposed`` streams through the owner-scoped repository.
+It never creates a ``Transaction`` and never overwrites a confirmed, ignored or ended stream.
 """
 
-from datetime import timedelta
+from __future__ import annotations
+
+from datetime import date
 from importlib import import_module
 
 from dateutil.parser import parse
 
-from app.services.recurring_detection import RecurringDetector
-from app.sql import recurring_logic
+from app.services.recurring_candidate_service import detect_candidate_streams
 
 
 class RecurringBridge:
     """Bridge recurring detection results to database persistence."""
 
     def __init__(self, transactions):
-        """Initialize with raw transaction dictionaries."""
+        """Initialize with transaction dictionaries (``account_id`` is required to persist)."""
         self.transactions = transactions
-        self.detector = RecurringDetector(transactions)
 
     def sync_to_db(self):
-        """Detect recurring patterns and upsert them into the database."""
-        # Import DB session and models only when syncing to avoid heavy
-        # dependencies during module import. This also ensures models are
-        # registered with the SQLAlchemy instance used by tests.
+        """Detect candidates and upsert them as proposed streams; returns the stream ids touched.
+
+        Rows without an ``account_id`` cannot be scoped to an owner and are ignored.
+        """
+        # Imported lazily so merely importing this module does not need the full application.
         _ = import_module("app.extensions")
-        _ = import_module("app.models")
+        models = import_module("app.models")
+        repository = import_module("app.services.recurring_repository")
 
-        candidates = self.detector.detect()
-        actions = []
-
-        freq_map = {
-            "daily": 1,
-            "weekly": 7,
-            "biweekly": 14,
-            "monthly": 30,
-        }
-
-        for item in candidates:
-            if not item.get("account_id"):
-                for tx in self.transactions:
-                    desc_sig = "".join(filter(str.isalnum, tx["description"].lower()))[:16]
-                    if round(tx["amount"], 2) == item["amount"] and desc_sig == item["description"]:
-                        item["account_id"] = tx.get("account_id")
-                        break
-
-            last_seen = parse(item.get("last_seen")).date()
-            freq_days = freq_map.get(item["frequency"].lower(), 30)
-            next_due_date = last_seen + timedelta(days=freq_days)
-            confidence = float(item.get("occurrences", 1)) / 10.0
-
-            rec_id = recurring_logic.upsert_recurring(
-                item["description"],
-                item["amount"],
-                item["frequency"],
-                next_due_date,
-                confidence,
-                item.get("account_id"),
-            )
-            actions.append(rec_id)
-
-        return actions
+        scoped = [t for t in self.transactions if t.get("account_id")]
+        if not scoped:
+            return []
+        owner_id = repository.trusted_owner_id()
+        account_ids = sorted({str(t["account_id"]) for t in scoped})
+        accounts = [
+            {
+                "account_id": a.account_id,
+                "type": a.type,
+                "subtype": a.subtype,
+                "is_investment": a.is_investment,
+                "user_id": a.user_id,
+            }
+            for a in models.Account.query.filter(
+                models.Account.account_id.in_(account_ids), models.Account.user_id == owner_id
+            ).all()
+        ]
+        rows = [
+            {
+                "transaction_id": str(t.get("transaction_id") or f"bridge-{i}"),
+                "account_id": str(t["account_id"]),
+                "date": parse(str(t["date"])).date(),
+                "amount": t["amount"],
+                "name": t.get("description"),
+                "merchant_name": t.get("merchant_name"),
+                "pending": bool(t.get("pending", False)),
+                "is_internal": bool(t.get("is_internal", False)),
+            }
+            for i, t in enumerate(scoped)
+        ]
+        as_of = max(r["date"] for r in rows) if rows else date.today()
+        found = detect_candidate_streams(rows, accounts, as_of, lookback_days=800)
+        return [repository.upsert_detected_candidate(owner_id, c)[0].id for c in found["candidates"]]

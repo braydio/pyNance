@@ -30,7 +30,7 @@ def load_v2_source_data(
     as_of_date: date | str,
     included_account_ids: Optional[Iterable[str]] = None,
     excluded_account_ids: Optional[Iterable[str]] = None,
-    lookback_days: int = DEFAULT_OPTIONS["lookback_days"],
+    lookback_days: int = DEFAULT_OPTIONS["stream_lookback_days"],
 ) -> dict[str, Any]:
     """Load accounts, transactions, saved rules and as-of balances for one user.
 
@@ -211,7 +211,7 @@ def build_user_v2_inputs(
         as_of_date=as_of_date,
         included_account_ids=included_account_ids,
         excluded_account_ids=excluded_account_ids,
-        lookback_days=int(opts["lookback_days"]),
+        lookback_days=max(int(opts["lookback_days"]), int(opts["stream_lookback_days"])),
     )
     as_of = data["as_of_date"]
     result = build_v2_inputs(

@@ -143,49 +143,8 @@ def client():
         yield client
 
 
-# ------------------------------
-# Test: POST /scan/<account_id>
-# ------------------------------
-
-
-def test_scan_route_returns_list(client, monkeypatch):
-    # Mock Transaction.query behavior
-    mock_query = MagicMock()
-    mock_tx = MagicMock(
-        amount=1.0,
-        description="d",
-        merchant_name="",
-        date=datetime.now(timezone.utc),
-        account_id="acc1",  # ✅ Required field
-    )
-    mock_query.filter_by.return_value = mock_query
-    mock_query.filter.return_value = mock_query
-    mock_query.order_by.return_value = mock_query
-    mock_query.all.return_value = [mock_tx]
-
-    mock_transaction_model = MagicMock()
-    mock_transaction_model.query = mock_query
-    mock_transaction_model.date = MagicMock()
-    mock_transaction_model.date.__ge__.return_value = True
-    monkeypatch.setattr(recurring_module, "Transaction", mock_transaction_model)
-
-    # Mock RecurringBridge
-    mock_bridge_class = MagicMock()
-    mock_bridge_instance = MagicMock()
-    mock_bridge_instance.sync_to_db.return_value = [{"mock": "action"}]
-    mock_bridge_class.return_value = mock_bridge_instance
-    monkeypatch.setattr(recurring_module, "RecurringBridge", mock_bridge_class)
-
-    # Mock get_structured_recurring
-    monkeypatch.setattr(
-        recurring_module,
-        "get_structured_recurring",
-        lambda account_id: {"status": "success", "reminders": []},
-    )
-
-    resp = client.post("/api/recurring/scan/acc1")
-    assert resp.status_code == 200
-    assert isinstance(resp.get_json()["reminders"], list)
+# The /scan route now needs the real database and detector; it is covered in
+# tests/test_recurring_detection.py (owner scope, idempotency, no fabricated transactions).
 
 
 def test_get_structured_recurring_includes_confidence_metadata(client, monkeypatch):

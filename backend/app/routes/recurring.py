@@ -1,6 +1,6 @@
 # app/routes/recurring.py
 import types
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta
 
 from flask import Blueprint, jsonify, request
 from sqlalchemy import func
@@ -8,7 +8,6 @@ from sqlalchemy import func
 from app.config import logger
 from app.extensions import db
 from app.models import Transaction
-from app.services.recurring_bridge import RecurringBridge
 
 recurring = Blueprint("recurring", __name__)
 
@@ -181,30 +180,57 @@ def delete_recurring_tx(account_id):
 
 @recurring.route("/scan/<account_id>", methods=["POST"])
 def scan_account_for_recurring(account_id):
-    """Detect recurring transactions for an account and persist them."""
+    """Rescan an owned account's stored transactions for recurring candidates (idempotent).
+
+    Uses only locally stored history (no Plaid calls): up to ``lookback_days`` (default 400, max
+    1000) through ``load_v2_source_data``, which normalizes amount direction once. Candidates are
+    stored as ``proposed`` streams; confirmed, ignored and ended streams keep their decision and no
+    transaction is ever created. The response is the legacy reminders payload plus a ``scan`` summary
+    (``history_incomplete`` is true when less history exists than was requested).
+    """
+    from app.services import recurring_repository as repo
+
     try:
-        cutoff = datetime.now(timezone.utc).date() - timedelta(days=90)
-        rows = (
-            Transaction.query.filter_by(account_id=account_id)
-            .filter(Transaction.date >= cutoff)
-            .order_by(Transaction.date.desc())
-            .all()
+        owner_id = repo.trusted_owner_id()
+        repo.owned_account(owner_id, account_id)
+        try:
+            lookback_days = int(request.args.get("lookback_days", 400))
+        except (TypeError, ValueError):
+            lookback_days = 400
+        lookback_days = max(30, min(lookback_days, 1000))
+
+        from app.services.forecast_v2_sources import load_v2_source_data
+        from app.services.recurring_candidate_service import detect_candidate_streams
+
+        today = date.today()
+        data = load_v2_source_data(
+            user_id=owner_id,
+            as_of_date=today,
+            included_account_ids=[account_id],
+            lookback_days=lookback_days,
         )
-        from app.utils.finance_utils import display_transaction_amount
+        found = detect_candidate_streams(data["transactions"], data["accounts"], today, lookback_days=lookback_days)
+        actions = {"created": 0, "updated": 0, "preserved": 0}
+        for candidate in found["candidates"]:
+            _, action = repo.upsert_detected_candidate(owner_id, candidate)
+            actions[action] += 1
 
-        txs = [
-            {
-                "amount": display_transaction_amount(tx),
-                "description": tx.description or tx.merchant_name or "",
-                "date": tx.date.strftime("%Y-%m-%d"),
-            }
-            for tx in rows
-        ]
-
-        rb = RecurringBridge(txs)
-        rb.sync_to_db()
-        return get_structured_recurring(account_id)
+        response, status = get_structured_recurring(account_id)
+        if status != 200:
+            return response, status
+        payload = response.get_json()
+        payload["scan"] = {
+            **actions,
+            "candidates": len(found["candidates"]),
+            "history_days": found["history"]["days"],
+            "history_incomplete": not found["history"]["complete"],
+            "sign_excluded": data.get("sign_summary", {}).get("excluded", 0),
+        }
+        return jsonify(payload), 200
+    except repo.RecurringError as exc:
+        return _error_response(exc)
     except Exception as e:
+        db.session.rollback()
         logger.error(
             "Error scanning account %s for recurring: %s",
             account_id,
