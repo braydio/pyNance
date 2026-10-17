@@ -1,0 +1,95 @@
+
+> dashvue@0.0.0 lint
+> eslint . --fix
+
+
+/home/braydenchaffee/Projects/pyNance/frontend/postcss.config.cjs
+  1:1  error  'module' is not defined  no-undef
+
+/home/braydenchaffee/Projects/pyNance/frontend/src/components/base/Toast.vue
+  1:1  error  Component name "Toast" should always be multi-word  vue/multi-word-component-names
+
+/home/braydenchaffee/Projects/pyNance/frontend/src/components/charts/NetIncomeCharts.vue
+  62:60  error  'canvasEl' is not defined  no-undef
+
+/home/braydenchaffee/Projects/pyNance/frontend/src/components/forecast/ForecastChart.vue
+  22:21  error  Parsing error: Unexpected token ]
+
+/home/braydenchaffee/Projects/pyNance/frontend/src/components/forecast/ForecastComponent.vue
+  81:9  error  Component name "Forecast" should always be multi-word  vue/multi-word-component-names
+
+/home/braydenchaffee/Projects/pyNance/frontend/src/components/forecast/ForecastLayout.vue
+  30:36  error  'loading' is assigned a value but never used  no-unused-vars
+  30:45  error  'error' is assigned a value but never used    no-unused-vars
+
+/home/braydenchaffee/Projects/pyNance/frontend/src/components/forms/TokenUpload.vue
+  6:7  error  The element inside `<transition>` is expected to have a `v-if` or `v-show` directive  vue/require-toggle-inside-transition
+
+/home/braydenchaffee/Projects/pyNance/frontend/src/components/layout/Navbar.vue
+  15:9  error  Component name "Navbar" should always be multi-word  vue/multi-word-component-names
+
+/home/braydenchaffee/Projects/pyNance/frontend/src/components/modals/TransactionModal.vue
+  16:7  error  'props' is assigned a value but never used  no-unused-vars
+
+/home/braydenchaffee/Projects/pyNance/frontend/src/components/recurring/RecurringTransactionSection.vue
+  71:10  error  'createRecurringTransaction' is defined but never used  no-unused-vars
+
+/home/braydenchaffee/Projects/pyNance/frontend/src/components/tables/AccountsTable.vue
+  120:17  error  The "RefreshControls" component has been registered but not used  vue/no-unused-components
+  209:27  error  'accountLinkApi' is not defined                                   no-undef
+
+/home/braydenchaffee/Projects/pyNance/frontend/src/components/ui/Button.vue
+  1:1  error  Component name "Button" should always be multi-word  vue/multi-word-component-names
+
+/home/braydenchaffee/Projects/pyNance/frontend/src/components/ui/Card.vue
+  1:1  error  Component name "Card" should always be multi-word  vue/multi-word-component-names
+
+/home/braydenchaffee/Projects/pyNance/frontend/src/components/ui/Modal.vue
+  1:1  error  Component name "Modal" should always be multi-word                                    vue/multi-word-component-names
+  3:5  error  The element inside `<transition>` is expected to have a `v-if` or `v-show` directive  vue/require-toggle-inside-transition
+
+/home/braydenchaffee/Projects/pyNance/frontend/src/components/unused/Chart.vue
+  1:1  error  Component name "Chart" should always be multi-word  vue/multi-word-component-names
+
+/home/braydenchaffee/Projects/pyNance/frontend/src/components/unused/MatchingTransactionUpload.vue
+  98:12  error  'e' is defined but never used  no-unused-vars
+
+/home/braydenchaffee/Projects/pyNance/frontend/src/components/unused/Settings.vue
+  57:9  error  Component name "Dashboard" should always be multi-word  vue/multi-word-component-names
+
+/home/braydenchaffee/Projects/pyNance/frontend/src/components/unused/YoutubeEmbed.vue
+  22:27  error  'YT' is not defined  no-undef
+
+/home/braydenchaffee/Projects/pyNance/frontend/src/services/loadExternalScripts.js
+  27:29  error  Promise executor functions should not be async  no-async-promise-executor
+
+/home/braydenchaffee/Projects/pyNance/frontend/src/utils/externalScripts.js
+  26:29  error  Promise executor functions should not be async  no-async-promise-executor
+
+/home/braydenchaffee/Projects/pyNance/frontend/src/views/Accounts.vue
+   1:1  error  Component name "Accounts" should always be multi-word  vue/multi-word-component-names
+  93:7  error  'currentDate' is assigned a value but never used       no-unused-vars
+
+/home/braydenchaffee/Projects/pyNance/frontend/src/views/Dashboard.vue
+  1:1  error  Component name "Dashboard" should always be multi-word  vue/multi-word-component-names
+
+/home/braydenchaffee/Projects/pyNance/frontend/src/views/Forecast.vue
+  1:1  error  Component name "Forecast" should always be multi-word  vue/multi-word-component-names
+
+/home/braydenchaffee/Projects/pyNance/frontend/src/views/Investments.vue
+  29:56  error  Filters are deprecated                                    vue/no-deprecated-filter
+  55:9   error  Component name "Investments" should always be multi-word  vue/multi-word-component-names
+
+/home/braydenchaffee/Projects/pyNance/frontend/src/views/Settings.vue
+  17:11  error  Component name "Settings" should always be multi-word  vue/multi-word-component-names
+
+/home/braydenchaffee/Projects/pyNance/frontend/src/views/Transactions.vue
+  60:9  error  Component name "Transactions" should always be multi-word  vue/multi-word-component-names
+
+/home/braydenchaffee/Projects/pyNance/frontend/tailwind.config.js
+  16:5  error  'require' is not defined  no-undef
+  17:5  error  'require' is not defined  no-undef
+  18:5  error  'require' is not defined  no-undef
+
+✖ 34 problems (34 errors, 0 warnings)
+

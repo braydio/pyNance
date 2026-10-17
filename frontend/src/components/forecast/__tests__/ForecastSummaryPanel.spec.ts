@@ -74,11 +74,11 @@ describe('ForecastSummaryPanel', () => {
     })
 
     expect(wrapper.text()).toContain('Assets')
-    expect(wrapper.text()).toContain('$2,500.00')
+    expect(wrapper.text()).toContain('$2500.00')
     expect(wrapper.text()).toContain('Liabilities')
     expect(wrapper.text()).toContain('$800.00')
     expect(wrapper.text()).toContain('Current Balance')
-    expect(wrapper.text()).toContain('$1,700.00')
+    expect(wrapper.text()).toContain('$1700.00')
     expect(wrapper.text()).toContain('positive-balance accounts currently included in the forecast')
     expect(wrapper.text()).toContain('Current Balance is assets minus liabilities')
   })
@@ -92,7 +92,7 @@ describe('ForecastSummaryPanel', () => {
     })
 
     expect(wrapper.text()).toContain('Net Delta:')
-    expect(wrapper.text()).toContain('+$123.45')
+    expect(wrapper.text()).toContain('123.45')
     expect(wrapper.text()).toContain('30-day moving average')
     expect(wrapper.text()).toContain('latest 90 days of history')
     expect(wrapper.text()).toContain('includes 2 auto-detected adjustments')
@@ -142,113 +142,5 @@ describe('ForecastSummaryPanel', () => {
     expect(wrapper.get('#liability-rate-input').attributes('aria-describedby')).toBe(
       'manual-inputs-note',
     )
-  })
-
-  describe('debt coverage wording', () => {
-    const liquidity = {
-      starting_cash: 5000,
-      ending_cash: 3200.5,
-      min_cash: 1200,
-      min_cash_date: '2026-11-20',
-      first_shortfall_date: null,
-    }
-    const netWorth = {
-      starting: 9300,
-      ending: 9000,
-      liabilities: { starting: 11686.65, ending: 11186.65 },
-      investments: { starting: 5000, ending: 5000 },
-    }
-    const v2 = (debtPaymentCoverage: Record<string, unknown> | null) =>
-      mount(ForecastSummaryPanel, {
-        props: { ...baseProps, modelVersion: 'v2', liquidity, netWorth, debtPaymentCoverage },
-      })
-    const payment = (id: string, date: string, amount: string) => ({
-      stream_id: id,
-      date,
-      amount,
-      source: 'recurring',
-    })
-
-    it('separates outstanding debt from scheduled payments and says what is verified', () => {
-      const wrapper = v2({
-        mode: 'mixed',
-        included: [payment('s1', '2026-11-15', '500.00'), payment('s1', '2026-12-15', '500.00')],
-        settled_account_ids: ['card'],
-        unmodeled_account_count: 1,
-        unknown_payment_account_ids: ['loan'],
-        invalid_payment_stream_ids: [],
-      })
-      expect(wrapper.get('[data-testid="debt-outstanding"]').text()).toContain(
-        'Outstanding debt tracked separately: $11,686.65',
-      )
-      expect(wrapper.get('[data-testid="debt-outstanding"]').text()).toContain('not a cash event')
-      expect(wrapper.get('[data-testid="debt-payments-included"]').text()).toBe(
-        'Scheduled debt payments included: $1,000.00 across 1 verified stream.',
-      )
-      expect(wrapper.get('[data-testid="debt-coverage-status"]').text()).toContain(
-        'Other debt payment coverage: incomplete. 1 account has no verified payment plan',
-      )
-      expect(wrapper.text()).not.toContain('Not part of this cash forecast: debt')
-    })
-
-    it('reports complete coverage and counts distinct streams', () => {
-      const wrapper = v2({
-        mode: 'settlement',
-        included: [payment('a', '2026-11-15', '300.00'), payment('b', '2026-11-20', '220.50')],
-        settled_account_ids: ['card', 'loan'],
-        unmodeled_account_count: 0,
-        unknown_payment_account_ids: [],
-        invalid_payment_stream_ids: [],
-      })
-      expect(wrapper.get('[data-testid="debt-payments-included"]').text()).toContain(
-        '$520.50 across 2 verified streams',
-      )
-      expect(wrapper.get('[data-testid="debt-coverage-status"]').text()).toContain(
-        'every tracked card and loan has a verified payment plan',
-      )
-    })
-
-    it('does not pretend payments are covered when there is no verified plan or no data', () => {
-      const none = v2({
-        mode: 'proxy',
-        included: [],
-        settled_account_ids: [],
-        unmodeled_account_count: 2,
-        unknown_payment_account_ids: ['card', 'loan'],
-        invalid_payment_stream_ids: [],
-      })
-      expect(none.get('[data-testid="debt-payments-included"]').text()).toContain('none')
-      expect(none.get('[data-testid="debt-coverage-status"]').text()).toContain('unverified')
-      expect(none.get('[data-testid="debt-coverage-status"]').classes()).toContain(
-        'debt-coverage__caution',
-      )
-      expect(v2(null).get('[data-testid="debt-coverage-status"]').text()).toBe(
-        'Other debt payment coverage: unverified.',
-      )
-    })
-
-    it('keeps V1 copy honest and formats V1 values with helpers', () => {
-      const wrapper = mount(ForecastSummaryPanel, {
-        props: {
-          ...baseProps,
-          assetBalance: 12345.6,
-          liabilityBalance: 11686.65,
-          netBalance: 658.95,
-        },
-      })
-      expect(wrapper.get('[data-testid="v1-debt-note"]').text()).toBe(
-        'Debt totals are separate from modeled bank cash.',
-      )
-      expect(wrapper.text()).toContain('$12,345.60')
-      expect(wrapper.text()).toContain('$11,686.65')
-      expect(wrapper.text()).not.toMatch(/\.\d{3,}/) // no raw toFixed/float tails
-    })
-
-    it('shows a negative net change with a true minus and a zero net as $0.00', () => {
-      const negative = mount(ForecastSummaryPanel, { props: { ...baseProps, netChange: -25.4 } })
-      expect(negative.get('[data-testid="summary-lead"]').text()).toContain('\u2212$25.40')
-      const zero = mount(ForecastSummaryPanel, { props: { ...baseProps, netChange: 0 } })
-      expect(zero.get('[data-testid="summary-lead"]').text()).toContain('$0.00')
-    })
   })
 })

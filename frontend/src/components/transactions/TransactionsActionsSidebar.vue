@@ -10,7 +10,7 @@
       />
     </div>
     <UiButton variant="outline" class="w-full" @click="$emit('open-scanner')">
-      Open Transfer Review
+      Open Scanner
     </UiButton>
   </div>
 </template>

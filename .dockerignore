@@ -20,6 +20,7 @@ frontend/dist/
 # Environment secrets (never ship these)
 .env
 .env.*
+exports.env
 
 # IDE / editors
 .vscode/

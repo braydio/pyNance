@@ -57,7 +57,7 @@ sys.modules["app.models"] = models_stub
 utils_pkg = types.ModuleType("app.utils")
 sys.modules["app.utils"] = utils_pkg
 finance_stub = types.ModuleType("app.utils.finance_utils")
-finance_stub.normalize_account_balance = lambda balance, account_type, account_id=None, subtype=None: balance
+finance_stub.normalize_account_balance = lambda balance, account_type, account_id=None: balance
 sys.modules["app.utils.finance_utils"] = finance_stub
 
 SERVICE_PATH = os.path.join(BASE_BACKEND, "app", "services", "safe_to_spend.py")

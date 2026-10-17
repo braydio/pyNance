@@ -24,7 +24,35 @@ transactions = Blueprint("transactions", __name__)
 UTC = timezone.utc
 TWOPLACES = Decimal("0.01")
 AMOUNT_EPSILON = TWOPLACES
-TRANSACTION_SORTS = ("date_desc", "date_asc", "spend_desc", "amount_desc", "merchant_asc", "category_asc")
+INTERNAL_TRANSFER_KEYWORDS = {
+    "transfer",
+    "zelle",
+    "venmo",
+    "cashapp",
+    "cash app",
+    "payment",
+    "p2p",
+    "xfer",
+}
+NON_TRANSFER_KEYWORDS = {
+    "uber",
+    "ubereats",
+    "eats",
+    "doordash",
+    "grubhub",
+    "lyft",
+    "restaurant",
+    "grocery",
+    "groceries",
+    "amazon",
+    "target",
+    "walmart",
+    "shell",
+    "chevron",
+    "starbucks",
+    "netflix",
+    "spotify",
+}
 
 
 def _ensure_utc(dt: datetime | None) -> datetime | None:
@@ -164,6 +192,112 @@ def _truthy_param(value: str | None, default: bool = False) -> bool:
     if value is None:
         return default
     return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _normalize_txn_datetime(value: date | datetime | None) -> datetime:
+    """Convert a transaction calendar date to UTC midnight for interval scoring."""
+
+    if isinstance(value, datetime):
+        return _ensure_utc(value) or datetime.min.replace(tzinfo=UTC)
+    if isinstance(value, date):
+        return datetime.combine(value, datetime.min.time(), tzinfo=UTC)
+    return datetime.min.replace(tzinfo=UTC)
+
+
+def _tokenize_transfer_text(value: str | None) -> set[str]:
+    """Extract lowercase alphanumeric tokens from transfer descriptions."""
+
+    if not value:
+        return set()
+    return set(re.findall(r"[a-z0-9]+", value.lower()))
+
+
+def _has_transfer_hint(tokens: set[str], raw_text: str | None = None) -> bool:
+    """Return whether tokens include common transfer/payment hints."""
+
+    if raw_text:
+        lowered = raw_text.lower()
+        if any(keyword in lowered for keyword in INTERNAL_TRANSFER_KEYWORDS):
+            return True
+    if not tokens:
+        return False
+    return any(token in INTERNAL_TRANSFER_KEYWORDS for token in tokens)
+
+
+def _has_non_transfer_hint(tokens: set[str], raw_text: str | None = None) -> bool:
+    """Return whether text looks like normal merchant spend (not transfers)."""
+
+    if raw_text:
+        lowered = raw_text.lower()
+        if any(keyword in lowered for keyword in NON_TRANSFER_KEYWORDS):
+            return True
+    if not tokens:
+        return False
+    return any(token in NON_TRANSFER_KEYWORDS for token in tokens)
+
+
+def _internal_match_score(
+    anchor: dict,
+    candidate: dict,
+    max_window_seconds: float,
+    amount_epsilon: Decimal,
+    allow_same_account: bool,
+) -> float | None:
+    """Score an internal-transfer candidate pair.
+
+    Lower scores are better. ``None`` means the pair is not eligible.
+    """
+
+    if anchor["transaction_id"] == candidate["transaction_id"]:
+        return None
+
+    if not allow_same_account and anchor["account_id"] == candidate["account_id"]:
+        return None
+
+    amount_a = anchor["amount"]
+    amount_b = candidate["amount"]
+    if amount_a == 0 or amount_b == 0:
+        return None
+    if amount_a * amount_b >= 0:
+        return None
+
+    amount_delta = abs(abs(amount_a) - abs(amount_b))
+    if amount_delta > amount_epsilon:
+        return None
+
+    time_delta_seconds = abs((anchor["date"] - candidate["date"]).total_seconds())
+    if time_delta_seconds > max_window_seconds:
+        return None
+
+    score = float(amount_delta * Decimal("1000"))
+    score += time_delta_seconds / 3600.0
+
+    # Prefer cross-account matches but still support same-account correction pairs.
+    if anchor["account_id"] == candidate["account_id"]:
+        score += 6.0
+    else:
+        score -= 0.5
+
+    overlap = anchor["tokens"] & candidate["tokens"]
+    if overlap:
+        score -= min(2.0, 0.5 * len(overlap))
+
+    hint_a = _has_transfer_hint(anchor["tokens"], anchor.get("description"))
+    hint_b = _has_transfer_hint(candidate["tokens"], candidate.get("description"))
+    if hint_a and hint_b:
+        score -= 4.0
+    elif hint_a or hint_b:
+        # Prevent transfer-looking rows from pairing with ordinary merchant spend.
+        score += 12.0
+
+    merchantish_a = _has_non_transfer_hint(anchor["tokens"], anchor.get("description"))
+    merchantish_b = _has_non_transfer_hint(candidate["tokens"], candidate.get("description"))
+    if merchantish_a and not hint_a:
+        score += 6.0
+    if merchantish_b and not hint_b:
+        score += 6.0
+
+    return score
 
 
 def display_transaction_amount(txn: Transaction) -> float:
@@ -356,25 +490,6 @@ def update_transaction():
         if not txn:
             return jsonify({"status": "error", "message": "Transaction not found"}), 404
 
-        # Transfer flags are validated for owner/scope/sign/pending/one-to-one BEFORE any field is
-        # touched, so a rejected pair leaves no partial change behind.
-        counterpart_txn, pair_already_confirmed = None, False
-        if "is_internal" in data:
-            from app.services import internal_transfer_review, recurring_repository
-
-            try:
-                counterpart_txn, pair_already_confirmed = internal_transfer_review.authorize_internal_flag(
-                    recurring_repository.trusted_owner_id(),
-                    txn,
-                    data.get("counterpart_transaction_id"),
-                    bool(data["is_internal"]),
-                    allow_same_account=bool(data.get("allow_same_account", False)),
-                )
-            except recurring_repository.OwnerNotConfigured as exc:
-                return jsonify({"status": "error", "code": exc.code, "message": str(exc)}), exc.status
-            except internal_transfer_review.TransferReviewError as exc:
-                return jsonify({"status": "error", "message": str(exc)}), exc.status
-
         changed_fields = {}
         if "amount" in data:
             try:
@@ -436,20 +551,21 @@ def update_transaction():
             txn.tags = tag_models
             changed_fields["tags"] = True
         counterpart_id = data.get("counterpart_transaction_id")
+        flag_counterpart = data.get("flag_counterpart", False)
         if "is_internal" in data:
             is_internal = bool(data["is_internal"])
             transfer_type = data.get("transfer_type")
-            transfer_label = (transfer_type if is_internal else None) or ("manual_internal" if is_internal else None)
             txn.is_internal = is_internal
-            txn.transfer_type = transfer_label
+            txn.transfer_type = (transfer_type if is_internal else None) or ("manual_internal" if is_internal else None)
             txn.internal_match_id = counterpart_id if is_internal and counterpart_id else None
             changed_fields["is_internal"] = True
             changed_fields["transfer_type"] = True
-            if counterpart_txn is not None and not pair_already_confirmed:
-                # Both legs are always updated together so a pair is never half-confirmed.
-                counterpart_txn.is_internal = is_internal
-                counterpart_txn.transfer_type = transfer_label
-                counterpart_txn.internal_match_id = txn.transaction_id if is_internal else None
+            if counterpart_id:
+                other = Transaction.query.filter_by(transaction_id=counterpart_id).first()
+                if other and flag_counterpart:
+                    other.is_internal = is_internal
+                    other.transfer_type = txn.transfer_type if is_internal else None
+                    other.internal_match_id = txn.transaction_id if is_internal else None
 
         txn.user_modified = True
         existing_fields = {}
@@ -497,53 +613,134 @@ def update_transaction():
 
 @transactions.route("/scan-internal", methods=["POST"])
 def scan_internal_transfers():
-    """Find potential internal transfer pairs without mutating anything (Transfer Review).
+    """Detect potential internal transfer pairs without mutating records.
 
-    Scoped to the trusted server-side owner (fails closed with 503 when none is configured). Query
-    parameters: ``start_date``/``end_date`` (YYYY-MM-DD, default last 90 days, max 365 days),
-    ``account_id`` (repeatable), ``date_window_days`` (1-14, default 3), ``amount_epsilon`` and
-    ``allow_same_account`` (default false; same-account pairs then need exact amounts and evidence).
-    Returns ``pairs`` (``pair_id``, ``left``, ``right``, ``evidence``, ``confidence_label``) plus
-    ``range``, ``scanned_rows`` and truncation flags.
+    Matching criteria:
+    - Same user
+    - Equal and offsetting amount (within ``amount_epsilon``)
+    - Near in time (within ``date_window_days``)
+    - Same-account matches optionally allowed (enabled by default)
     """
-    from app.services import internal_transfer_review, recurring_repository
-
     try:
-        try:
-            owner_id = recurring_repository.trusted_owner_id()
-        except recurring_repository.OwnerNotConfigured as exc:
-            return jsonify({"status": "error", "code": exc.code, "message": str(exc)}), exc.status
-
+        date_window_days = _coerce_positive_int(request.args.get("date_window_days"), default=3, minimum=1, maximum=14)
+        allow_same_account = _truthy_param(request.args.get("allow_same_account"), default=True)
+        amount_epsilon_raw = request.args.get("amount_epsilon")
         amount_epsilon = AMOUNT_EPSILON
-        if request.args.get("amount_epsilon"):
+        if amount_epsilon_raw:
             try:
-                amount_epsilon = Decimal(str(request.args["amount_epsilon"])).quantize(TWOPLACES)
+                amount_epsilon = Decimal(str(amount_epsilon_raw)).quantize(TWOPLACES)
             except (InvalidOperation, TypeError, ValueError):
-                return jsonify({"status": "error", "message": "Invalid amount_epsilon"}), 400
-        try:
-            start = _parse_iso_date(request.args["start_date"]) if request.args.get("start_date") else None
-            end = _parse_iso_date(request.args["end_date"]) if request.args.get("end_date") else None
-        except (TypeError, ValueError):
-            return jsonify({"status": "error", "message": "Invalid date format"}), 400
+                return (
+                    jsonify({"status": "error", "message": "Invalid amount_epsilon"}),
+                    400,
+                )
 
-        try:
-            result = internal_transfer_review.find_candidates(
-                owner_id,
-                start_date=start,
-                end_date=end,
-                account_ids=request.args.getlist("account_id") or None,
-                allow_same_account=_truthy_param(request.args.get("allow_same_account"), default=False),
-                date_window_days=_coerce_positive_int(
-                    request.args.get("date_window_days"), default=3, minimum=1, maximum=14
-                ),
-                amount_epsilon=amount_epsilon,
+        txns = (
+            db.session.query(Transaction, Account)
+            .join(Account, Transaction.account_id == Account.account_id)
+            .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
+            .filter((Transaction.pending.is_(False)) | (Transaction.pending.is_(None)))
+            .all()
+        )
+
+        records_by_user: dict[str, list[dict]] = defaultdict(list)
+        for txn, account in txns:
+            user_id = txn.user_id or account.user_id
+            if not user_id:
+                continue
+            date_value = _normalize_txn_datetime(getattr(txn, "date", None))
+            description = txn.description or txn.merchant_name or ""
+            records_by_user[user_id].append(
+                {
+                    "transaction_id": txn.transaction_id,
+                    "account_id": txn.account_id,
+                    "account_name": account.name,
+                    "institution_name": account.institution_name,
+                    "amount": Decimal(str(txn.amount)).quantize(TWOPLACES),
+                    "date": date_value,
+                    "description": description,
+                    "tokens": _tokenize_transfer_text(description),
+                    "txn": txn,
+                }
             )
-        except internal_transfer_review.TransferReviewError as exc:
-            return jsonify({"status": "error", "message": str(exc)}), exc.status
-        return jsonify({"status": "success", **result}), 200
+
+        pairs = []
+        seen = set()
+        max_window_seconds = float(date_window_days * 86400)
+
+        for user_id, records in records_by_user.items():
+            records.sort(key=lambda record: record["date"])
+            for index, anchor in enumerate(records):
+                anchor_id = anchor["transaction_id"]
+                if anchor_id in seen:
+                    continue
+
+                best_candidate = None
+                best_score = None
+
+                for candidate in records[index + 1 :]:
+                    candidate_id = candidate["transaction_id"]
+                    if candidate_id in seen:
+                        continue
+
+                    # Records are date-sorted; stop once we pass the max forward window.
+                    forward_seconds = (candidate["date"] - anchor["date"]).total_seconds()
+                    if forward_seconds > max_window_seconds:
+                        break
+
+                    score = _internal_match_score(
+                        anchor=anchor,
+                        candidate=candidate,
+                        max_window_seconds=max_window_seconds,
+                        amount_epsilon=amount_epsilon,
+                        allow_same_account=allow_same_account,
+                    )
+                    if score is None:
+                        continue
+                    if best_score is None or score < best_score:
+                        best_score = score
+                        best_candidate = candidate
+
+                if not best_candidate:
+                    continue
+
+                anchor_txn = anchor["txn"]
+                counterpart_txn = best_candidate["txn"]
+                pairs.append(
+                    {
+                        "transaction_id": anchor_txn.transaction_id,
+                        "counterpart_id": counterpart_txn.transaction_id,
+                        "amount": float(anchor["amount"]),
+                        "date": anchor["date"].isoformat(),
+                        "description": anchor["description"],
+                        "account_id": anchor["account_id"],
+                        "account_name": anchor.get("account_name"),
+                        "institution_name": anchor.get("institution_name"),
+                        "user_id": user_id,
+                        "time_delta_hours": round(
+                            abs((anchor["date"] - best_candidate["date"]).total_seconds()) / 3600.0,
+                            2,
+                        ),
+                        "amount_delta": float(abs(abs(anchor["amount"]) - abs(best_candidate["amount"]))),
+                        "match_score": round(float(best_score), 4),
+                        "counterpart": {
+                            "transaction_id": counterpart_txn.transaction_id,
+                            "amount": float(best_candidate["amount"]),
+                            "date": best_candidate["date"].isoformat(),
+                            "description": best_candidate["description"],
+                            "account_id": best_candidate["account_id"],
+                            "account_name": best_candidate.get("account_name"),
+                            "institution_name": best_candidate.get("institution_name"),
+                        },
+                    }
+                )
+                seen.add(anchor_id)
+                seen.add(best_candidate["transaction_id"])
+
+        return jsonify({"status": "success", "pairs": pairs}), 200
     except Exception as e:
         logger.error("Error scanning internal transfers: %s", e, exc_info=True)
-        return jsonify({"status": "error", "message": "Unable to scan for internal transfers"}), 500
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @transactions.route("/user_modify/update")
@@ -617,9 +814,7 @@ def get_transactions_paginated():
     (YYYY-MM-DD), ``account_id`` or ``account_ids`` (comma-delimited or
     repeated parameters), ``transaction_id`` for a specific lookup and
     ``tx_type``/``transaction_type`` with values ``credit`` or ``debit``.
-    ``sort`` orders ALL matching rows server-side (``date_desc`` default, ``date_asc``, ``spend_desc``,
-    ``amount_desc``, ``merchant_asc``, ``category_asc``). ``include_transfers=true`` keeps confirmed internal transfers (bound to the trusted server owner,
-    503 when none is configured). Tag filters can be supplied through ``tag`` or ``tags`` parameters.
+    Tag filters can be supplied through ``tag`` or ``tags`` parameters.
     Unknown or empty parameters are ignored.
     """
     try:
@@ -647,35 +842,18 @@ def get_transactions_paginated():
         except ValueError as exc:
             return jsonify({"status": "error", "message": str(exc)}), 400
 
-        sort = request.args.get("sort") or "date_desc"
-        if sort not in TRANSACTION_SORTS:
-            return jsonify({"status": "error", "message": f"sort must be one of {', '.join(TRANSACTION_SORTS)}"}), 400
-        include_transfers = _truthy_param(request.args.get("include_transfers"), default=False)
-        owner_id = None
-        if include_transfers:
-            # Transfer history is owner data: bind it to the trusted server owner and fail closed.
-            from app.services import recurring_repository
-
-            try:
-                owner_id = recurring_repository.trusted_owner_id()
-            except recurring_repository.OwnerNotConfigured as exc:
-                return jsonify({"status": "error", "code": exc.code, "message": str(exc)}), exc.status
-
         transactions, total, meta = account_logic.get_paginated_transactions(
             page,
             page_size,
             start_date=start_date,
             end_date=end_date,
             category=category,
-            user_id=owner_id,
             merchant=merchant,
             account_ids=account_ids or None,
             tx_type=tx_type,
             transaction_id=transaction_id,
             tags=tags or None,
             include_running_balance=include_running_balance,
-            include_transfers=include_transfers,
-            sort=sort,
         )
 
         return (
@@ -695,46 +873,6 @@ def get_transactions_paginated():
     except Exception as e:
         logger.error("Error in get_transactions_paginated: %s", e, exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
-
-
-@transactions.route("/insights", methods=["GET"])
-def get_transaction_insights():
-    """Summaries and a short review queue over ALL matching transactions (not the loaded page).
-
-    Query parameters: ``start_date`` / ``end_date`` (YYYY-MM-DD, default last 30 days, at most 366
-    days), ``account_ids`` (comma-delimited or repeated), ``category`` (repeatable) and ``refresh=true``
-    to bypass the ten-minute cache. Bound to the trusted server owner; 503 without one, 400 for bad
-    scope. Read-only: nothing is edited and no external service is called.
-    """
-    from app.services import recurring_repository, transaction_insights
-
-    try:
-        try:
-            owner_id = recurring_repository.trusted_owner_id()
-        except recurring_repository.OwnerNotConfigured as exc:
-            return jsonify({"status": "error", "code": exc.code, "message": str(exc)}), exc.status
-        try:
-            start = _parse_iso_date(request.args.get("start_date"))
-            end = _parse_iso_date(request.args.get("end_date"))
-        except (TypeError, ValueError):
-            return jsonify({"status": "error", "message": "Dates must be YYYY-MM-DD"}), 400
-        start = start.date() if isinstance(start, datetime) else start
-        end = end.date() if isinstance(end, datetime) else end
-        try:
-            data = transaction_insights.get_insights(
-                owner_id,
-                start,
-                end,
-                account_ids=_parse_account_ids(request.args) or None,
-                categories=request.args.getlist("category") or None,
-                refresh=_truthy_param(request.args.get("refresh"), default=False),
-            )
-        except transaction_insights.InsightsError as exc:
-            return jsonify({"status": "error", "message": str(exc)}), exc.status
-        return jsonify({"status": "success", "data": data}), 200
-    except Exception as e:
-        logger.error("Error building transaction insights: %s", e, exc_info=True)
-        return jsonify({"status": "error", "message": "Unable to build transaction insights"}), 500
 
 
 @transactions.route("/<account_id>/transactions", methods=["GET"])

@@ -18,7 +18,7 @@ from app.helpers.plaid_helpers import get_accounts, get_transactions
 from app.models import Account, AccountHistory, Category, PlaidAccount, PlaidItem, Tag, Transaction
 from app.sql.dialect_utils import dialect_insert
 from app.utils.category_canonical import canonicalize_category
-from app.utils.finance_utils import display_transaction_amount, is_liability_account
+from app.utils.finance_utils import display_transaction_amount
 
 ParentCategory = aliased(Category)
 
@@ -489,8 +489,6 @@ def _tx_cache_key(
     include_running_balance,
     recent,
     limit,
-    include_transfers=False,
-    sort="date_desc",
 ):
     ids = None
     if account_ids:
@@ -515,8 +513,6 @@ def _tx_cache_key(
         bool(include_running_balance),
         bool(recent),
         limit,
-        bool(include_transfers),
-        sort or "date_desc",
     )
 
 
@@ -548,12 +544,6 @@ def invalidate_tx_cache():
     global TX_CACHE_VERSION
     TX_PAGE_CACHE.clear()
     TX_CACHE_VERSION = int(time.time())
-    try:  # insights are derived from the same rows, so an edit or refresh must drop them too
-        from app.services.transaction_insights import invalidate_insights_cache
-
-        invalidate_insights_cache()
-    except ImportError:  # pragma: no cover - minimal stub environments
-        pass
 
 
 def process_transaction_amount(amount):
@@ -561,13 +551,11 @@ def process_transaction_amount(amount):
     return normalize_amount(amount)
 
 
-LIABILITY_ACCOUNT_TYPES = frozenset(
-    {"credit", "credit card", "credit_card", "loan", "liability"}
-)  # see is_liability_account
+LIABILITY_ACCOUNT_TYPES = frozenset({"credit", "credit card", "credit_card", "loan", "liability"})
 CREDIT_CARD_ACCOUNT_TYPES = frozenset({"credit", "credit card", "credit_card"})
 
 
-def normalize_balance(amount, account_type, subtype=None):
+def normalize_balance(amount, account_type):
     """Return the stored balance for a provider-reported ``amount``.
 
     Liabilities keep the provider convention (positive = amount owed, negative =
@@ -577,7 +565,7 @@ def normalize_balance(amount, account_type, subtype=None):
     """
 
     kind = account_type.lower().replace("_", " ") if account_type else None
-    if is_liability_account(account_type, subtype):
+    if kind in LIABILITY_ACCOUNT_TYPES or (account_type or "").lower() in LIABILITY_ACCOUNT_TYPES:
         return normalize_amount(amount)
     return normalize_amount({"amount": amount, "transaction_type": kind})
 
@@ -617,9 +605,7 @@ def extract_balance_fields(account, account_type=None):
     if current is None:
         current = _decimal_or_none(legacy)
     kind = (account_type or payload.get("type") or "").lower()
-    subtype_kind = str(payload.get("subtype") or "").strip().lower().replace("_", " ")
-    is_card = kind in CREDIT_CARD_ACCOUNT_TYPES or subtype_kind in CREDIT_CARD_ACCOUNT_TYPES
-    limit = _decimal_or_none(balances.get("limit")) if is_card else None
+    limit = _decimal_or_none(balances.get("limit")) if kind in CREDIT_CARD_ACCOUNT_TYPES else None
     mask = payload.get("mask")
     currency = balances.get("iso_currency_code") or balances.get("currency_code")
     return {
@@ -959,11 +945,7 @@ def upsert_accounts(
             # Explicit null handling: a valid 0 is kept, a missing value is not invented.
             balance_fields = extract_balance_fields(account, acc_type)
             balance_observed = balance_fields["current"] is not None
-            balance = (
-                normalize_balance(balance_fields["current"], acc_type, account.get("subtype"))
-                if balance_observed
-                else None
-            )
+            balance = normalize_balance(balance_fields["current"], acc_type) if balance_observed else None
             balance_fields["current"] = balance
             logger.debug("[UPSERT] Balance parsed for %s: %s", account_id, balance)
 
@@ -1101,8 +1083,6 @@ def get_paginated_transactions(
     limit=None,
     include_running_balance=False,
     merchant=None,
-    include_transfers=False,
-    sort="date_desc",
 ):
     """Return paginated transaction rows with optional filtering.
 
@@ -1134,17 +1114,6 @@ def get_paginated_transactions(
     include_running_balance : bool, default False
         When ``True``, include a per-transaction running balance computed with a window
         function so pagination does not require loading every row into memory.
-    include_transfers : bool, default False
-        When ``True`` keep confirmed internal transfers in the result (used by the daily modal so
-        its history matches the Daily Net reconciliation). The default explorer view still hides them.
-
-    sort : str, default ``"date_desc"``
-        Server-side ordering across ALL matching rows (not just the loaded page): ``date_desc``,
-        ``date_asc``, ``spend_desc`` (largest money-out first), ``amount_desc`` (largest absolute
-        amount), ``merchant_asc`` or ``category_asc``. Unknown values fall back to newest first.
-
-    Every serialized row also carries ``reporting_flow_kind``, ``flow_confidence`` and
-    ``flow_reason_codes`` from the shared economic-flow classifier.
 
     Returns
     -------
@@ -1158,10 +1127,9 @@ def get_paginated_transactions(
         .join(Account, Transaction.account_id == Account.account_id)
         .outerjoin(Category, Transaction.category_id == Category.id)
         .filter(Account.is_hidden.is_(False))
-        .order_by(*_transaction_order(sort))
+        .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
+        .order_by(Transaction.date.desc(), Transaction.transaction_id.desc())
     )
-    if not include_transfers:
-        query = query.filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
 
     if user_id:
         query = query.filter(Account.user_id == user_id)
@@ -1222,8 +1190,6 @@ def get_paginated_transactions(
             include_running_balance,
             recent,
             limit,
-            include_transfers,
-            sort,
         )
         cached = _get_cached_tx_page(cache_key)
         if cached:
@@ -1250,20 +1216,6 @@ def get_paginated_transactions(
     else:
         results = query.offset(offset).limit(page_size).all()
 
-    # Classify the page with the shared reporting classifier (one batched counterpart lookup).
-    from app.services.transaction_flow_classification import LinkedPair, classify_reporting_flow, user_decision_for
-
-    match_ids = {row[0].internal_match_id for row in results if row[0].internal_match_id}
-    counterparts = {}
-    if match_ids:
-        for other, other_account in (
-            db.session.query(Transaction, Account)
-            .join(Account, Transaction.account_id == Account.account_id)
-            .filter(Transaction.transaction_id.in_(match_ids))
-            .all()
-        ):
-            counterparts[other.transaction_id] = LinkedPair(other, other_account)
-
     # Unpack and serialize
     serialized = []
     for row in results:
@@ -1278,12 +1230,6 @@ def get_paginated_transactions(
             category_label = cat.computed_display_name
         category_slug = txn.category_slug or getattr(cat, "category_slug", None)
         category_display = txn.category_display or category_label
-        flow = classify_reporting_flow(
-            txn,
-            acc,
-            linked_pair=counterparts.get(txn.internal_match_id) if txn.internal_match_id else None,
-            user_decision=user_decision_for(txn),
-        )
 
         serialized.append(
             {
@@ -1305,9 +1251,6 @@ def get_paginated_transactions(
                 "pending": getattr(txn, "pending", False),
                 "transfer_type": getattr(txn, "transfer_type", None),
                 "internal_transfer_flag": bool(getattr(txn, "is_internal", False)),
-                "reporting_flow_kind": flow["flow_kind"],
-                "flow_confidence": flow["confidence"],
-                "flow_reason_codes": flow["reason_codes"],
                 "isEditing": False,
                 "tags": _serialize_transaction_tags(txn),
                 "running_balance": (float(running_balance) if running_balance is not None else None),
@@ -1327,25 +1270,6 @@ def get_paginated_transactions(
         _set_cached_tx_page(cache_key, (serialized, total), meta)
 
     return serialized, total, meta
-
-
-_NEWEST_FIRST = ("date_desc",)
-
-
-def _transaction_order(sort):
-    """ORDER BY clauses for the supported ``sort`` keys, always tie-broken newest first."""
-
-    tie = (Transaction.date.desc(), Transaction.transaction_id.desc())
-    amount = func.coalesce(Transaction.amount, 0)
-    clauses = {
-        "date_asc": (Transaction.date.asc(), Transaction.transaction_id.asc()),
-        # Plaid stores money out as positive; largest spend first, credits sink to the bottom.
-        "spend_desc": (amount.desc(), *tie),
-        "amount_desc": (func.abs(amount).desc(), *tie),
-        "merchant_asc": (func.lower(func.coalesce(Transaction.merchant_name, "")).asc(), *tie),
-        "category_asc": (func.lower(func.coalesce(Transaction.category, "")).asc(), *tie),
-    }
-    return clauses.get(sort or "date_desc", tie)
 
 
 def _running_balance_expression():
@@ -1524,7 +1448,7 @@ def refresh_data_for_plaid_account(access_token, account_or_id, accounts_data=No
                 fields = extract_balance_fields(acct_dict, account.type)
                 refreshed_at = datetime.now(timezone.utc)
                 if fields["current"] is not None:
-                    account.balance = normalize_balance(fields["current"], account.type, account.subtype)
+                    account.balance = normalize_balance(fields["current"], account.type)
                     account.balance_as_of = refreshed_at
                 for attr, source in (
                     ("available_balance", "available"),

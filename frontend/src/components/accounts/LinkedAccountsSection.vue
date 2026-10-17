@@ -3,23 +3,15 @@
   <Card class="p-6 space-y-6" data-testid="linked-accounts-section">
     <header class="space-y-1">
       <h2 class="text-xl font-semibold">Linked Accounts Overview</h2>
-      <p class="text-sm text-muted" data-testid="connections-summary">
-        {{ institutionCount }} {{ institutionCount === 1 ? 'institution' : 'institutions' }} linked
-        ·
-        <span :class="reconnectConnections.length ? 'connection-summary--attention' : ''">
-          {{
-            reconnectConnections.length
-              ? `${reconnectConnections.length} need${reconnectConnections.length === 1 ? 's' : ''} reconnect`
-              : 'all connections healthy'
-          }}
-        </span>
+      <p class="text-sm text-muted-foreground">
+        Sorted by account category and grouped by institution for quick review of key details.
       </p>
     </header>
 
     <div
       v-for="connection in reconnectConnections"
       :key="connection.key ?? connection.connectionId"
-      class="connection-callout space-y-2"
+      class="rounded-md border border-amber-400 bg-amber-50 p-4 dark:bg-amber-950"
       role="status"
       :data-testid="`connection-${connection.key ?? connection.connectionId}`"
     >
@@ -53,7 +45,7 @@
       </p>
     </div>
 
-    <div v-if="!groupedAccounts.length" class="text-sm text-muted">
+    <div v-if="!groupedAccounts.length" class="text-sm text-muted-foreground">
       No accounts available yet. Link an account to see details below.
     </div>
 
@@ -66,9 +58,8 @@
       >
         <div class="flex items-center justify-between">
           <h3 class="text-lg font-semibold">{{ typeGroup.label }}</h3>
-          <span class="text-sm text-muted">
-            {{ typeGroup.institutionCount }}
-            {{ typeGroup.institutionCount === 1 ? 'institution' : 'institutions' }}
+          <span class="text-xs uppercase tracking-wide text-muted-foreground">
+            {{ typeGroup.institutionCount }} institutions
           </span>
         </div>
 
@@ -76,13 +67,13 @@
           <article
             v-for="institution in typeGroup.institutions"
             :key="institution.name"
-            class="linked-institution"
+            class="rounded-lg border border-surface-200 bg-surface-50 p-4 shadow-sm dark:border-surface-700 dark:bg-surface-900"
             :data-testid="`institution-${institution.name}`"
           >
             <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <div>
                 <h4 class="text-base font-semibold">{{ institution.name }}</h4>
-                <p class="text-sm text-muted">
+                <p class="text-xs uppercase tracking-wide text-muted-foreground">
                   {{ institution.accounts.length }} account{{
                     institution.accounts.length === 1 ? '' : 's'
                   }}
@@ -90,11 +81,11 @@
               </div>
             </div>
 
-            <div class="mt-2">
+            <div class="mt-4 space-y-4">
               <div
                 v-for="account in institution.accounts"
                 :key="account.id"
-                class="linked-account"
+                class="rounded-md border border-surface-200 bg-white p-4 shadow-sm dark:border-surface-600 dark:bg-surface-800"
                 :data-testid="`account-${account.id}`"
               >
                 <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -102,35 +93,40 @@
                     <p class="text-base font-medium wrap-anywhere">{{ account.name }}</p>
                     <span
                       v-if="account.connection_status?.requires_reauth"
-                      class="connection-badge"
+                      class="inline-flex rounded bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900"
                       role="status"
                     >
                       Plaid reconnect required
                     </span>
-                    <p v-if="account.mask" class="text-sm text-muted">
+                    <p v-if="account.mask" class="text-sm text-muted-foreground">
                       Account •••• {{ account.mask }}
                     </p>
-                    <p v-if="account.subtype" class="text-sm text-muted">
+                    <p
+                      v-if="account.subtype"
+                      class="text-xs uppercase tracking-wide text-muted-foreground"
+                    >
                       {{ account.subtype }}
                     </p>
                   </div>
 
                   <div class="grid grid-cols-2 gap-4 text-sm md:text-right">
                     <div v-if="aprFor(account).applicable" :data-testid="`apr-${account.id}`">
-                      <p class="text-sm text-muted">APR</p>
+                      <p class="text-xs uppercase tracking-wide text-muted-foreground">APR</p>
                       <p class="font-semibold">{{ formatApr(aprFor(account).value) }}</p>
-                      <p class="text-sm text-muted">{{ aprFor(account).label }}</p>
+                      <p class="text-xs text-muted-foreground">{{ aprFor(account).label }}</p>
                     </div>
                     <div v-if="account.balance !== undefined">
-                      <p class="text-sm text-muted">Balance</p>
+                      <p class="text-xs uppercase tracking-wide text-muted-foreground">Balance</p>
                       <p class="font-semibold">{{ formatBalance(account.balance) }}</p>
                     </div>
                     <div v-if="account.limit !== undefined">
-                      <p class="text-sm text-muted">Credit limit</p>
+                      <p class="text-xs uppercase tracking-wide text-muted-foreground">
+                        Credit Limit
+                      </p>
                       <p class="font-semibold">{{ formatBalance(account.limit) }}</p>
                     </div>
                     <div v-if="account.status">
-                      <p class="text-sm text-muted">Status</p>
+                      <p class="text-xs uppercase tracking-wide text-muted-foreground">Status</p>
                       <p class="font-semibold">{{ account.status }}</p>
                     </div>
                   </div>
@@ -138,7 +134,8 @@
 
                 <details
                   v-if="(promotionEntries[account.id] || []).length || enablePromotionEditor"
-                  class="mt-3 space-y-3"
+                  class="mt-4 space-y-3"
+                  open
                 >
                   <summary class="cursor-pointer text-sm font-semibold">
                     Rewards & Promotions
@@ -148,7 +145,7 @@
                     <li
                       v-for="(promotion, index) in promotionEntries[account.id] || []"
                       :key="`${account.id}-${promotion.category}-${index}`"
-                      class="promo-item flex items-center justify-between px-3 py-2 text-sm"
+                      class="flex items-center justify-between rounded border border-surface-200 bg-surface-50 px-3 py-2 text-sm dark:border-surface-600 dark:bg-surface-900"
                     >
                       <span class="font-medium">{{ promotion.category }}</span>
                       <span>{{ formatPercentage(promotion.rate) }} back</span>
@@ -157,16 +154,21 @@
 
                   <form
                     v-if="enablePromotionEditor"
-                    class="promo-form grid gap-3 p-3 text-sm"
+                    class="grid gap-3 rounded-md border border-dashed border-surface-300 p-3 text-sm dark:border-surface-600"
                     @submit.prevent="addPromotion(account.id)"
                     :data-testid="`promo-form-${account.id}`"
                   >
-                    <p class="text-sm text-muted" :data-testid="`promo-draft-label-${account.id}`">
+                    <p
+                      class="text-xs text-muted-foreground"
+                      :data-testid="`promo-draft-label-${account.id}`"
+                    >
                       Local draft only. Promotions are not persisted yet.
                     </p>
                     <div class="grid gap-2 md:grid-cols-3 md:items-end">
                       <div class="space-y-1">
-                        <label :for="`promo-category-${account.id}`" class="text-sm text-muted"
+                        <label
+                          :for="`promo-category-${account.id}`"
+                          class="text-xs uppercase tracking-wide text-muted-foreground"
                           >Category</label
                         >
                         <select
@@ -191,7 +193,7 @@
                       >
                         <label
                           :for="`promo-custom-category-${account.id}`"
-                          class="text-sm text-muted"
+                          class="text-xs uppercase tracking-wide text-muted-foreground"
                           >Custom Category</label
                         >
                         <input
@@ -205,7 +207,9 @@
                       </div>
 
                       <div class="space-y-1">
-                        <label :for="`promo-rate-${account.id}`" class="text-sm text-muted"
+                        <label
+                          :for="`promo-rate-${account.id}`"
+                          class="text-xs uppercase tracking-wide text-muted-foreground"
                           >Cash Back %</label
                         >
                         <input
@@ -411,11 +415,6 @@ const groupedAccounts = computed(() => {
 
 const reconnectConnections = computed(() => uniqueReconnectConnections(resolvedAccounts.value))
 
-/** Distinct institutions across all groups. */
-const institutionCount = computed(
-  () => new Set(resolvedAccounts.value.map((account) => account.institution || 'Unknown')).size,
-)
-
 function ensurePromotionState(accounts) {
   const currentIds = new Set()
 
@@ -518,58 +517,5 @@ function addPromotion(accountId) {
 <style scoped>
 .wrap-anywhere {
   overflow-wrap: anywhere;
-}
-
-/* One surface per level: Card > institution fill > account rows split by a hairline (no nested boxes). */
-.linked-institution {
-  padding: 1rem;
-  border-radius: var(--radius-2, 0.5rem);
-  background: var(--surface-2);
-}
-
-.linked-account {
-  padding: 0.9rem 0;
-  border-top: 1px solid var(--divider);
-}
-
-.linked-account:first-child {
-  border-top: 0;
-  padding-top: 0.25rem;
-}
-
-/* Reconnect callout: a caution surface built from theme tokens, readable in light and dark themes. */
-.connection-callout {
-  padding: 1rem;
-  border-radius: var(--radius-2, 0.5rem);
-  color: var(--color-text-light, inherit);
-  background: color-mix(in srgb, var(--color-warning) 14%, var(--surface-1));
-  border: 1px solid color-mix(in srgb, var(--color-warning) 60%, transparent);
-  border-left-width: 4px;
-}
-
-.connection-badge {
-  display: inline-flex;
-  padding: 0.15rem 0.5rem;
-  border-radius: 9999px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--color-text-light, inherit);
-  background: color-mix(in srgb, var(--color-warning) 22%, var(--surface-1));
-  border: 1px solid color-mix(in srgb, var(--color-warning) 55%, transparent);
-}
-
-.connection-summary--attention {
-  font-weight: 600;
-  color: var(--text-warning);
-}
-
-.promo-item {
-  border-radius: 0.4rem;
-  background: var(--surface-1);
-}
-
-.promo-form {
-  border-radius: 0.4rem;
-  border: 1px dashed var(--divider);
 }
 </style>

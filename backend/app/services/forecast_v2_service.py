@@ -294,8 +294,6 @@ def _drivers(inputs: dict[str, Any]) -> list[dict[str, Any]]:
     streams = {s["stream_id"]: s for s in inputs["streams"]}
     rows = []
     for event in inputs["scheduled_events"]:
-        if event.kind == "liability_charge":
-            continue  # raises the amount owed; it is not a cash driver
         stream = streams.get(str(event.source_id), {})
         origin = stream.get("origin", "manual")
         level = (
@@ -308,8 +306,7 @@ def _drivers(inputs: dict[str, Any]) -> list[dict[str, Any]]:
                 "event_id": event.event_id,
                 "source_id": event.source_id,
                 "date": event.date.isoformat(),
-                # A payment is stored as a positive movement magnitude; as a driver it is cash leaving.
-                "amount": float(-event.amount if event.kind == "liability_payment" else event.amount),
+                "amount": float(event.amount),
                 "kind": event.kind,
                 "origin": _ORIGIN_LABELS.get(origin, origin),
                 "confidence_label": level,
@@ -408,36 +405,6 @@ def compute_v2_forecast(payload: dict[str, Any], *, today: Optional[date] = None
 
         base_events = inputs["scheduled_events"] + inputs["residual_events"]
         baseline = run_ledger(base_events, parsed["adjustments"])
-        sign_summary = data.get("sign_summary") or {}
-        if sign_summary.get("excluded"):
-            warnings.append(
-                {
-                    "code": "sign_unknown_excluded",
-                    "message": "Some transactions had an unknown amount direction and were excluded from the forecast.",
-                    "count": sign_summary["excluded"],
-                    "by_reason": sign_summary.get("by_reason", {}),
-                }
-            )
-        debt_coverage = inputs["debt_payment_coverage"]
-        if debt_coverage["mode"] == "mixed":
-            warnings.append(
-                {
-                    "code": "debt_payments_partial",
-                    "message": (
-                        "Some debts use a verified payment schedule; the others still count card purchases "
-                        "as cash spending."
-                    ),
-                    "unmodeled_account_count": debt_coverage["unmodeled_account_count"],
-                }
-            )
-        if debt_coverage["invalid_payment_stream_ids"]:
-            warnings.append(
-                {
-                    "code": "payment_plan_out_of_scope",
-                    "message": "A payment plan needs a funding cash account and a card or loan that are both included.",
-                    "count": len(debt_coverage["invalid_payment_stream_ids"]),
-                }
-            )
         if data["ignored_account_ids"]:
             warnings.append(
                 {
@@ -538,57 +505,23 @@ def compute_v2_forecast(payload: dict[str, Any], *, today: Optional[date] = None
             row["events"] = point.event_ids
         timeline.append(row)
 
-    cash_ids = set(baseline.accounts["included"]["cash"])
-
-    def cash_effect(e: ForecastV2Event) -> Decimal:
-        """Signed effect of one applied event on liquid cash (what the user would see in a bank)."""
-        if e.kind in {"scheduled_income", "scheduled_bill", "adjustment", "residual"}:
-            return e.amount
-        if e.kind == "liability_charge":
-            return Decimal("0.00")  # raises the amount owed; cash moves when the payment is made
-        src_cash = e.account_id in cash_ids
-        dst_cash = e.counterparty_account_id in cash_ids
-        if e.kind in {"liability_payment", "transfer"}:
-            # Movement events carry a positive magnitude; the cash effect is its direction.
-            return (
-                -e.amount if src_cash and not dst_cash else e.amount if dst_cash and not src_cash else Decimal("0.00")
-            )
-        return e.amount
-
-    cashflows = []
-    for e in baseline.events:
-        effect = cash_effect(e)
-        if effect == 0:
-            continue  # nothing reached liquid cash (card charges, cash-to-cash transfers)
-        cashflows.append(
-            {
-                "date": e.date.isoformat(),
-                "amount": float(effect),
-                "label": e.metadata.get("label") or e.kind.replace("_", " "),
-                "category": e.kind,
-                "source": e.source,
-                "type": "income" if effect > 0 else "expense",
-                "confidence": e.confidence,
-                "account_id": None,
-                "recurring_id": None,
-                "direction": "inflow" if effect > 0 else "outflow",
-                "sources": None,
-                "metadata": {
-                    "event_id": e.event_id,
-                    "source_id": e.source_id,
-                    **(
-                        {
-                            "event_role": e.metadata.get("event_role"),
-                            "funding_account_id": e.account_id,
-                            "destination_account_id": e.counterparty_account_id,
-                            "principal_split": e.metadata.get("principal_split"),
-                        }
-                        if e.kind == "liability_payment"
-                        else {}
-                    ),
-                },
-            }
-        )
+    cashflows = [
+        {
+            "date": e.date.isoformat(),
+            "amount": float(e.amount),
+            "label": e.metadata.get("label") or e.kind.replace("_", " "),
+            "category": e.kind,
+            "source": e.source,
+            "type": "income" if e.amount > 0 else "expense",
+            "confidence": e.confidence,
+            "account_id": None,
+            "recurring_id": None,
+            "direction": "inflow" if e.amount > 0 else "outflow",
+            "sources": None,
+            "metadata": {"event_id": e.event_id, "source_id": e.source_id},
+        }
+        for e in baseline.events
+    ]
     quality_warnings = warnings + baseline.warnings
     return {
         "model_version": MODEL_VERSION,
@@ -635,7 +568,6 @@ def compute_v2_forecast(payload: dict[str, Any], *, today: Optional[date] = None
             "account_buckets": baseline.accounts["included"],
             "horizon_days": horizon,
             "start_date": start.isoformat(),
-            "debt_payment_coverage": debt_coverage,
         },
         "liquidity": _liquidity(baseline),
         "net_worth": {

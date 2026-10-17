@@ -112,9 +112,7 @@ def _cash_account_payload(accounts: list[Account]) -> tuple[int, list[dict]]:
     for account in accounts:
         if not _is_cash_account(account):
             continue
-        normalized = normalize_account_balance(
-            account.balance, account.type, account_id=account.account_id, subtype=account.subtype
-        )
+        normalized = normalize_account_balance(account.balance, account.type, account_id=account.account_id)
         balance_cents = max(_to_cents(normalized), 0)
         total_cents += balance_cents
         payload.append(

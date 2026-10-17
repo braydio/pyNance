@@ -40,14 +40,12 @@ def app_context():
         db.drop_all()
 
 
-def _payload(account_id="a1", type_="credit", subtype=None, **balances):
-    if subtype is None:
-        subtype = "credit card" if type_ in {"credit", "credit card"} else "checking"
+def _payload(account_id="a1", type_="credit", **balances):
     return {
         "account_id": account_id,
         "name": "Card",
         "type": type_,
-        "subtype": subtype,
+        "subtype": "credit card",
         "mask": "1234",
         "institution_name": "Bank",
         "balances": balances,
@@ -205,119 +203,3 @@ def test_list_accounts_serializes_new_nullable_fields(app_context):
     assert card["account_type"] == "credit" and card["is_investment"] is False
     assert checking["credit_limit"] is None and checking["limit"] is None
     assert "access_token" not in card
-
-
-# ----------------------------------------------------------------------------- classification (TP-007)
-
-from app.services.account_portfolio_metrics import classification_conflict  # noqa: E402
-from app.utils.finance_utils import is_liability_account, normalize_account_balance  # noqa: E402
-
-# Keep in sync with the `classifyAccount` table in frontend/src/utils/__tests__/accountPortfolio.spec.js.
-CLASSIFICATION_FIXTURES = [
-    ({"type": "depository"}, "depository"),
-    ({"type": "checking"}, "depository"),
-    ({"type": "credit"}, "credit"),
-    ({"type": "Credit Card"}, "credit"),
-    ({"type": "credit_card"}, "credit"),
-    ({"type": "loan"}, "loan"),
-    ({"type": "brokerage", "is_investment": False}, "investment"),
-    ({"type": "depository", "is_investment": True}, "depository"),
-    ({"account_type": "investment"}, "investment"),
-    ({"type": "weird"}, "other"),
-    ({}, "other"),
-    ({"type": "investment", "subtype": "Credit card", "is_investment": True}, "credit"),
-    ({"type": "investment", "subtype": "Savings", "is_investment": True}, "depository"),
-    ({"type": "investment", "subtype": "Checking", "is_investment": True}, "depository"),
-    ({"type": "investment", "subtype": "Brokerage", "is_investment": True}, "investment"),
-    ({"type": "investment", "subtype": "Roth", "is_investment": True}, "investment"),
-    ({"type": "investment", "subtype": "Ira", "is_investment": True}, "investment"),
-    ({"type": "investment", "subtype": "cash management"}, "investment"),
-    ({"type": "depository", "subtype": "Checking", "is_investment": False}, "depository"),
-    ({"type": "credit", "subtype": "Credit card"}, "credit"),
-    ({"type": "other", "subtype": "Roth IRA"}, "investment"),
-    ({"type": "other", "is_investment": True}, "investment"),
-    ({"type": "loan", "subtype": "student", "is_investment": True}, "loan"),
-]
-
-
-@pytest.mark.parametrize("fields, expected", CLASSIFICATION_FIXTURES)
-def test_explicit_type_and_subtype_win_over_the_legacy_investment_flag(fields, expected):
-    assert classify_account_group(SimpleNamespace(**fields)) == expected
-
-
-def test_conflicting_flag_is_reported_not_alarmed():
-    card = SimpleNamespace(type="investment", subtype="Credit card", is_investment=True)
-    assert classification_conflict(card) == {
-        "flag": "is_investment",
-        "classified": "credit",
-        "reason": "explicit_credit",
-    }
-    assert classification_conflict(SimpleNamespace(type="investment", subtype="Ira", is_investment=True)) is None
-    assert classification_conflict(SimpleNamespace(type="credit", is_investment=False)) is None
-
-
-def test_robinhood_credit_card_under_an_investment_item_is_owed_debt_not_an_asset():
-    card = SimpleNamespace(
-        account_id="rh-cc",
-        type="investment",
-        subtype="Credit card",
-        is_investment=True,
-        balance=Decimal("10268.37"),  # provider convention: positive = amount owed
-        credit_limit=Decimal("20000"),
-        available_balance=None,
-        balance_as_of=datetime(2026, 10, 16, tzinfo=timezone.utc),
-    )
-    metrics = compute_account_metrics(card, now=datetime(2026, 10, 17, tzinfo=timezone.utc))
-    assert metrics["group"] == "credit"
-    assert metrics["signed_balance"] == Decimal("-10268.37")
-    assert metrics["owed"] == Decimal("10268.37")
-    assert metrics["utilization_pct"] == pytest.approx(51.34, abs=0.01)
-    assert metrics["classification_conflict"]["classified"] == "credit"
-
-    savings = SimpleNamespace(
-        account_id="rh-sav", type="investment", subtype="Savings", is_investment=True, balance=Decimal("500.00")
-    )
-    saved = compute_account_metrics(savings)
-    assert saved["group"] == "depository" and saved["signed_balance"] == Decimal("500.00") and saved["owed"] is None
-
-
-@pytest.mark.parametrize(
-    "account_type, subtype, expected",
-    [
-        ("credit card", None, True),
-        ("credit_card", None, True),
-        ("loan", None, True),
-        ("investment", "Credit card", True),
-        ("investment", "Savings", False),
-        ("depository", "Checking", False),
-        ("investment", "Brokerage", False),
-        (None, None, False),
-    ],
-)
-def test_liability_detection_honors_an_explicit_credit_or_loan_subtype(account_type, subtype, expected):
-    assert is_liability_account(account_type, subtype) is expected
-
-
-def test_read_side_sign_flip_uses_the_subtype():
-    assert normalize_account_balance(Decimal("10268.37"), "investment", subtype="Credit card") == Decimal("-10268.37")
-    assert normalize_account_balance(Decimal("10268.37"), "investment") == Decimal("10268.37")  # no subtype => asset
-    assert normalize_account_balance(Decimal("-40.00"), "investment", subtype="credit card") == Decimal(
-        "40.00"
-    )  # overpaid
-
-
-def test_ingestion_keeps_the_provider_sign_for_a_card_under_an_investment_item(app_context):
-    from app.sql.account_logic import extract_balance_fields, normalize_balance
-
-    assert normalize_balance(Decimal("-40.00"), "investment", "Credit card") == Decimal(
-        "-40.00"
-    )  # credit stays negative
-    assert normalize_balance(Decimal("10268.37"), "investment", "Credit card") == Decimal("10268.37")
-    payload = {
-        "type": "investment",
-        "subtype": "Credit card",
-        "balances": {"current": "10268.37", "limit": "20000"},
-    }
-    assert extract_balance_fields(payload, "investment")["credit_limit"] == Decimal("20000.00")
-    brokerage = {"type": "investment", "subtype": "Brokerage", "balances": {"current": "5", "limit": "20000"}}
-    assert extract_balance_fields(brokerage, "investment")["credit_limit"] is None

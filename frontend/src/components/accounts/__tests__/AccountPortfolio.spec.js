@@ -84,89 +84,9 @@ describe('AccountPortfolioOverview', () => {
     expect(wrapper.get('[data-testid="kpi-net"]').text()).toContain('($3,350.00)')
     expect(wrapper.get('[data-testid="kpi-utilization"]').text()).toContain('25%')
     expect(wrapper.get('[data-testid="utilization-coverage"]').text()).toBe(
-      'Known credit limits: 1/2 cards',
+      '1 of 2 credit lines have known limits',
     )
     expect(wrapper.find('[data-testid="hidden-excluded-note"]').exists()).toBe(true)
-  })
-
-  it('scopes the headline to visible accounts and never calls a partial net the total', () => {
-    const wrapper = mount(AccountPortfolioOverview, { props: { accounts } })
-    const hidden = accounts.filter((a) => a.is_hidden).length
-    expect(wrapper.get('[data-testid="scope-line"]').text()).toBe(
-      `${accounts.length - hidden} visible of ${accounts.length} linked; ${hidden} hidden excluded`,
-    )
-    expect(wrapper.get('[data-testid="kpi-net"]').text()).toContain('Visible-account net')
-    expect(wrapper.get('[data-testid="kpi-net"]').text()).not.toContain('Net position')
-    expect(wrapper.get('[data-testid="hidden-excluded-note"]').text()).toContain('partial picture')
-  })
-
-  it('uses the plain Net position label when every linked account is counted', () => {
-    const wrapper = mount(AccountPortfolioOverview, { props: { accounts, includeHidden: true } })
-    expect(wrapper.get('[data-testid="kpi-net"]').text()).toContain('Net position')
-    expect(wrapper.get('[data-testid="scope-line"]').text()).toBe(
-      `${accounts.length} of ${accounts.length} linked accounts included`,
-    )
-  })
-
-  it('says when balances are unknown instead of counting them as zero', () => {
-    const wrapper = mount(AccountPortfolioOverview, {
-      props: { accounts: [...accounts, { account_id: 'x', name: 'No data', type: 'depository' }] },
-    })
-    expect(wrapper.get('[data-testid="unknown-balances-note"]').text()).toContain(
-      '1 account has no balance data and is not counted as $0',
-    )
-  })
-
-  it('groups a Robinhood-style item by what each account really is and keeps totals and chips in agreement', () => {
-    const robinhood = [
-      {
-        account_id: 'r1',
-        name: 'Robinhood Credit Card',
-        type: 'investment',
-        subtype: 'Credit card',
-        is_investment: true,
-        balance: -120,
-        credit_limit: 2000,
-        institution_name: 'Robinhood',
-      },
-      {
-        account_id: 'r2',
-        name: 'Robinhood Savings',
-        type: 'investment',
-        subtype: 'Savings',
-        is_investment: true,
-        balance: 500,
-        institution_name: 'Robinhood',
-      },
-      {
-        account_id: 'r3',
-        name: 'Robinhood individual',
-        type: 'investment',
-        subtype: 'Brokerage',
-        is_investment: true,
-        balance: 9000,
-        institution_name: 'Robinhood',
-      },
-      {
-        account_id: 'r4',
-        name: 'Robinhood traditional IRA',
-        type: 'investment',
-        subtype: 'Ira',
-        is_investment: true,
-        balance: 4000,
-        institution_name: 'Robinhood',
-      },
-    ]
-    const wrapper = mount(AccountPortfolioOverview, { props: { accounts: robinhood } })
-    expect(wrapper.get('[data-testid="type-chip-credit"]').text()).toContain('$120.00 owed')
-    expect(wrapper.get('[data-testid="type-chip-depository"]').text()).toContain('$500.00')
-    expect(wrapper.get('[data-testid="type-chip-investment"]').text()).toContain('$13,000.00')
-    expect(wrapper.get('[data-testid="kpi-assets"]').text()).toContain('$13,500.00')
-    expect(wrapper.get('[data-testid="kpi-liabilities"]').text()).toContain('$120.00')
-    expect(wrapper.get('[data-testid="kpi-net"]').text()).toContain('$13,380.00')
-    expect(wrapper.get('[data-testid="utilization-coverage"]').text()).toBe(
-      'Known credit limits: 1/1 card',
-    )
   })
 
   it('labels totals when hidden accounts are included', () => {

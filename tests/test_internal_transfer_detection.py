@@ -34,7 +34,7 @@ sys.modules["app.config"] = config_stub
 
 app_pkg = types.ModuleType("app")
 app_pkg.config = config_stub
-app_pkg.__path__ = [os.path.join(BASE_BACKEND, "app")]
+app_pkg.__path__ = []
 sys.modules["app"] = app_pkg
 
 helpers_norm = types.ModuleType("app.helpers.normalize")
@@ -54,7 +54,6 @@ sys.modules["app.sql.transaction_rules_logic"] = transaction_rules_logic
 
 refresh_metadata = types.ModuleType("app.sql.refresh_metadata")
 refresh_metadata.refresh_or_insert_plaid_metadata = lambda *a, **k: None
-refresh_metadata._sanitize_for_json = lambda value: value
 sys.modules["app.sql.refresh_metadata"] = refresh_metadata
 
 dialect_utils = types.ModuleType("app.sql.dialect_utils")
@@ -83,7 +82,6 @@ utils_pkg = types.ModuleType("app.utils")
 utils_pkg.__path__ = []
 finance_utils = types.ModuleType("app.utils.finance_utils")
 finance_utils.display_transaction_amount = lambda txn: txn.amount
-finance_utils.is_liability_account = lambda account_type, subtype=None: False
 category_display = types.ModuleType("app.utils.category_display")
 category_display.category_display = lambda primary, detailed=None: (f"{primary} - {detailed}" if detailed else primary)
 category_display.humanize_enum = lambda value: str(value).replace("_", " ").title()
@@ -230,8 +228,7 @@ def test_detect_internal_transfer_without_description_match():
         assert t2.internal_match_id == "X1"
 
 
-def test_scan_internal_transfers_endpoint(monkeypatch):
-    monkeypatch.setenv("PYNANCE_OWNER_USER_ID", "u1")
+def test_scan_internal_transfers_endpoint():
     app = Flask(__name__)
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite://"
     db.init_app(app)
@@ -241,13 +238,11 @@ def test_scan_internal_transfers_endpoint(monkeypatch):
         acc1 = models.Account(account_id="C1", user_id="u1", name="Checking")
         acc2 = models.Account(account_id="C2", user_id="u1", name="Savings")
         db.session.add_all([acc1, acc2])
-        # Plaid sign: positive = money out, negative = money in.
         t1 = models.Transaction(
             transaction_id="Y1",
             account_id="C1",
             user_id="u1",
-            amount=25.0,
-            provider="plaid",
+            amount=-25.0,
             date=datetime(2024, 3, 1, tzinfo=timezone.utc),
             description="Transfer out",
         )
@@ -255,8 +250,7 @@ def test_scan_internal_transfers_endpoint(monkeypatch):
             transaction_id="Y2",
             account_id="C2",
             user_id="u1",
-            amount=-25.0,
-            provider="plaid",
+            amount=25.0,
             date=datetime(2024, 3, 1, tzinfo=timezone.utc),
             description="Transfer in",
         )
@@ -264,12 +258,11 @@ def test_scan_internal_transfers_endpoint(monkeypatch):
         db.session.commit()
 
         client = app.test_client()
-        res = client.post("/transactions/scan-internal?start_date=2024-02-01&end_date=2024-03-31")
+        res = client.post("/transactions/scan-internal")
         assert res.status_code == 200
         data = res.get_json()
         assert len(data["pairs"]) == 1
-        assert data["pairs"][0]["left"]["transaction_id"] == "Y1"  # the money-out leg
-        assert data["pairs"][0]["right"]["transaction_id"] == "Y2"
+        assert data["pairs"][0]["transaction_id"] == "Y1"
         assert models.Transaction.query.filter_by(is_internal=True).count() == 0
 
 

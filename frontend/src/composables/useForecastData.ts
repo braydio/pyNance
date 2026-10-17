@@ -23,25 +23,7 @@ export type ForecastAdjustmentInput = {
   metadata?: ForecastMetadata
 }
 
-/** How debt payments reach the cash forecast (backend `metadata.debt_payment_coverage`). */
-export type ForecastDebtPaymentCoverage = {
-  mode: 'settlement' | 'proxy' | 'mixed' | string
-  included: Array<{
-    stream_id: string
-    date: string
-    amount: string
-    source: string
-    funding_account_id?: string | null
-    destination_account_id?: string | null
-  }>
-  settled_account_ids: string[]
-  unmodeled_account_count: number
-  unknown_payment_account_ids: string[]
-  invalid_payment_stream_ids: string[]
-}
-
 export type ForecastMetadata = {
-  debt_payment_coverage?: ForecastDebtPaymentCoverage
   asset_balance?: number
   liability_balance?: number
   net_balance?: number
@@ -490,10 +472,6 @@ export function useForecastData({
     uncertainty: computed(() => uncertainty.value),
     drivers: computed(() => drivers.value),
     dataQuality: computed(() => dataQuality.value),
-    debtPaymentCoverage: computed(
-      () =>
-        (metadata.value?.debt_payment_coverage as ForecastDebtPaymentCoverage | undefined) ?? null,
-    ),
     scenarioResults: computed(() => scenarioResults.value),
     fetchData,
   }

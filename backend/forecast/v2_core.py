@@ -49,7 +49,7 @@ EVENT_KINDS = frozenset(
 )
 _CASH_EFFECT_KINDS = frozenset({"scheduled_income", "scheduled_bill", "adjustment", "residual"})
 _MOVEMENT_KINDS = frozenset({"transfer", "liability_payment"})
-CADENCES = frozenset({"once", "daily", "weekly", "biweekly", "semimonthly", "monthly", "quarterly", "yearly"})
+CADENCES = frozenset({"once", "daily", "weekly", "biweekly", "semimonthly", "monthly"})
 
 DEFAULT_ASSUMPTIONS: dict[str, Any] = {"stale_snapshot_days": 3}
 _SECRET_KEYS = frozenset({"access_token", "public_token", "item_id", "password", "secret", "token"})
@@ -188,8 +188,8 @@ def _occurrence_dates(
 ) -> list[date]:
     """Dates in ``[window_start, window_end]`` that a rule anchored at ``anchor`` fires on.
 
-    Monthly, quarterly and yearly rules keep the *original* anchor day (31 -> Feb 28/29 -> Mar 31);
-    nothing drifts after a short month. No occurrence is generated before ``anchor``.
+    Monthly rules keep the *original* anchor day (31 -> Feb 28/29 -> Mar 31); nothing
+    drifts after a short month. No occurrence is generated before ``anchor``.
     """
     first = max(anchor, window_start)
     if first > window_end:
@@ -210,15 +210,6 @@ def _occurrence_dates(
             d
             for year, month in _month_iter(first, window_end)
             if first <= (d := _clamp_day(year, month, anchor.day)) <= window_end
-        ]
-    if cadence in {"quarterly", "yearly"}:
-        step_months = 3 if cadence == "quarterly" else 12
-        anchor_index = anchor.year * 12 + anchor.month - 1
-        return [
-            d
-            for year, month in _month_iter(first, window_end)
-            if (year * 12 + month - 1 - anchor_index) % step_months == 0
-            and first <= (d := _clamp_day(year, month, anchor.day)) <= window_end
         ]
     if cadence == "semimonthly":
         out = []
@@ -274,7 +265,7 @@ def expand_scheduled_events(
     """Expand recurrence rules into concrete events inside ``[window_start, window_end]``.
 
     A spec is a mapping with ``source_id``, ``kind``, ``amount``, ``account_id``,
-    ``cadence`` (``once|daily|weekly|biweekly|semimonthly|monthly|quarterly|yearly``) and ``anchor_date``.
+    ``cadence`` (``once|daily|weekly|biweekly|semimonthly|monthly``) and ``anchor_date``.
     Optional: ``end_date`` (last effective day), ``days`` (exactly two month days, required
     for ``semimonthly``), ``counterparty_account_id``, ``source``, ``confidence``,
     ``override`` and ``metadata``. Events never fall outside the window or before the anchor.

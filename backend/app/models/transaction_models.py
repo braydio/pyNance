@@ -1,7 +1,6 @@
 """Transaction models including categories, tags, recurring schedules, and Plaid metadata."""
 
-import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 from decimal import Decimal
 
 import sqlalchemy as sa
@@ -221,106 +220,6 @@ class RecurringTransaction(db.Model):
         onupdate=lambda: datetime.utcnow(),
     )
     next_instance_id = db.Column(db.String(64), nullable=True)
-
-
-class RecurringStream(db.Model):
-    """User-owned recurring cash plan; the canonical recurring identity.
-
-    A stream never needs a ``transactions`` row: manual plans (for example a variable utility
-    bill) exist on their own. ``amount_cash_delta`` follows the canonical account-delta sign
-    (``+`` inflow / ``-`` outflow, see ``app.services.transaction_semantics``). Several streams may
-    share a merchant, so ``merchant_key`` is indexed but deliberately not unique.
-    """
-
-    __tablename__ = "recurring_streams"
-    __table_args__ = (
-        sa.CheckConstraint("amount_mode IN ('fixed', 'variable')", name="ck_recurring_streams_amount_mode"),
-        sa.CheckConstraint(
-            "cadence IN ('once', 'weekly', 'biweekly', 'semimonthly', 'monthly', 'quarterly', 'yearly')",
-            name="ck_recurring_streams_cadence",
-        ),
-        sa.CheckConstraint(
-            "status IN ('proposed', 'confirmed', 'ignored', 'ended')", name="ck_recurring_streams_status"
-        ),
-        sa.CheckConstraint("source IN ('manual', 'detected', 'legacy')", name="ck_recurring_streams_source"),
-        sa.CheckConstraint(
-            "event_role IN ('ordinary_expense', 'income', 'liability_payment', 'transfer')",
-            name="ck_recurring_streams_event_role",
-        ),
-        sa.UniqueConstraint("user_id", "candidate_key", name="uq_recurring_streams_user_candidate"),
-        db.Index("ix_recurring_streams_user_status_anchor", "user_id", "status", "anchor_date"),
-        db.Index("ix_recurring_streams_user_account_merchant", "user_id", "account_id", "merchant_key"),
-    )
-
-    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = db.Column(db.String(64), nullable=False)
-    account_id = db.Column(
-        db.String(64), db.ForeignKey("accounts.account_id", ondelete="CASCADE"), nullable=False, index=True
-    )
-    merchant_key = db.Column(db.String(160), nullable=True)
-    candidate_key = db.Column(db.String(64), nullable=True)
-    event_role = db.Column(db.String(24), nullable=False, default="ordinary_expense", server_default="ordinary_expense")
-    funding_account_id = db.Column(
-        db.String(64),
-        db.ForeignKey("accounts.account_id", ondelete="SET NULL", name="fk_recurring_streams_funding_account"),
-        nullable=True,
-    )
-    destination_account_id = db.Column(
-        db.String(64),
-        db.ForeignKey("accounts.account_id", ondelete="SET NULL", name="fk_recurring_streams_destination_account"),
-        nullable=True,
-    )
-    display_name = db.Column(db.String(256), nullable=False)
-    amount_cash_delta = db.Column(db.Numeric(18, 2), nullable=False)
-    amount_mode = db.Column(db.String(16), nullable=False, default="fixed")
-    cadence = db.Column(db.String(20), nullable=False)
-    anchor_date = db.Column(db.Date, nullable=False)
-    status = db.Column(db.String(16), nullable=False, default="confirmed")
-    source = db.Column(db.String(16), nullable=False, default="manual")
-    confidence = db.Column(db.Numeric(4, 3), nullable=True)
-    last_observed = db.Column(db.Date, nullable=True)
-    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
-    updated_at = db.Column(
-        db.DateTime(timezone=True),
-        nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
-    )
-    confirmed_at = db.Column(db.DateTime(timezone=True), nullable=True)
-    notes = db.Column(db.Text, nullable=True)
-
-    account = db.relationship("Account", foreign_keys=[account_id])
-    evidence = db.relationship(
-        "RecurringStreamEvidence", back_populates="stream", cascade="all, delete-orphan", passive_deletes=True
-    )
-
-
-class RecurringStreamEvidence(db.Model):
-    """Immutable observation that supports or contradicts a recurring stream.
-
-    ``transaction_id`` is a logical reference (no foreign key) so evidence survives when a source
-    transaction is retired. Never store credentials or access tokens here.
-    """
-
-    __tablename__ = "recurring_stream_evidence"
-    __table_args__ = (
-        sa.UniqueConstraint("stream_id", "transaction_id", name="uq_recurring_stream_evidence_stream_tx"),
-    )
-
-    id = db.Column(db.BigInteger().with_variant(db.Integer, "sqlite"), primary_key=True, autoincrement=True)
-    stream_id = db.Column(
-        db.String(36), db.ForeignKey("recurring_streams.id", ondelete="CASCADE"), nullable=False, index=True
-    )
-    transaction_id = db.Column(db.String(64), nullable=True)
-    observed_at = db.Column(db.Date, nullable=False)
-    raw_amount = db.Column(db.Numeric(18, 2), nullable=True)
-    canonical_amount = db.Column(db.Numeric(18, 2), nullable=True)
-    merchant_key = db.Column(db.String(160), nullable=True)
-    decision = db.Column(db.String(24), nullable=False)
-    reason = db.Column(db.JSON, nullable=True)
-    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
-
-    stream = db.relationship("RecurringStream", back_populates="evidence")
 
 
 class TransactionRule(db.Model, TimestampMixin):

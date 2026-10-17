@@ -95,13 +95,6 @@
         </Card>
 
         <template v-else>
-          <details class="accounts-link-panel" data-testid="link-account-panel">
-            <summary class="accounts-link-panel__summary">+ Link an account</summary>
-            <div class="accounts-link-panel__body">
-              <AccountActionsSidebar />
-            </div>
-          </details>
-
           <Card class="accounts-card accounts-card--secondary rounded-2xl p-4 shadow-xl">
             <AccountPortfolioOverview
               :accounts="accounts"
@@ -122,33 +115,22 @@
             />
           </Card>
 
-          <header class="accounts-analysis-header" data-testid="accounts-period-bar">
-            <div>
-              <h2 id="accounts-analysis-title" class="accounts-subpanel-title">
-                Activity &amp; history
-              </h2>
-              <p class="text-sm text-muted" data-testid="accounts-period-scope">
-                The period applies to the history, money movement and most-active sections below. It
-                does not change the balances above.
-              </p>
-            </div>
-            <div class="accounts-analysis-header__control">
-              <label class="accounts-period-bar__label" for="accounts-period">Period</label>
-              <select
-                id="accounts-period"
-                v-model="selectedRange"
-                class="input w-36"
-                data-testid="history-range-select"
-              >
-                <option v-for="range in ranges" :key="range" :value="range">
-                  {{ rangeLabels[range] }}
-                </option>
-              </select>
-              <span class="accounts-period-bar__dates" data-testid="accounts-period-dates">
-                {{ periodDates.start }} – {{ periodDates.end }}
-              </span>
-            </div>
-          </header>
+          <div class="accounts-period-bar" data-testid="accounts-period-bar">
+            <label class="accounts-period-bar__label" for="accounts-period">Period</label>
+            <select
+              id="accounts-period"
+              v-model="selectedRange"
+              class="input w-32"
+              data-testid="history-range-select"
+            >
+              <option v-for="range in ranges" :key="range" :value="range">
+                {{ rangeLabels[range] }}
+              </option>
+            </select>
+            <span class="accounts-period-bar__dates" data-testid="accounts-period-dates">
+              {{ periodDates.start }} – {{ periodDates.end }}
+            </span>
+          </div>
 
           <template v-if="selectedAccount">
             <header
@@ -408,9 +390,7 @@
       </section>
     </template>
 
-    <!-- Actions sidebar: Transactions and Connections only. Summary and Charts use the full width,
-         and Summary keeps the same actions in the compact bar above the overview. -->
-    <template v-if="showSidebar" #sidebar>
+    <template #sidebar>
       <AccountActionsSidebar />
     </template>
   </TabbedPageLayout>
@@ -502,8 +482,6 @@ let loadDataToken = 0
 let activityToken = 0
 
 const activeTab = ref('Summary')
-/** Link/token actions live in a sidebar only where they are useful; Overview shows them in a compact bar. */
-const showSidebar = computed(() => ['Transactions', 'Connections'].includes(activeTab.value))
 
 const DEFAULT_PORTFOLIO_FILTERS = {
   query: '',
@@ -958,19 +936,14 @@ watch(selectedRange, () => {
   color: var(--color-text-muted);
 }
 
-/* Reconnect is a caution, not an emergency: one quiet amber line that does not outshout the KPIs. */
 .accounts-context__attention {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.4rem 0.75rem;
-  font-size: 0.875rem;
-  color: var(--color-text-light, inherit);
-  background: color-mix(in srgb, var(--color-warning) 12%, var(--surface-1));
-  border: 1px solid color-mix(in srgb, var(--color-warning) 45%, transparent);
-  border-left-width: 4px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
 }
 
 .accounts-tab-panel {
@@ -1019,57 +992,20 @@ watch(selectedRange, () => {
   border-color: var(--table-border);
 }
 
-.accounts-analysis-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 0.75rem 1.5rem;
-  padding-top: var(--space-4, 1rem);
-  border-top: 1px solid var(--divider);
-}
-
-.accounts-analysis-header__control {
+.accounts-period-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.6rem;
 }
 
-.accounts-link-panel {
-  border: 1px solid var(--themed-border);
-  border-radius: var(--radius-2, 0.5rem);
-  background: var(--surface-1);
-}
-
-.accounts-link-panel__summary {
-  cursor: pointer;
-  padding: 0.6rem 1rem;
-  font-weight: 600;
-  list-style: none;
-}
-
-.accounts-link-panel__summary::-webkit-details-marker {
-  display: none;
-}
-
-.accounts-link-panel__summary:focus-visible {
-  outline: 2px solid var(--color-accent-cyan);
-  outline-offset: 2px;
-  border-radius: var(--radius-2, 0.5rem);
-}
-
-.accounts-link-panel__body {
-  padding: 0 1rem 1rem;
-}
-
 .accounts-period-bar__label {
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   font-weight: 600;
 }
 
 .accounts-period-bar__dates {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
 }

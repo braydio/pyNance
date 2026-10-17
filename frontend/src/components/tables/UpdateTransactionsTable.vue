@@ -110,18 +110,13 @@
     <div class="table-shell">
       <div
         ref="tableScrollRef"
-        class="table-scroll"
-        :class="
-          useVirtualization
-            ? 'table-scroll--virtual max-h-[70dvh] lg:max-h-[75dvh] overflow-auto'
-            : 'overflow-x-auto'
-        "
+        class="table-scroll max-h-[70dvh] lg:max-h-[75dvh] overflow-auto"
         tabindex="0"
         role="region"
         aria-label="Transactions table"
       >
         <table class="transactions-grid min-w-full border-separate border-spacing-0 mt-2">
-          <thead class="table-head" :class="{ 'sticky top-0 z-10': useVirtualization }">
+          <thead class="table-head sticky top-0 z-10">
             <tr>
               <th
                 v-for="column in visibleColumnDefs"
@@ -237,20 +232,9 @@
                       />
                     </div>
                   </div>
-                  <template v-else>
-                    <span class="truncate" :title="row.tx.description || undefined">{{
-                      row.tx.description
-                    }}</span>
-                    <span
-                      v-if="flowBadge(row.tx)"
-                      class="flow-badge"
-                      :class="`flow-badge--${row.tx.reporting_flow_kind}`"
-                      :data-testid="`flow-badge-${row.tx.transaction_id}`"
-                      :title="flowBadge(row.tx).title"
-                    >
-                      {{ flowBadge(row.tx).label }}
-                    </span>
-                  </template>
+                  <span v-else class="truncate" :title="row.tx.description || undefined">{{
+                    row.tx.description
+                  }}</span>
                 </td>
                 <td class="col-category">
                   <div v-if="editingIndex === row.renderIndex" class="edit-cell">
@@ -777,28 +761,6 @@ function cancelEdit() {
     category: '',
     merchant_name: '',
   }
-}
-
-const FLOW_BADGES = {
-  transfer: {
-    label: 'Transfer',
-    title: 'Money moved between your own accounts; not income or spending.',
-  },
-  refund: { label: 'Refund', title: 'Money back for a purchase; offsets spending, not income.' },
-  debt_settlement: {
-    label: 'Debt payment',
-    title: 'Paying a card or loan; the purchases were already counted.',
-  },
-  investment_movement: { label: 'Investment', title: 'Moved to or from an investment account.' },
-  unclassified: {
-    label: 'Needs review',
-    title: 'Not counted as income or spending until it is reviewed.',
-  },
-}
-
-/** Badge for rows whose reporting meaning differs from a plain income or spending line. */
-function flowBadge(tx) {
-  return FLOW_BADGES[tx?.reporting_flow_kind] || null
 }
 
 function amountTone(value) {
@@ -1434,29 +1396,6 @@ async function loadCategoryData() {
   background: var(--table-surface-alt);
   border-radius: inherit;
   overscroll-behavior: contain;
-}
-
-/* Paginated pages (10-25 rows) scroll with the page; only the virtualised view keeps an inner scroll. */
-.table-scroll--virtual {
-  overscroll-behavior: contain;
-}
-
-.flow-badge {
-  display: inline-block;
-  margin-left: 0.4rem;
-  padding: 0 0.4rem;
-  border: 1px solid var(--divider);
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  line-height: 1.3;
-  color: var(--color-text-muted);
-  white-space: nowrap;
-}
-
-.flow-badge--unclassified {
-  color: var(--color-text-light);
-  border-color: color-mix(in srgb, var(--color-warning) 60%, transparent);
-  background: color-mix(in srgb, var(--color-warning) 14%, transparent);
 }
 
 .table-scroll:focus-visible {

@@ -96,30 +96,6 @@ class DummyBridge:
 bridge_stub.RecurringBridge = DummyBridge
 sys.modules["app.services.recurring_bridge"] = bridge_stub
 
-# The owner-scoped repository is covered in tests/test_recurring_repository.py; here it only needs to
-# report "no trusted owner configured" so the route falls back to auto-detected reminders.
-repo_stub = types.ModuleType("app.services.recurring_repository")
-
-
-class RecurringError(Exception):
-    status = 400
-    code = "recurring_error"
-
-
-class OwnerNotConfigured(RecurringError):
-    status = 503
-    code = "owner_not_configured"
-
-
-def _no_owner():
-    raise OwnerNotConfigured("owner not configured")
-
-
-repo_stub.RecurringError = RecurringError
-repo_stub.trusted_owner_id = _no_owner
-sys.modules["app.services.recurring_repository"] = repo_stub
-services_stub.recurring_repository = repo_stub
-
 # ------------------------------
 # Load Route Module
 # ------------------------------
@@ -143,15 +119,54 @@ def client():
         yield client
 
 
-# The /scan route now needs the real database and detector; it is covered in
-# tests/test_recurring_detection.py (owner scope, idempotency, no fabricated transactions).
+# ------------------------------
+# Test: POST /scan/<account_id>
+# ------------------------------
+
+
+def test_scan_route_returns_list(client, monkeypatch):
+    # Mock Transaction.query behavior
+    mock_query = MagicMock()
+    mock_tx = MagicMock(
+        amount=1.0,
+        description="d",
+        merchant_name="",
+        date=datetime.now(timezone.utc),
+        account_id="acc1",  # ✅ Required field
+    )
+    mock_query.filter_by.return_value = mock_query
+    mock_query.filter.return_value = mock_query
+    mock_query.order_by.return_value = mock_query
+    mock_query.all.return_value = [mock_tx]
+
+    mock_transaction_model = MagicMock()
+    mock_transaction_model.query = mock_query
+    mock_transaction_model.date = MagicMock()
+    mock_transaction_model.date.__ge__.return_value = True
+    monkeypatch.setattr(recurring_module, "Transaction", mock_transaction_model)
+
+    # Mock RecurringBridge
+    mock_bridge_class = MagicMock()
+    mock_bridge_instance = MagicMock()
+    mock_bridge_instance.sync_to_db.return_value = [{"mock": "action"}]
+    mock_bridge_class.return_value = mock_bridge_instance
+    monkeypatch.setattr(recurring_module, "RecurringBridge", mock_bridge_class)
+
+    # Mock get_structured_recurring
+    monkeypatch.setattr(
+        recurring_module,
+        "get_structured_recurring",
+        lambda account_id: {"status": "success", "reminders": []},
+    )
+
+    resp = client.post("/api/recurring/scan/acc1")
+    assert resp.status_code == 200
+    assert isinstance(resp.get_json()["reminders"], list)
 
 
 def test_get_structured_recurring_includes_confidence_metadata(client, monkeypatch):
     today = recurring_module.date.today()
     latest_date = today - recurring_module.timedelta(days=3)
-    # Pin the monthly projection so the reminder is due in 2 days regardless of month length.
-    monkeypatch.setattr(recurring_module, "add_months", lambda d, months=1: d + recurring_module.timedelta(days=5))
     auto_row = types.SimpleNamespace(
         description="Rent",
         amount=-1200.0,
@@ -170,15 +185,18 @@ def test_get_structured_recurring_includes_confidence_metadata(client, monkeypat
 
     mock_transaction_model = MagicMock()
     mock_transaction_model.account_id = "account_id"
-    mock_transaction_model.date = MagicMock()
-    mock_transaction_model.date.__ge__.return_value = True
+    mock_transaction_model.date = "date"
     mock_transaction_model.id = "id"
     mock_transaction_model.description = "description"
     mock_transaction_model.amount = "amount"
     monkeypatch.setattr(recurring_module, "Transaction", mock_transaction_model)
 
-    # No owner configured: user-defined streams are not read (fail closed); auto reminders still work.
-    monkeypatch.delenv("PYNANCE_OWNER_USER_ID", raising=False)
+    mock_recurring_query = MagicMock()
+    mock_recurring_query.filter_by.return_value = mock_recurring_query
+    mock_recurring_query.all.return_value = []
+    mock_recurring_model = MagicMock()
+    mock_recurring_model.query = mock_recurring_query
+    monkeypatch.setattr(recurring_module, "RecurringTransaction", mock_recurring_model)
 
     response = client.get("/api/recurring/acc1/recurring")
     assert response.status_code == 200
@@ -188,4 +206,3 @@ def test_get_structured_recurring_includes_confidence_metadata(client, monkeypat
     assert reminder["auto_detection"]["occurrences"] == 4
     assert 0 <= reminder["auto_detection"]["confidence_score"] <= 100
     assert reminder["account_id"] == "acc1"
-    assert payload["streams_available"] is False

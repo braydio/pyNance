@@ -105,25 +105,8 @@ export default {
     return response.data
   },
 
-  /**
-   * Scan for internal transfer pairs (read-only). Optional params: start_date, end_date,
-   * account_id, allow_same_account.
-   */
-  async scanInternalTransfers(params = {}) {
-    const response = await apiClient.post('/transactions/scan-internal', null, { params })
-    return response.data
-  },
-
-  /**
-   * Summaries and a short review queue over ALL transactions matching the scope (not the loaded page).
-   * Params: start_date, end_date, account_ids (array or comma list), category, refresh.
-   */
-  async getTransactionInsights(params = {}) {
-    const { account_ids, ...rest } = params
-    const query = { ...rest }
-    if (Array.isArray(account_ids) && account_ids.length) query.account_ids = account_ids.join(',')
-    else if (account_ids) query.account_ids = account_ids
-    const response = await apiClient.get('/transactions/insights', { params: query })
+  async scanInternalTransfers() {
+    const response = await apiClient.post('/transactions/scan-internal')
     return response.data
   },
 

@@ -130,7 +130,6 @@
                 'portfolio-row--selected': String(account.account_id) === String(selectedId),
               }"
               :data-testid="`portfolio-row-${account.account_id}`"
-              :data-classification-conflict="classificationConflict(account) ? 'true' : null"
             >
               <div class="portfolio-row__identity">
                 <p class="portfolio-row__name">
@@ -138,7 +137,6 @@
                   <span v-if="account.is_hidden" class="portfolio-row__badge">Hidden</span>
                 </p>
                 <p class="portfolio-row__meta">
-                  <span data-testid="row-type">{{ accountTypeLabel(account) }}</span>
                   {{ maskLabel(account) }}
                   <span
                     :class="{
@@ -226,11 +224,9 @@ import {
   GROUP_LABELS,
   SORT_OPTIONS,
   accountBalance,
-  accountTypeLabel,
   accountUtilization,
   amountOwed,
   aprInfo,
-  classificationConflict,
   classifyAccount,
   connectionState,
   creditLimit,
@@ -355,7 +351,7 @@ function aprCaption(account) {
 
 .portfolio-list__count {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   color: var(--color-text-muted);
 }
 
@@ -380,10 +376,8 @@ function aprCaption(account) {
   grid-column: span 2;
 }
 
-/* Filters stay clear but lighter than the account results beneath them. */
 .portfolio-field__label {
-  font-size: 0.875rem;
-  font-weight: 400;
+  font-size: 0.72rem;
   color: var(--color-text-muted);
 }
 
@@ -407,7 +401,7 @@ function aprCaption(account) {
   border-radius: 9999px;
   background: transparent;
   color: inherit;
-  font-size: 0.875rem;
+  font-size: 0.78rem;
   cursor: pointer;
 }
 
@@ -422,8 +416,8 @@ function aprCaption(account) {
 }
 
 .portfolio-group-title {
-  margin: 1rem 0 0.25rem;
-  font-size: 1.1rem;
+  margin: 0.75rem 0 0.25rem;
+  font-size: 0.95rem;
   font-weight: 700;
 }
 
@@ -433,19 +427,20 @@ function aprCaption(account) {
   color: var(--color-text-muted);
 }
 
-/* Hierarchy: group > institution > account > primary amount > secondary details. */
 .portfolio-institution__name {
-  margin: 0.6rem 0 0.25rem;
-  font-size: 1rem;
+  margin: 0.5rem 0 0.25rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  overflow-wrap: anywhere;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .portfolio-rows {
   list-style: none;
   margin: 0;
   padding: 0;
-  border: 1px solid var(--divider);
+  border: 1px solid var(--themed-border);
   border-radius: 0.6rem;
   overflow: hidden;
 }
@@ -457,8 +452,8 @@ function aprCaption(account) {
     auto;
   gap: 0.75rem;
   align-items: center;
-  padding: 0.7rem 0.9rem;
-  border-top: 1px solid var(--divider);
+  padding: 0.6rem 0.8rem;
+  border-top: 1px solid var(--themed-border);
 }
 
 .portfolio-row:first-child {
@@ -474,14 +469,13 @@ function aprCaption(account) {
 }
 
 .portfolio-row__name {
-  font-size: 1rem;
   font-weight: 600;
   overflow-wrap: anywhere;
 }
 
 .portfolio-row__badge {
   margin-left: 0.4rem;
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   color: var(--color-text-muted);
   border: 1px solid var(--themed-border);
   border-radius: 4px;
@@ -490,9 +484,8 @@ function aprCaption(account) {
 
 .portfolio-row__meta,
 .portfolio-row__sub {
-  font-size: 0.875rem;
+  font-size: 0.74rem;
   color: var(--color-text-muted);
-  overflow-wrap: anywhere;
 }
 
 .portfolio-row__warn {
@@ -504,13 +497,12 @@ function aprCaption(account) {
 }
 
 .portfolio-row__value {
-  font-size: 1.15rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
 .portfolio-row__value--sm {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 .portfolio-bar {
@@ -536,7 +528,7 @@ function aprCaption(account) {
   border-radius: 0.4rem;
   background: transparent;
   color: var(--color-accent-cyan);
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   cursor: pointer;
 }
 
@@ -545,22 +537,6 @@ function aprCaption(account) {
 .portfolio-active__reset:focus-visible {
   outline: 2px solid var(--color-accent-cyan);
   outline-offset: 2px;
-}
-
-@media (max-width: 480px) {
-  /* 390px phones: identity, amount and details each get a full-width line. */
-  .portfolio-row {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .portfolio-row__identity,
-  .portfolio-row__amount {
-    grid-column: 1;
-  }
-
-  .portfolio-row__amount {
-    text-align: left;
-  }
 }
 
 @media (max-width: 768px) {
