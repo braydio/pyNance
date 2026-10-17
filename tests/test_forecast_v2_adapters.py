@@ -36,6 +36,10 @@ def add_account(account_id, user_id, acct_type="depository", subtype="checking",
 
 
 def add_tx(transaction_id, account_id, day, amount, description, user_id="alice", **extra):
+    """Store a Plaid-signed row; ``amount`` is the account delta (+ inflow / - outflow)."""
+    extra.setdefault("provider", "plaid")
+    if extra["provider"] == "plaid":
+        amount = -Decimal(str(amount))
     transaction = Transaction(
         transaction_id=transaction_id,
         user_id=user_id,

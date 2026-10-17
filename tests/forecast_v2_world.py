@@ -39,6 +39,7 @@ def seed_world():
     n = 0
 
     def add(day, account, amount, name, user="alice", **extra):
+        """Add a Plaid-signed row; ``amount`` is written as the account delta (+ inflow / - outflow)."""
         nonlocal n
         n += 1
         db.session.add(
@@ -47,7 +48,8 @@ def seed_world():
                 user_id=user,
                 account_id=account,
                 date=day,
-                amount=Decimal(str(amount)),
+                amount=-Decimal(str(amount)),
+                provider="plaid",
                 description=name,
                 **extra,
             )
@@ -69,7 +71,8 @@ def seed_world():
             user_id="alice",
             account_id="chk",
             date=AS_OF - timedelta(days=9),
-            amount=Decimal("-300.00"),
+            amount=Decimal("300.00"),
+            provider="plaid",
             description="Card payment",
             is_internal=True,
             internal_match_id="pay-in",
@@ -81,7 +84,8 @@ def seed_world():
             user_id="alice",
             account_id="card",
             date=AS_OF - timedelta(days=9),
-            amount=Decimal("300.00"),
+            amount=Decimal("-300.00"),
+            provider="plaid",
             description="Payment received",
             is_internal=True,
             internal_match_id="pay-out",
