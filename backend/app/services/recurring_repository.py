@@ -22,6 +22,7 @@ CADENCES = ("once", "weekly", "biweekly", "semimonthly", "monthly", "quarterly",
 AMOUNT_MODES = ("fixed", "variable")
 STATUSES = ("proposed", "confirmed", "ignored", "ended")
 SOURCES = ("manual", "detected", "legacy")
+EVENT_ROLES = ("ordinary_expense", "income", "liability_payment", "transfer")
 OWNER_ENV = "PYNANCE_OWNER_USER_ID"
 CENT = Decimal("0.01")
 
@@ -144,6 +145,48 @@ def serialize(stream: RecurringStream) -> dict[str, Any]:
     }
 
 
+def validate_roles(
+    owner_id: str,
+    event_role: Any,
+    funding_account_id: Any,
+    destination_account_id: Any,
+    amount_cash_delta: Decimal,
+) -> tuple[str, Optional[str], Optional[str]]:
+    """Check how a stream moves money and return ``(role, funding_id, destination_id)``.
+
+    ``liability_payment`` moves cash from an owned deposit account to an owned card or loan, so the
+    amount must be a cash outflow. Other roles must not name funding or destination accounts
+    (``transfer`` may name two owned accounts). Nothing is written here.
+    """
+    role = str(event_role or "ordinary_expense").strip().lower()
+    if role not in EVENT_ROLES:
+        raise ValidationFailed("event_role must be one of " + ", ".join(EVENT_ROLES))
+    funding = None if funding_account_id in (None, "") else str(funding_account_id)
+    destination = None if destination_account_id in (None, "") else str(destination_account_id)
+    if role not in {"liability_payment", "transfer"}:
+        if funding or destination:
+            raise ValidationFailed("funding_account_id / destination_account_id only apply to payments and transfers")
+        if role == "income" and amount_cash_delta <= 0:
+            raise ValidationFailed("income must be a positive cash amount")
+        return role, None, None
+    if not funding or not destination:
+        raise ValidationFailed(f"{role} needs funding_account_id and destination_account_id")
+    if funding == destination:
+        raise ValidationFailed("funding and destination must be different accounts")
+    source = owned_account(owner_id, funding)
+    target = owned_account(owner_id, destination)
+    if role == "liability_payment":
+        from app.services.account_portfolio_metrics import classify_account_group
+
+        if classify_account_group(source) != "depository":
+            raise ValidationFailed("a payment must be funded from a checking or savings account")
+        if classify_account_group(target) not in {"credit", "loan"}:
+            raise ValidationFailed("a payment must go to a credit card or loan account")
+        if amount_cash_delta >= 0:
+            raise ValidationFailed("a payment is cash leaving the funding account (negative amount)")
+    return role, source.account_id, target.account_id
+
+
 def create_manual(
     owner_id: str,
     *,
@@ -160,6 +203,9 @@ def create_manual(
     confidence: Any = None,
     candidate_key: Optional[str] = None,
     commit: bool = True,
+    event_role: Any = "ordinary_expense",
+    funding_account_id: Any = None,
+    destination_account_id: Any = None,
 ) -> RecurringStream:
     """Create a stream for an owned account. Validates everything before touching the session."""
     account = owned_account(owner_id, account_id)
@@ -171,8 +217,14 @@ def create_manual(
     if status not in STATUSES or source not in SOURCES:
         raise ValidationFailed("invalid status or source")
     amount = parse_amount(amount_cash_delta)
+    role, funding, destination = validate_roles(
+        owner_id, event_role, funding_account_id, destination_account_id, amount
+    )
     stream = RecurringStream(
         user_id=owner_id,
+        event_role=role,
+        funding_account_id=funding,
+        destination_account_id=destination,
         account_id=account.account_id,
         display_name=name[:256],
         merchant_key=merchant_key if merchant_key is not None else merchant_key_for(name),
@@ -211,6 +263,9 @@ _UPDATABLE = {
     "status",
     "notes",
     "account_id",
+    "event_role",
+    "funding_account_id",
+    "destination_account_id",
 }
 
 
@@ -241,6 +296,15 @@ def update_stream(owner_id: str, stream_id: str, **changes: Any) -> RecurringStr
             staged[key] = name[:256]
         else:
             staged[key] = value
+    if {"event_role", "funding_account_id", "destination_account_id", "amount_cash_delta"} & set(changes):
+        final_role, final_funding, final_destination = validate_roles(
+            owner_id,
+            changes.get("event_role", stream.event_role),
+            changes.get("funding_account_id", stream.funding_account_id),
+            changes.get("destination_account_id", stream.destination_account_id),
+            staged.get("amount_cash_delta", stream.amount_cash_delta),
+        )
+        staged.update(event_role=final_role, funding_account_id=final_funding, destination_account_id=final_destination)
     for key, value in staged.items():
         setattr(stream, key, value)
     if staged.get("status") == "confirmed" and stream.confirmed_at is None:
@@ -539,6 +603,9 @@ def serialize_review(stream: RecurringStream, today: Optional[date] = None, evid
         "display_name": stream.display_name,
         "status": stream.status,
         "source": stream.source,
+        "event_role": stream.event_role,
+        "funding_account_id": stream.funding_account_id,
+        "destination_account_id": stream.destination_account_id,
         "cadence": stream.cadence,
         "amount_mode": stream.amount_mode,
         "amount_cash_delta": f"{amount:.2f}",

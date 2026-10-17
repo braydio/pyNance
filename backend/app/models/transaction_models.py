@@ -243,6 +243,10 @@ class RecurringStream(db.Model):
             "status IN ('proposed', 'confirmed', 'ignored', 'ended')", name="ck_recurring_streams_status"
         ),
         sa.CheckConstraint("source IN ('manual', 'detected', 'legacy')", name="ck_recurring_streams_source"),
+        sa.CheckConstraint(
+            "event_role IN ('ordinary_expense', 'income', 'liability_payment', 'transfer')",
+            name="ck_recurring_streams_event_role",
+        ),
         sa.UniqueConstraint("user_id", "candidate_key", name="uq_recurring_streams_user_candidate"),
         db.Index("ix_recurring_streams_user_status_anchor", "user_id", "status", "anchor_date"),
         db.Index("ix_recurring_streams_user_account_merchant", "user_id", "account_id", "merchant_key"),
@@ -255,6 +259,17 @@ class RecurringStream(db.Model):
     )
     merchant_key = db.Column(db.String(160), nullable=True)
     candidate_key = db.Column(db.String(64), nullable=True)
+    event_role = db.Column(db.String(24), nullable=False, default="ordinary_expense", server_default="ordinary_expense")
+    funding_account_id = db.Column(
+        db.String(64),
+        db.ForeignKey("accounts.account_id", ondelete="SET NULL", name="fk_recurring_streams_funding_account"),
+        nullable=True,
+    )
+    destination_account_id = db.Column(
+        db.String(64),
+        db.ForeignKey("accounts.account_id", ondelete="SET NULL", name="fk_recurring_streams_destination_account"),
+        nullable=True,
+    )
     display_name = db.Column(db.String(256), nullable=False)
     amount_cash_delta = db.Column(db.Numeric(18, 2), nullable=False)
     amount_mode = db.Column(db.String(16), nullable=False, default="fixed")
@@ -274,7 +289,7 @@ class RecurringStream(db.Model):
     confirmed_at = db.Column(db.DateTime(timezone=True), nullable=True)
     notes = db.Column(db.Text, nullable=True)
 
-    account = db.relationship("Account")
+    account = db.relationship("Account", foreign_keys=[account_id])
     evidence = db.relationship(
         "RecurringStreamEvidence", back_populates="stream", cascade="all, delete-orphan", passive_deletes=True
     )

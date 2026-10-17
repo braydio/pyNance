@@ -425,6 +425,9 @@ def create_recurring_stream():
             cadence=data.get("cadence"),
             anchor_date=data.get("anchor_date", data.get("next_due_date")),
             notes=data.get("notes"),
+            event_role=data.get("event_role", "ordinary_expense"),
+            funding_account_id=data.get("funding_account_id"),
+            destination_account_id=data.get("destination_account_id"),
         )
         return jsonify({"status": "success", "stream": repo.serialize_review(stream)}), 201
 
@@ -445,6 +448,9 @@ def update_recurring_stream(stream_id):
             "anchor_date",
             "notes",
             "account_id",
+            "event_role",
+            "funding_account_id",
+            "destination_account_id",
         }
         changes = {k: v for k, v in data.items() if k in allowed}
         unknown = set(data) - allowed

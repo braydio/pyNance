@@ -342,6 +342,15 @@ def test_migration_creates_tables_and_copies_only_valid_legacy_rows(app):
     connection.commit()
     connection.close()
     assert "candidate_key" in {c["name"] for c in sa.inspect(db.engine).get_columns("recurring_streams")}
+    role_migration = _load_migration("d5a9b2c7e1f3_recurring_stream_event_role.py")
+    connection = db.engine.connect()
+    with Operations.context(MigrationContext.configure(connection)):
+        role_migration.upgrade()
+    connection.commit()
+    connection.close()
+    assert {"event_role", "funding_account_id", "destination_account_id"} <= {
+        c["name"] for c in sa.inspect(db.engine).get_columns("recurring_streams")
+    }
 
     streams = RecurringStream.query.all()
     assert len(streams) == 1

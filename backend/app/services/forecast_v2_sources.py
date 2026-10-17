@@ -16,7 +16,7 @@ from typing import Any, Iterable, Optional
 
 from forecast.v2_sources import DEFAULT_OPTIONS, build_v2_inputs, normalize_merchant_key
 
-from app.models import Account, AccountHistory, RecurringTransaction, Transaction
+from app.models import Account, AccountHistory, RecurringStream, RecurringTransaction, Transaction
 from app.services.transaction_semantics import account_bucket, normalize_amount
 
 
@@ -176,6 +176,28 @@ def load_v2_source_data(
                 "cadence": rule.frequency,
                 "anchor_date": rule.next_due_date,
                 "source_transaction_ids": [source.transaction_id],
+            }
+        )
+    # Confirmed payment plans (cash account -> card/loan) are the only streams that can settle debt.
+    payments = (
+        RecurringStream.query.filter_by(user_id=user_id, status="confirmed", event_role="liability_payment")
+        .filter(RecurringStream.funding_account_id.in_(ids) | RecurringStream.destination_account_id.in_(ids))
+        .order_by(RecurringStream.id)
+        .all()
+    )
+    for plan in payments:
+        rules.append(
+            {
+                "rule_id": f"stream:{plan.id}",
+                "account_id": plan.funding_account_id,
+                "amount": plan.amount_cash_delta,
+                "cadence": plan.cadence,
+                "anchor_date": plan.anchor_date,
+                "label": plan.display_name,
+                "event_role": "liability_payment",
+                "funding_account_id": plan.funding_account_id,
+                "destination_account_id": plan.destination_account_id,
+                "source_transaction_ids": [],
             }
         )
     return {

@@ -544,10 +544,29 @@ def _rule_to_stream(rule: Any, origin: str) -> dict[str, Any]:
         "confidence": 1.0 if origin == "manual" else 0.9,
         "reason": f"{origin}_rule",
         "source_transaction_ids": [str(t) for t in (_read(rule, "source_transaction_ids") or [])],
+        "event_role": str(_read(rule, "event_role", "ordinary_expense") or "ordinary_expense"),
+        "funding_account_id": (
+            None if _read(rule, "funding_account_id") is None else str(_read(rule, "funding_account_id"))
+        ),
+        "destination_account_id": (
+            None if _read(rule, "destination_account_id") is None else str(_read(rule, "destination_account_id"))
+        ),
     }
     if cadence is None:
         stream["reason"] = f"unsupported_cadence:{raw_cadence or 'missing'}"
     return stream
+
+
+def _payment_accounts_valid(stream: Mapping[str, Any], account_bucket: Mapping[str, str]) -> bool:
+    """A payment stream needs a cash funding account and a liability destination, both in scope."""
+    funding, destination = stream.get("funding_account_id"), stream.get("destination_account_id")
+    return (
+        funding is not None
+        and destination is not None
+        and funding != destination
+        and account_bucket.get(funding) == BUCKET_CASH
+        and account_bucket.get(destination) == BUCKET_LIABILITY
+    )
 
 
 def build_v2_inputs(
@@ -598,7 +617,12 @@ def build_v2_inputs(
     window_start = as_of - timedelta(days=int(opts["lookback_days"]) - 1)
     stream_start = as_of - timedelta(days=max(int(opts["stream_lookback_days"]), int(opts["lookback_days"])) - 1)
 
+    accounts = list(accounts)
     account_bucket = {str(_read(a, "account_id")): classify_forecast_account(a) for a in accounts}
+    account_kind = {
+        str(_read(a, "account_id")): "loan" if "loan" in f"{_read(a, 'type')} {_read(a, 'subtype')}".lower() else "card"
+        for a in accounts
+    }
     # Recurrence inference sees ``stream_lookback_days`` of history; allocation, reconciliation and
     # the residual model keep using the shorter ``lookback_days`` window exactly as before.
     usable_all, rejected = _prepare(transactions, account_bucket, as_of, stream_start)
@@ -636,11 +660,16 @@ def build_v2_inputs(
             stream["state"] = "disabled"
         elif stream["cadence"] is None:
             stream["state"] = "unsupported"
+        elif stream.get("event_role") == "liability_payment" and not _payment_accounts_valid(stream, account_bucket):
+            # Never invent a payment: both ends must be in scope as a cash account and a liability.
+            stream["state"], stream["reason"] = "unsupported", "payment_accounts_not_in_scope"
         else:
             stream["state"] = "promoted"
             for tx in members:
                 claimed[tx["transaction_id"]] = stream["stream_id"]
         streams.append(stream)
+    payment_streams = [s for s in streams if s["state"] == "promoted" and s.get("event_role") == "liability_payment"]
+    settled_cards = {s["destination_account_id"] for s in payment_streams}
     suppressed = {(s["account_id"], s["merchant_key"], s["sign"]) for s in streams if s["merchant_key"]}
 
     unclaimed = [t for t in stream_candidates if t["transaction_id"] not in claimed]
@@ -672,6 +701,7 @@ def build_v2_inputs(
     # Allocate the buckets, one audit entry per transaction.
     audit = [e for e in audit_by_key.values()]
     residual_rows: list[dict[str, Any]] = []
+    settled_rows: dict[str, list[dict[str, Any]]] = defaultdict(list)
     reason_by_tx: dict[str, str] = {}
     for s in streams:
         if s["state"] in {"proposed", "disabled", "lapsed"}:
@@ -681,6 +711,12 @@ def build_v2_inputs(
         owner = claimed.get(tx["transaction_id"])
         if owner:
             audit.append(_entry(tx, "scheduled", "promoted_stream", stream_id=owner))
+            continue
+        if tx["account_id"] in settled_cards:
+            # A verified payment schedule settles this card, so its purchases raise the amount owed
+            # instead of also being counted as immediate cash spend.
+            settled_rows[tx["account_id"]].append(tx)
+            audit.append(_entry(tx, "liability_charge", "settled_by_payment_schedule"))
             continue
         reason = reason_by_tx.get(tx["transaction_id"], "variable_spending")
         residual_rows.append(tx)
@@ -693,6 +729,14 @@ def build_v2_inputs(
         if stream["state"] != "promoted":
             continue
         kind = "scheduled_income" if stream["sign"] > 0 else "scheduled_bill"
+        is_payment = stream.get("event_role") == "liability_payment"
+        on_settled_card = not is_payment and stream["account_id"] in settled_cards
+        if is_payment:
+            kind = "liability_payment"
+        elif on_settled_card:
+            if stream["sign"] > 0:
+                continue  # a credit to a settled card is not modeled as cash
+            kind = "liability_charge"  # raises the amount owed; the payment schedule moves the cash
         if stream["origin"] == "inferred" or stream["origin"] == "inferred_confirmed":
             anchor, days = _next_anchor(stream), stream.get("days")
             end_date = None
@@ -703,11 +747,23 @@ def build_v2_inputs(
                 "source": {"manual": "manual", "recurring_rule": "recurring"}.get(stream["origin"], "inferred"),
                 "source_id": stream["stream_id"],
                 "kind": kind,
-                "amount": stream["amount"],
+                # A payment is always a positive movement magnitude from funding to destination.
+                "amount": abs(stream["amount"]) if is_payment or on_settled_card else stream["amount"],
                 # Charges on a card are cash-spend proxies with no known funding account.
                 "account_id": (
-                    None if account_bucket.get(stream["account_id"]) == BUCKET_LIABILITY else stream["account_id"]
+                    stream["funding_account_id"]
+                    if is_payment
+                    else (
+                        stream["account_id"]
+                        if on_settled_card
+                        else (
+                            None
+                            if account_bucket.get(stream["account_id"]) == BUCKET_LIABILITY
+                            else stream["account_id"]
+                        )
+                    )
                 ),
+                "counterparty_account_id": stream["destination_account_id"] if is_payment else None,
                 "cadence": stream["cadence"],
                 "anchor_date": anchor,
                 "days": days,
@@ -718,6 +774,18 @@ def build_v2_inputs(
                     "origin": stream["origin"],
                     "amount_dispersion": stream.get("amount_dispersion", 0.0),
                     "label": stream.get("label") or stream.get("merchant_key"),
+                    **(
+                        {
+                            "event_role": "liability_payment",
+                            "principal_split": (
+                                "unknown"
+                                if account_kind.get(stream["destination_account_id"]) == "loan"
+                                else "not_applicable"
+                            ),
+                        }
+                        if is_payment
+                        else {}
+                    ),
                     "source_transaction_ids": [t["transaction_id"] for t in stream["transactions"]][-12:],
                 },
             }
@@ -752,6 +820,53 @@ def build_v2_inputs(
                 )
             )
 
+    # Settled cards: purchases raise the amount owed (liability_charge); the scheduled payment above is
+    # the only thing that moves cash, so nothing is counted twice.
+    for card in sorted(settled_cards):
+        card_model = _residual_model(settled_rows.get(card, []), grid_start, as_of, opts)
+        for offset in range(horizon_days):
+            day = start + timedelta(days=offset)
+            spend = -card_model["spend_by_weekday"].get(day.weekday(), ZERO)
+            if spend <= 0:
+                continue
+            residual_events.append(
+                ForecastV2Event(
+                    event_id=f"residual:charge:{card}:{day.isoformat()}",
+                    date=day,
+                    amount=spend,
+                    account_id=card,
+                    kind="liability_charge",
+                    source_id=f"charge:{card}",
+                    source="residual",
+                    confidence=None,
+                    metadata={"component": "card_spend", "model": card_model["status"]},
+                )
+            )
+
+    liability_ids = sorted(a for a, b in account_bucket.items() if b == BUCKET_LIABILITY)
+    unmodeled = [a for a in liability_ids if a not in settled_cards]
+    debt_payment_coverage = {
+        "mode": "proxy" if not settled_cards else "settlement" if not unmodeled else "mixed",
+        "included": [
+            {
+                "stream_id": e.source_id,
+                "date": e.date.isoformat(),
+                "amount": f"{e.amount:.2f}",
+                "source": e.source,
+                "funding_account_id": e.account_id,
+                "destination_account_id": e.counterparty_account_id,
+            }
+            for e in scheduled
+            if e.kind == "liability_payment"
+        ],
+        "settled_account_ids": sorted(settled_cards),
+        "unmodeled_account_count": len(unmodeled),
+        "unknown_payment_account_ids": unmodeled,
+        "invalid_payment_stream_ids": sorted(
+            s["stream_id"] for s in streams if s.get("event_role") == "liability_payment" and s["state"] != "promoted"
+        ),
+    }
+
     counts = Counter(e["bucket"] for e in audit)
     totals: dict[str, Decimal] = defaultdict(lambda: ZERO)
     for entry in audit:
@@ -778,6 +893,7 @@ def build_v2_inputs(
                 "status": stream["state"],
                 "origin": stream["origin"],
                 "kind": "income" if stream["sign"] > 0 else "bill",
+                "event_role": stream.get("event_role", "ordinary_expense"),
                 "account_id": stream["account_id"],
                 "merchant_key": stream.get("merchant_key"),
                 "cadence": stream["cadence"],
@@ -796,6 +912,7 @@ def build_v2_inputs(
         "residual_events": residual_events,
         "proposed_rules": [s for s in stream_audit if s["status"] in {"proposed", "lapsed"}],
         "streams": stream_audit,
+        "debt_payment_coverage": debt_payment_coverage,
         "allocation_audit": audit,
         "reconciliation": reconciliation,
         "coverage": {

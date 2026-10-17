@@ -415,6 +415,26 @@ def compute_v2_forecast(payload: dict[str, Any], *, today: Optional[date] = None
                     "by_reason": sign_summary.get("by_reason", {}),
                 }
             )
+        debt_coverage = inputs["debt_payment_coverage"]
+        if debt_coverage["mode"] == "mixed":
+            warnings.append(
+                {
+                    "code": "debt_payments_partial",
+                    "message": (
+                        "Some debts use a verified payment schedule; the others still count card purchases "
+                        "as cash spending."
+                    ),
+                    "unmodeled_account_count": debt_coverage["unmodeled_account_count"],
+                }
+            )
+        if debt_coverage["invalid_payment_stream_ids"]:
+            warnings.append(
+                {
+                    "code": "payment_plan_out_of_scope",
+                    "message": "A payment plan needs a funding cash account and a card or loan that are both included.",
+                    "count": len(debt_coverage["invalid_payment_stream_ids"]),
+                }
+            )
         if data["ignored_account_ids"]:
             warnings.append(
                 {
@@ -528,7 +548,20 @@ def compute_v2_forecast(payload: dict[str, Any], *, today: Optional[date] = None
             "recurring_id": None,
             "direction": "inflow" if e.amount > 0 else "outflow",
             "sources": None,
-            "metadata": {"event_id": e.event_id, "source_id": e.source_id},
+            "metadata": {
+                "event_id": e.event_id,
+                "source_id": e.source_id,
+                **(
+                    {
+                        "event_role": e.metadata.get("event_role"),
+                        "funding_account_id": e.account_id,
+                        "destination_account_id": e.counterparty_account_id,
+                        "principal_split": e.metadata.get("principal_split"),
+                    }
+                    if e.kind == "liability_payment"
+                    else {}
+                ),
+            },
         }
         for e in baseline.events
     ]
@@ -578,6 +611,7 @@ def compute_v2_forecast(payload: dict[str, Any], *, today: Optional[date] = None
             "account_buckets": baseline.accounts["included"],
             "horizon_days": horizon,
             "start_date": start.isoformat(),
+            "debt_payment_coverage": debt_coverage,
         },
         "liquidity": _liquidity(baseline),
         "net_worth": {
