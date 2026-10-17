@@ -1,7 +1,5 @@
 """Institution models covering financial institutions and Plaid-linked records."""
 
-from datetime import datetime
-
 from app.extensions import db
 
 from .mixins import TimestampMixin
@@ -68,16 +66,3 @@ class PlaidItem(db.Model, TimestampMixin):
     last_refreshed = db.Column(db.DateTime, nullable=True)
     is_active = db.Column(db.Boolean, default=True)
     last_error = db.Column(db.Text, nullable=True)
-
-
-class PlaidWebhookLog(db.Model, TimestampMixin):
-    __tablename__ = "plaid_webhook_logs"
-
-    id = db.Column(db.Integer, primary_key=True)
-    event_type = db.Column(db.String(128))
-    webhook_type = db.Column(db.String(64))
-    webhook_code = db.Column(db.String(64))
-    item_id = db.Column(db.String(128))
-    payload = db.Column(db.JSON, nullable=True)
-    # Store naive UTC to match DB column (no timezone=True)
-    received_at = db.Column(db.DateTime, default=datetime.utcnow)

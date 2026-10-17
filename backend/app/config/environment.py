@@ -39,8 +39,6 @@ PLAID_CLIENT_ID = os.getenv("PLAID_CLIENT_ID")
 PLAID_SECRET = os.getenv("PLAID_SECRET_KEY")
 PLAID_CLIENT_NAME = os.getenv("CLIENT_NAME")
 
-# Shared secret used to validate Plaid webhook signatures
-PLAID_WEBHOOK_SECRET = os.getenv("PLAID_WEBHOOK_SECRET")
 
 # Misc Plaid environment setup
 PRODUCTS = os.getenv("PRODUCTS", "transactions").split(",")
@@ -52,10 +50,6 @@ OPENAI_API_KEY_PYNANCE = os.getenv("OPENAI_API_KEY_PYNANCE")
 
 # ATTENTION CODEX OR LLM PLEASE SEE COMMENT ON DEPRECATION
 ARBIT_EXPORTER_URL = os.getenv("ARBIT_EXPORTER_URL", "http://localhost:8000")
-
-# Public URL of this backend (used to register Plaid webhooks)
-# Example: https://your-domain.example or https://abcd1234.ngrok.app
-BACKEND_PUBLIC_URL = os.getenv("BACKEND_PUBLIC_URL")
 
 # Feature toggles
 # ARBITRAGE DASHBOARD WILL BE DEPRECATED
