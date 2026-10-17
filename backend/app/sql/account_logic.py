@@ -489,6 +489,7 @@ def _tx_cache_key(
     include_running_balance,
     recent,
     limit,
+    include_transfers=False,
 ):
     ids = None
     if account_ids:
@@ -513,6 +514,7 @@ def _tx_cache_key(
         bool(include_running_balance),
         bool(recent),
         limit,
+        bool(include_transfers),
     )
 
 
@@ -1091,6 +1093,7 @@ def get_paginated_transactions(
     limit=None,
     include_running_balance=False,
     merchant=None,
+    include_transfers=False,
 ):
     """Return paginated transaction rows with optional filtering.
 
@@ -1122,6 +1125,12 @@ def get_paginated_transactions(
     include_running_balance : bool, default False
         When ``True``, include a per-transaction running balance computed with a window
         function so pagination does not require loading every row into memory.
+    include_transfers : bool, default False
+        When ``True`` keep confirmed internal transfers in the result (used by the daily modal so
+        its history matches the Daily Net reconciliation). The default explorer view still hides them.
+
+    Every serialized row also carries ``reporting_flow_kind``, ``flow_confidence`` and
+    ``flow_reason_codes`` from the shared economic-flow classifier.
 
     Returns
     -------
@@ -1135,9 +1144,10 @@ def get_paginated_transactions(
         .join(Account, Transaction.account_id == Account.account_id)
         .outerjoin(Category, Transaction.category_id == Category.id)
         .filter(Account.is_hidden.is_(False))
-        .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
         .order_by(Transaction.date.desc(), Transaction.transaction_id.desc())
     )
+    if not include_transfers:
+        query = query.filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
 
     if user_id:
         query = query.filter(Account.user_id == user_id)
@@ -1198,6 +1208,7 @@ def get_paginated_transactions(
             include_running_balance,
             recent,
             limit,
+            include_transfers,
         )
         cached = _get_cached_tx_page(cache_key)
         if cached:
@@ -1224,6 +1235,20 @@ def get_paginated_transactions(
     else:
         results = query.offset(offset).limit(page_size).all()
 
+    # Classify the page with the shared reporting classifier (one batched counterpart lookup).
+    from app.services.transaction_flow_classification import LinkedPair, classify_reporting_flow, user_decision_for
+
+    match_ids = {row[0].internal_match_id for row in results if row[0].internal_match_id}
+    counterparts = {}
+    if match_ids:
+        for other, other_account in (
+            db.session.query(Transaction, Account)
+            .join(Account, Transaction.account_id == Account.account_id)
+            .filter(Transaction.transaction_id.in_(match_ids))
+            .all()
+        ):
+            counterparts[other.transaction_id] = LinkedPair(other, other_account)
+
     # Unpack and serialize
     serialized = []
     for row in results:
@@ -1238,6 +1263,12 @@ def get_paginated_transactions(
             category_label = cat.computed_display_name
         category_slug = txn.category_slug or getattr(cat, "category_slug", None)
         category_display = txn.category_display or category_label
+        flow = classify_reporting_flow(
+            txn,
+            acc,
+            linked_pair=counterparts.get(txn.internal_match_id) if txn.internal_match_id else None,
+            user_decision=user_decision_for(txn),
+        )
 
         serialized.append(
             {
@@ -1259,6 +1290,9 @@ def get_paginated_transactions(
                 "pending": getattr(txn, "pending", False),
                 "transfer_type": getattr(txn, "transfer_type", None),
                 "internal_transfer_flag": bool(getattr(txn, "is_internal", False)),
+                "reporting_flow_kind": flow["flow_kind"],
+                "flow_confidence": flow["confidence"],
+                "flow_reason_codes": flow["reason_codes"],
                 "isEditing": False,
                 "tags": _serialize_transaction_tags(txn),
                 "running_balance": (float(running_balance) if running_balance is not None else None),

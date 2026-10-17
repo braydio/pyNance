@@ -616,7 +616,8 @@ def get_transactions_paginated():
     (YYYY-MM-DD), ``account_id`` or ``account_ids`` (comma-delimited or
     repeated parameters), ``transaction_id`` for a specific lookup and
     ``tx_type``/``transaction_type`` with values ``credit`` or ``debit``.
-    Tag filters can be supplied through ``tag`` or ``tags`` parameters.
+    ``include_transfers=true`` keeps confirmed internal transfers (bound to the trusted server owner,
+    503 when none is configured). Tag filters can be supplied through ``tag`` or ``tags`` parameters.
     Unknown or empty parameters are ignored.
     """
     try:
@@ -644,18 +645,31 @@ def get_transactions_paginated():
         except ValueError as exc:
             return jsonify({"status": "error", "message": str(exc)}), 400
 
+        include_transfers = _truthy_param(request.args.get("include_transfers"), default=False)
+        owner_id = None
+        if include_transfers:
+            # Transfer history is owner data: bind it to the trusted server owner and fail closed.
+            from app.services import recurring_repository
+
+            try:
+                owner_id = recurring_repository.trusted_owner_id()
+            except recurring_repository.OwnerNotConfigured as exc:
+                return jsonify({"status": "error", "code": exc.code, "message": str(exc)}), exc.status
+
         transactions, total, meta = account_logic.get_paginated_transactions(
             page,
             page_size,
             start_date=start_date,
             end_date=end_date,
             category=category,
+            user_id=owner_id,
             merchant=merchant,
             account_ids=account_ids or None,
             tx_type=tx_type,
             transaction_id=transaction_id,
             tags=tags or None,
             include_running_balance=include_running_balance,
+            include_transfers=include_transfers,
         )
 
         return (

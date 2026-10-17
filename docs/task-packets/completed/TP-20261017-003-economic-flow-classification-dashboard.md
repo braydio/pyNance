@@ -1,12 +1,12 @@
 # TP-20261017-003: Classify Economic Flows Before Daily Net Aggregation
 
 **Packet ID:** TP-20261017-003  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-17  
-**Last updated:** 2026-10-17  
+**Last updated:** 2026-10-17
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261017-003-economic-flow-classification-dashboard.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261017-003-economic-flow-classification-dashboard.md`  
 **Priority:** P0  
 **Workstream size:** One backend reporting-classification packet  
 **Depends on:** TP-20261016-001, TP-20261016-003  
@@ -40,3 +40,15 @@ Stop labeling every positive transaction delta "Income" or every negative delta 
 `pytest tests/test_transaction_flow_classification.py tests/test_charts_daily_net.py tests/test_transfer_analytics_exclusion.py tests/test_transaction_insights.py -q` (create missing focused files as necessary); `pytest tests/test_internal_transfer_detection.py tests/test_forecast_v2_adapters.py -q`.
 No schema migration, no bulk auto-modification, no transaction deletes, no new Plaid calls, no UI design changes. Build only named classifier and consumers; no broad repo search.
 Implementation: read AGENTS + packet README/INDEX/TRACKER; mark In Progress; validate exact symbols; implement/test; move completed and update INDEX/TRACKER in same commit; push main without force; report tested owner/date reconciliations and any unavailable runtime tests. Next TP-20261017-004.
+
+## Completion report (2026-10-17)
+
+- **Classifier** `backend/app/services/transaction_flow_classification.py` (new, pure): `classify_reporting_flow(tx, account, *, linked_pair=None, user_decision=None)` returns `{flow_kind, confidence, reason_codes, signed_account_delta, economic_amount}` with kinds `income | expense | refund | transfer | debt_settlement | investment_movement | unclassified`. The amount direction comes from `transaction_semantics.canonical_account_delta` exactly once; the stored row is never modified, never auto-flagged `is_internal`, and no pair is fabricated. Precedence: user rejection of a transfer flag > confirmed `is_internal` / verified reciprocal same-owner offsetting pair > account-type and Plaid category evidence (income, investment-and-retirement transfers, loan payments, fees/interest charges) > refund (a credit in an expense category) > unclassified. Zelle/ACH wording or a positive sign alone is never proof of an own transfer; unpaired transfer evidence, loan proceeds and unexplained deposits are `unclassified` (review), not income.
+- **Shared loading**: `load_classified_flows(owner_id, start, end)` is owner-bound through the account, excludes hidden accounts and pending rows, and batches counterpart lookups (no per-row queries); `rollup_by_day` produces `income`, `expenses` (negative), `refunds`, `net = income + expenses + refunds`, plus separate cash-movement buckets that are never part of net: `transfer_in/out`, `debt_settlement`, `investment_movement`, `unclassified_inflows/outflows`.
+- **`GET /api/charts/daily_net`**: same `income/expenses/net/transaction_count` shape, now economic and owner-bound; adds the movement fields, `transfer_count`, `unclassified_count` and a top-level `coverage {classified_count, unclassified_count, needs_review, basis}`. Without `PYNANCE_OWNER_USER_ID` it returns 503 instead of aggregating other users; bad dates are 400.
+- **`GET /api/summary/financial`**: `fetch_transaction_data` now uses the same classifier and scope (no raw sign CASE); same stats shape plus `totalRefunds`. Chart and summary totals are asserted equal for the same owner and dates.
+- **Transaction lists**: every serialized row from `get_paginated_transactions` carries `reporting_flow_kind`, `flow_confidence`, `flow_reason_codes`; `include_transfers=true` keeps confirmed internal transfers (for the daily modal) and is bound to the trusted owner (503 without one). The default explorer still hides transfers; the cache key includes the new parameter. The explorer without `include_transfers` keeps working when no owner is configured.
+- **Tests (synthetic):** `tests/test_transaction_flow_classification.py` (29: verified $200 own transfer => transfer on both legs with no economic amount; unpaired $100 brokerage-style credit => review and not income or flagged; payroll, refund, card interest, loan principal, unclassified deposit, investment movement, user rejection, pair-verification failure modes, unknown sign, determinism, no mutation, the two screenshot credits not summing to $300 of income), `tests/test_charts_daily_net.py` (10: the Oct 13 day reconciles to income $1000 / expenses -$55 / refunds $25 / net $970 / transfers 200 in and out / unclassified inflow $100 / card payment $300 as debt settlement, shape compatibility, no mutation and repeat runs identical, other owners, hidden, pending and out-of-range rows omitted, 503 and 400 handling, chart equals summary, listed rows carry the same classification, `include_transfers` owner-bound). Related suites (`test_transfer_analytics_exclusion`, `test_api_transactions`, forecast and recurring suites) unchanged and passing.
+- **Real-data check (read-only, your last 90 days, 452 rows):** the old logic would have called $27.7k of credits "income" and $27.6k of debits "expenses". Classified: income $20.1k, expenses $6.3k, refunds $0.3k, own transfers $10.5k, card/loan payments $6.4k, investment moves $3.2k, and $8.5k (55 rows) left unclassified, all of it unconfirmed transfer evidence you can resolve in Transfer Review.
+- **Action required:** the chart and summary now need `PYNANCE_OWNER_USER_ID` (same setting as TP-002/003); without it the Dashboard's Daily Net chart shows an error. Restart the Flask server to pick up this and the earlier fixes.
+- **Not changed:** no schema migration, no UI redesign (TP-20261017-004 owns the chart and modal), no paid or Plaid calls, `Transaction.is_internal` untouched. `tx_type=credit|debit` in the explorer still filters on the raw stored sign (a separate pre-existing issue outside this packet).

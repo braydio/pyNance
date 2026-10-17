@@ -2,14 +2,11 @@
 Routes providing aggregated financial summary metrics.
 """
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+from types import SimpleNamespace
 from typing import Any, Dict, Tuple
 
 from flask import Blueprint, jsonify, request
-from sqlalchemy import case, func, or_
-
-from app.extensions import db
-from app.models import Account, Transaction
 
 summary = Blueprint("summary", __name__)
 
@@ -35,29 +32,28 @@ def parse_date_range() -> Tuple[datetime, datetime]:
     return start_date, end_date
 
 
-def fetch_transaction_data(start_date: datetime, end_date: datetime):
+def fetch_transaction_data(start_date: datetime, end_date: datetime, owner_id: str):
+    """Return per-day economic totals for ``owner_id`` using the shared flow classification.
+
+    Uses the same classifier and scope as the Daily Net chart (owner-bound, hidden and pending
+    excluded), so the two cannot disagree. Each row has ``date``, ``income``, ``expenses`` (a
+    positive magnitude), ``refunds`` and ``net`` (income - expenses + refunds). Own-account
+    transfers, card and loan payments, investment movements and unclassified credits are not income
+    or spending.
     """
-    Query daily aggregated income, expenses, and net totals within the date range.
-    Filters hidden and internal accounts.
-    """
-    return (
-        db.session.query(
-            Transaction.date.label("date"),
-            func.sum(case((Transaction.amount > 0, Transaction.amount), else_=0)).label("income"),
-            func.sum(case((Transaction.amount < 0, func.abs(Transaction.amount)), else_=0)).label("expenses"),
-            func.sum(Transaction.amount).label("net"),
+    from app.services.transaction_flow_classification import load_classified_flows, rollup_by_day
+
+    days = rollup_by_day(load_classified_flows(owner_id, start_date, end_date))
+    return [
+        SimpleNamespace(
+            date=date.fromisoformat(day),
+            income=float(v["income"]),
+            expenses=float(-v["expenses"]),
+            refunds=float(v["refunds"]),
+            net=float(v["net"]),
         )
-        .join(Account, Transaction.account_id == Account.account_id)
-        .filter(
-            or_(Account.is_hidden.is_(False), Account.is_hidden.is_(None)),
-            or_(Transaction.is_internal.is_(False), Transaction.is_internal.is_(None)),
-            Transaction.date >= start_date,
-            Transaction.date <= end_date,
-        )
-        .group_by(Transaction.date)
-        .order_by(Transaction.date)
-        .all()
-    )
+        for day, v in sorted(days.items())
+    ]
 
 
 def compute_daily_statistics(rows) -> Dict[str, Any]:
@@ -97,6 +93,7 @@ def compute_daily_statistics(rows) -> Dict[str, Any]:
         "totalIncome": round(total_income, 2),
         "totalExpenses": round(total_expenses, 2),
         "totalNet": round(total_net, 2),
+        "totalRefunds": round(sum(getattr(r, "refunds", 0) or 0 for r in rows), 2),
         "averageIncome": round(avg_income, 2),
         "averageExpenses": round(avg_expenses, 2),
         "highestIncomeDay": {
@@ -148,9 +145,11 @@ def financial_summary():
     """
     REST endpoint: returns daily income, expense, and volatility summary.
     """
+    from app.services import recurring_repository
+
     try:
         start_date, end_date = parse_date_range()
-        rows = fetch_transaction_data(start_date, end_date)
+        rows = fetch_transaction_data(start_date, end_date, recurring_repository.trusted_owner_id())
         stats = compute_daily_statistics(rows)
 
         # Merge volatility and trend metrics
@@ -163,5 +162,7 @@ def financial_summary():
 
         return jsonify({"status": "success", "data": stats}), 200
 
+    except recurring_repository.OwnerNotConfigured as exc:
+        return jsonify({"status": "error", "code": exc.code, "message": str(exc)}), exc.status
     except Exception as exc:  # Defensive: capture unexpected exceptions
         return jsonify({"status": "error", "message": str(exc)}), 500
