@@ -12,13 +12,14 @@
     </PageHeader>
 
     <template v-if="variant !== 'year'">
-      <div class="flex justify-end">
+      <div class="flex flex-wrap items-end justify-end gap-3">
+        <ChartRangePresets v-model="selectedPreset" @update:model-value="applyPreset" />
         <DateRangeSelector
           :start-date="dateRange.start"
           :end-date="dateRange.end"
           disable-zoom
-          @update:start-date="dateRange.start = $event"
-          @update:end-date="dateRange.end = $event"
+          @update:start-date="setManualDate('start', $event)"
+          @update:end-date="setManualDate('end', $event)"
         />
       </div>
       <p class="text-sm text-muted" data-testid="chart-route-period">
@@ -48,7 +49,7 @@
           :end-date="dateRange.end"
           :selected-category-ids="selectedIds"
           :group-others="groupOthers"
-          breakdown-type="category"
+          :breakdown-type="breakdownType"
           @categories-change="setAvailableIds"
         />
       </template>
@@ -60,15 +61,17 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { BarChart3, PieChart, TrendingUp } from 'lucide-vue-next'
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import DateRangeSelector from '@/components/DateRangeSelector.vue'
+import ChartRangePresets from '@/components/charts/ChartRangePresets.vue'
 import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue'
 import DailyNetChart from '@/components/charts/DailyNetChart.vue'
 import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.vue'
 import NetYearComparisonChart from '@/components/charts/NetYearComparisonChart.vue'
-import { getMonthToDateRange } from '@/composables/useDateRange'
+import { getMonthToDateRange, getChartPresetRange } from '@/composables/useDateRange'
 import { useCategories } from '@/composables/useCategories'
 
 const props = defineProps({
@@ -98,13 +101,42 @@ const HEADINGS = {
   },
 }
 
-const heading = computed(() => HEADINGS[props.variant])
+const heading = computed(() =>
+  props.variant === 'category' && route.query.breakdown === 'merchant'
+    ? { ...HEADINGS.category, title: 'Spending by Merchant' }
+    : HEADINGS[props.variant],
+)
 const icon = computed(() => HEADINGS[props.variant].icon)
 
 // Month-to-date, as local calendar dates (never UTC-shifted, never in the future).
-const dateRange = ref(getMonthToDateRange())
+const route = useRoute()
+const isoDay = (value) => {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const d = new Date(`${value}T12:00:00`)
+  return !Number.isNaN(d.getTime()) && d.getFullYear() === Number(value.slice(0, 4)) &&
+    d.getMonth() + 1 === Number(value.slice(5, 7)) && d.getDate() === Number(value.slice(8, 10))
+}
+const fromQuery = isoDay(route.query.start_date) && isoDay(route.query.end_date) &&
+  route.query.start_date <= route.query.end_date
+const dateRange = ref(fromQuery
+  ? { start: route.query.start_date, end: route.query.end_date }
+  : getMonthToDateRange())
+const selectedPreset = ref(fromQuery ? 'custom' : 'mtd')
+function applyPreset(preset) {
+  dateRange.value = getChartPresetRange(preset)
+  selectedPreset.value = preset
+}
+function setManualDate(boundary, value) {
+  dateRange.value[boundary] = value
+  if (dateRange.value.start > dateRange.value.end) {
+    dateRange.value[boundary === 'start' ? 'end' : 'start'] = value
+  }
+  selectedPreset.value = 'custom'
+}
 
 const {
+  breakdownType,
+  setBreakdownType,
   groupedOptions: categoryGroups,
   selectedIds,
   groupOthers,
@@ -118,6 +150,13 @@ function loadCategories() {
   refreshOptions({ start_date: dateRange.value.start, end_date: dateRange.value.end })
 }
 
-onMounted(loadCategories)
+onMounted(() => {
+  if (route.query.breakdown === 'merchant') setBreakdownType('merchant')
+  loadCategories()
+})
 watch(() => [dateRange.value.start, dateRange.value.end], loadCategories)
+watch(() => route.query.breakdown, (mode) => {
+  setBreakdownType(mode === 'merchant' ? 'merchant' : 'category')
+  loadCategories()
+})
 </script>

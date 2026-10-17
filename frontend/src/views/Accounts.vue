@@ -449,11 +449,13 @@ const accountId = ref(route.query.accountId?.toString() || null)
 const netSummary = ref({ income: 0, expense: 0, net: 0, balanceChange: null })
 const recentTransactions = ref([])
 
-const ranges = ['7d', '30d', '90d', '365d']
+const ranges = ['7d', '30d', '90d', '180d', 'ytd', '365d']
 const rangeLabels = {
   '7d': 'Last 7 days',
   '30d': 'Last 30 days',
   '90d': 'Last 90 days',
+  '180d': 'Last 180 days',
+  ytd: 'Year to date',
   '365d': 'Last 365 days',
 }
 const selectedRange = ref('30d')

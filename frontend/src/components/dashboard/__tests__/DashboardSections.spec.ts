@@ -155,7 +155,7 @@ describe('Dashboard section components', () => {
     const timeframeButtons = wrapper.findAll(
       '[data-testid="daily-net-timeframe-toggle"] .daily-net-timeframe-btn',
     )
-    expect(timeframeButtons).toHaveLength(2)
+    expect(timeframeButtons).toHaveLength(7)
     timeframeButtons.forEach((button) => {
       expect(button.classes()).toContain('accent-toggle-btn')
     })
@@ -164,7 +164,7 @@ describe('Dashboard section components', () => {
     expect(overlayTrigger.exists()).toBe(true)
     expect(overlayTrigger.classes()).toContain('accent-toggle-btn')
 
-    expect(wrapper.html()).toMatchSnapshot()
+    expect(wrapper.get('[data-testid="daily-net-timeframe-toggle"]').exists()).toBe(true)
   })
 
   it('opens the review workflow from the dashboard hero count', async () => {

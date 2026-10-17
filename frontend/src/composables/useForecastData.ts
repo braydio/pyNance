@@ -1,6 +1,6 @@
 import { computed, ref, type Ref } from 'vue'
 
-export type ForecastViewType = 'Month' | 'Year'
+export type ForecastViewType = 'Month' | 'Quarter' | 'Year'
 export type ForecastGraphMode = 'combined' | 'forecast' | 'historical'
 export type ForecastSeriesId =
   | 'realized_income'
@@ -406,7 +406,7 @@ export function useForecastData({
 
       const version: ForecastModelVersion = modelVersion?.value === 'v2' ? 'v2' : 'v1'
       const startDate = formatDate(new Date())
-      const horizonDays = viewType.value === 'Year' ? 365 : 30
+      const horizonDays = viewType.value === 'Year' ? 365 : viewType.value === 'Quarter' ? 90 : 30
 
       const res = await fetch('/api/forecast/compute', {
         method: 'POST',
