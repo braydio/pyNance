@@ -1,6 +1,6 @@
 # Safe to Spend Dashboard Widget
 
-_Last updated: 2026-10-02_
+_Last updated: 2026-10-17_
 
 ## Purpose
 
@@ -19,7 +19,7 @@ Query params:
 - `mode`: `today`, `until_payday`, or `week`; unknown values fall back to `today`.
 - `as_of`: optional `YYYY-MM-DD` date. Defaults to the backend's current date.
 - `buffer_cents`: optional protected buffer in integer cents. Defaults to `$250.00`.
-- `user_id`: optional account/transaction scope.
+- `user_id`: optional; the owner is always the server-configured `PYNANCE_OWNER_USER_ID` (503 if unset, 403 if different).
 
 Response shape:
 
@@ -27,9 +27,15 @@ Response shape:
 {
   "status": "success",
   "data": {
-    "amount_cents": 4200,
-    "total_horizon_cents": 4200,
-    "per_day_cents": 4200,
+    "amount_cents": 2307,
+    "daily_allowance_cents": 2307,
+    "total_protected_room_cents": 30000,
+    "total_horizon_cents": 30000,
+    "per_day_cents": 2307,
+    "calculation_version": "2",
+    "display_window": { "start": "2026-10-17", "end": "2026-10-17", "days": 1 },
+    "protection_window": { "start": "2026-10-17", "end": "2026-10-29", "days": 13, "basis": "day_before_payday", "payday_verified": true },
+    "warnings": [],
     "status": "caution",
     "currency": "USD",
     "mode": "today",
@@ -50,28 +56,36 @@ Response shape:
 }
 ```
 
-## Decision math
-
-When the endpoint fails, the dashboard card displays the API's message when
-available, then the error message, with a generic fallback for unknown errors.
-
-The backend computes a horizon-level spend amount as:
+## Decision math (calculation_version 2)
 
 ```text
-spendable cash - upcoming planned bills - protected buffer - spent today
+total_protected_room = max(0, usable cash - bills through protection_end - protected buffer)
+daily_allowance      = floor(total_protected_room / protection days)
 ```
 
-The result is clamped to zero. `today` displays the whole clamped amount. `until_payday` and `week` display a per-day amount while preserving `total_horizon_cents` for drill-down copy.
+- `amount_cents`, `daily_allowance_cents` and `per_day_cents` are the **daily allowance**, identical in every mode for the same evidence (switching Today, Next 7 Days or Until Payday never inflates it).
+- `total_horizon_cents` and `total_protected_room_cents` are all discretionary cash through `protection_end` (a secondary figure, never called today's allowance). `display_window_allowance_cents` is the allowance times the display days.
+- Usable cash comes from `cash_coverage` / `opening_cash_sources` (see TP-20261017-006); spent-today is shown but never deducted, because balances already include it.
 
-## Feature-complete next version
+Windows (inclusive, rolling, from `as_of`):
 
-The first implementation already includes the horizon controls planned for the next version:
+| Mode | `display_window` | `protection_window` |
+| --- | --- | --- |
+| Today | today | through the day before the validated payday, else the 14-day fallback (today..today+13) |
+| Next 7 Days | today..today+6 | the longer of its own 7 days and the Today protection |
+| Until Payday | through `protection_end` | same as Today |
+
+A payday that is today but not yet posted (`awaiting_payday_post`) is never counted as cash and falls back to the 14-day window. `horizon_end` is kept for compatibility and equals `protection_window.end`.
+
+`status` is tightness (`do_not_spend`, `tight`, `caution`, `comfortable`). `confidence` is evidence completeness (`limited`, `estimated`, `ready`) and is `ready` only when `warnings` is empty: cash availability and age are verified, the payday is confirmed, and recurring obligations are projected (`obligation_coverage.complete`, set by TP-20261017-001). The default `$250` buffer is disclosed in the card and in `default_buffer_cents`. Historical dashboard ranges (3M/YTD) never affect this decision.
+
+## Horizon controls
 
 - Today
 - Until Payday
-- This Week
+- Next 7 Days (a rolling 7-day window, not the calendar week)
 
-Follow-up work should add user-editable buffer settings, richer bill-source attribution, and a drill-down detail drawer for included accounts, upcoming bills, today's transactions, and payday inference.
+Follow-up work should add user-editable buffer settings and a drill-down detail drawer (TP-20261017-002).
 
 ## Reliability and transaction ownership
 

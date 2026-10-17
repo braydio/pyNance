@@ -37,9 +37,18 @@
     <template v-else-if="payload">
       <div class="safe-spend-card__amount-row">
         <span class="safe-spend-card__amount">{{ formatCents(primaryAmount) }}</span>
-        <span class="safe-spend-card__amount-copy">{{ amountCopy }}</span>
+        <span class="safe-spend-card__amount-copy">Daily allowance</span>
       </div>
       <p class="safe-spend-card__message">{{ payload.message }}</p>
+      <p v-if="protectedTotal !== null" class="safe-spend-card__secondary" data-testid="protected-total">
+        Total protected spending room: {{ formatCents(protectedTotal) }}
+      </p>
+      <ul v-if="windowLines.length" class="safe-spend-card__windows" data-testid="windows">
+        <li v-for="line in windowLines" :key="line">{{ line }}</li>
+      </ul>
+      <ul v-if="warnings.length" class="safe-spend-card__warnings" data-testid="warnings">
+        <li v-for="warning in warnings" :key="warning">{{ warning }}</li>
+      </ul>
 
       <dl class="safe-spend-card__components">
         <div>
@@ -51,7 +60,7 @@
           <dd>-{{ formatCents(payload.components?.upcoming_outflows_cents) }}</dd>
         </div>
         <div>
-          <dt>Protected buffer</dt>
+          <dt>Protected buffer{{ bufferNote }}</dt>
           <dd>-{{ formatCents(payload.components?.required_buffer_cents) }}</dd>
         </div>
         <div>
@@ -80,7 +89,7 @@ import { computed } from 'vue'
 const modeOptions = [
   { value: 'today', label: 'Today' },
   { value: 'until_payday', label: 'Until Payday' },
-  { value: 'week', label: 'This Week' },
+  { value: 'week', label: 'Next 7 Days' },
 ]
 
 const props = defineProps({
@@ -95,11 +104,35 @@ const emit = defineEmits(['update:mode'])
 const primaryAmount = computed(() => props.payload?.amount_cents ?? 0)
 const statusClass = computed(() => props.payload?.status || 'unknown')
 const statusLabel = computed(() => String(props.payload?.status || 'unknown').replace(/_/g, ' '))
-const amountCopy = computed(() => (props.selectedMode === 'today' ? 'available today' : 'per day'))
+const protectedTotal = computed(() => props.payload?.total_protected_room_cents ?? null)
+const warnings = computed(() => props.payload?.warnings || [])
+const bufferNote = computed(() => {
+  const buffer = props.payload?.components?.required_buffer_cents
+  const standard = props.payload?.default_buffer_cents
+  return buffer != null && buffer === standard ? ` (${formatCents(buffer)} default)` : ''
+})
 const horizonLabel = computed(() => {
-  if (!props.payload?.horizon_end) return 'Horizon unavailable'
-  if (props.selectedMode === 'today') return `As of ${props.payload.as_of}`
-  return `Through ${props.payload.horizon_end}`
+  const end = props.payload?.protection_window?.end || props.payload?.horizon_end
+  if (!end) return 'Horizon unavailable'
+  return `Protected through ${end}`
+})
+const windowLines = computed(() => {
+  const display = props.payload?.display_window
+  const protection = props.payload?.protection_window
+  if (!display || !protection) return []
+  const lines = [`Showing ${display.start} to ${display.end}`]
+  const basis = {
+    day_before_payday: 'the day before payday',
+    rolling_7_day: 'the rolling 7 days',
+    fallback_14_day: '14-day fallback (payday not validated)',
+  }[protection.basis]
+  lines.push(`Protecting ${protection.start} to ${protection.end}${basis ? `: ${basis}` : ''}`)
+  const payday = props.payload?.payday_prediction
+  if (payday?.next_payday) {
+    const kind = payday.needs_review ? 'inferred' : 'confirmed'
+    lines.push(`Next payday ${payday.next_payday} (${kind}, ${payday.confidence} confidence)`)
+  }
+  return lines
 })
 const confidenceLabel = computed(() => `Confidence: ${props.payload?.confidence || 'unknown'}`)
 
@@ -231,6 +264,24 @@ function formatCents(cents) {
 .safe-spend-card__components dd {
   color: var(--color-text-light);
   font-weight: 800;
+}
+
+.safe-spend-card__secondary,
+.safe-spend-card__windows,
+.safe-spend-card__warnings {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.safe-spend-card__windows,
+.safe-spend-card__warnings {
+  list-style: none;
+  padding: 0;
+}
+
+.safe-spend-card__warnings {
+  color: var(--color-accent-yellow);
 }
 
 .safe-spend-card__confidence {

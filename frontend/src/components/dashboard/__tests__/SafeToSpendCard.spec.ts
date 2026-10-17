@@ -34,6 +34,34 @@ describe('SafeToSpendCard', () => {
     expect(wrapper.text()).toContain('Confidence: ready')
   })
 
+  it('shows the daily allowance, windows, payday source and buffer disclosure', () => {
+    const full = {
+      ...payload,
+      amount_cents: 2307,
+      total_protected_room_cents: 30000,
+      default_buffer_cents: 25000,
+      display_window: { start: '2026-10-17', end: '2026-10-17', days: 1 },
+      protection_window: { start: '2026-10-17', end: '2026-10-29', days: 13, basis: 'day_before_payday' },
+      payday_prediction: { next_payday: '2026-10-30', needs_review: true, confidence: 'medium' },
+      warnings: ['Payday is inferred from past deposits, not confirmed.'],
+    }
+    const wrapper = mount(SafeToSpendCard, { props: { payload: full, selectedMode: 'today' } })
+    expect(wrapper.text()).toContain('Daily allowance')
+    expect(wrapper.get('[data-testid="protected-total"]').text()).toContain('$300')
+    expect(wrapper.get('[data-testid="windows"]').text()).toContain('Protecting 2026-10-17 to 2026-10-29')
+    expect(wrapper.get('[data-testid="windows"]').text()).toContain('(inferred, medium confidence)')
+    expect(wrapper.text()).toContain('$250 default')
+    expect(wrapper.get('[data-testid="warnings"]').text()).toContain('inferred')
+    expect(wrapper.text()).toContain('Protected through 2026-10-29')
+  })
+
+  it('labels the rolling week honestly', () => {
+    const wrapper = mount(SafeToSpendCard, { props: { payload, selectedMode: 'week' } })
+    const labels = wrapper.findAll('button').map((b) => b.text())
+    expect(labels).toContain('Next 7 Days')
+    expect(labels).not.toContain('This Week')
+  })
+
   it('emits mode changes for next-version horizons', async () => {
     const wrapper = mount(SafeToSpendCard, {
       props: { payload, selectedMode: 'today' },

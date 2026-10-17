@@ -1,12 +1,12 @@
 # TP-20261017-007: Safe-to-Spend Protection Horizon and Headline Truth
 
 **Packet ID:** TP-20261017-007  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-17  
 **Last updated:** 2026-10-17  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261017-007-safe-spend-window-and-display-contract.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261017-007-safe-spend-window-and-display-contract.md`  
 **Workstream size:** One API decision/horizon + existing card semantics packet  
 **Priority:** P0  
 **Depends on:** TP-20261017-005, TP-20261017-006  
@@ -31,3 +31,13 @@ Display an allowance that is actually *safe through the protection horizon*, cor
 
 ## Non-goals / handoff
 No recurring detector, bank balance mutation, new provider APIs, paid lookups, unknown paychecks inserted as cash, alternative scenarios or broad dashboard restyle. `pytest tests/test_safe_to_spend_service.py tests/test_safe_to_spend_integration.py -q`; `cd frontend && npm run test -- --run src/components/dashboard/__tests__/SafeToSpendCard.spec.js && npm run build`. Read AGENTS and packet controls, mark In Progress/Complete with tracker + canonical location, and report exact simulated horizon math and tests.
+
+## Completion report (2026-10-17)
+
+- **Windows:** `_windows` replaces `_horizon_end`; `MODE_WINDOWS` now holds inclusive offsets (today 0, week 6, fallback 13). Protection ends the day before a validated payday, else the labelled 14-day fallback; Next 7 Days protects at least its own 7 days; a payday today that has not posted is not cash (`awaiting_payday_post`, fallback). Planned bills are reserved through the protection end, not the display end.
+- **Math (as_of 2026-10-17, payday Oct 30, $1,000 cash, $0 buffer):** protection Oct 17..29 = 13 days, so Today, Next 7 Days and Until Payday all show `100000 // 13 = $76.92` per day (no inflation by switching modes). With a $700 bill due Oct 21: room $300, `30000 // 13 = $23.07`/day, headline is not the $300. Unverified payday: protection Oct 17..30 (14 days). Payday Oct 20: Today protects to Oct 19 while Next 7 Days protects to Oct 23 and shows an allowance no higher than Today's.
+- **Payload:** adds `daily_allowance_cents`, `total_protected_room_cents`, `display_window_allowance_cents`, `display_window`, `protection_window` (with `basis`, `payday_verified`), `awaiting_payday_post`, `default_buffer_cents`, `obligation_coverage`, `warnings`, `calculation_version: "2"`. `amount_cents`/`per_day_cents` are now the daily allowance in every mode; `total_horizon_cents` is the protected total. `horizon_end` stays and equals the protection end.
+- **Confidence:** derived from warnings (cash coverage, payday validation, obligation coverage); `status` stays tightness. It is `estimated` until TP-20261017-001 sets `obligation_coverage.complete`, so `ready` is intentionally unreachable today.
+- **UI:** `SafeToSpendCard` shows "Daily allowance", the protected total as secondary text, the display and protection windows, payday source (inferred vs confirmed) with confidence, warnings and the "$250 default" buffer note; the button reads "Next 7 Days". Historical chart ranges do not feed it. `docs/frontend/safe-to-spend.md` updated.
+- **Tests:** 7 new service cases plus updated assertions (`tests/test_safe_to_spend_service.py`, 9 pass); `SafeToSpendCard.spec.ts` 5 pass; integration (8) and cash basis (9) still pass; `npm run build` succeeds. `Dashboard.spec.ts` (30 failing) and one `DashboardSections.spec.ts` test fail identically without this change.
+- **Not changed:** no recurring projection, provider calls, settings UI or balance mutation. The spec file is the existing `.ts` one rather than a new `.js`.

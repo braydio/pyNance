@@ -25,7 +25,7 @@ See [README.md](README.md) for naming, lifecycle, execution, and authoring rules
 | TP-20261017-004 | Reconcile Daily Net Chart and Transaction Modal | Ready | 2026-10-17 | [active/TP-20261017-004-daily-net-modal-reconciliation.md](active/TP-20261017-004-daily-net-modal-reconciliation.md) |
 | TP-20261017-005 | Payday Detection with Sources, Confidence and Read-only Evidence | Complete | 2026-10-17 | [completed/TP-20261017-005-payday-inference-evidence.md](completed/TP-20261017-005-payday-inference-evidence.md) |
 | TP-20261017-006 | Correct Safe-to-Spend Cash Basis and Remove Double Charges | Complete | 2026-10-17 | [completed/TP-20261017-006-safe-spend-cash-basis-reconciliation.md](completed/TP-20261017-006-safe-spend-cash-basis-reconciliation.md) |
-| TP-20261017-007 | Safe-to-Spend Protection Horizon and Headline Truth | Ready | 2026-10-17 | [active/TP-20261017-007-safe-spend-window-and-display-contract.md](active/TP-20261017-007-safe-spend-window-and-display-contract.md) |
+| TP-20261017-007 | Safe-to-Spend Protection Horizon and Headline Truth | Complete | 2026-10-17 | [completed/TP-20261017-007-safe-spend-window-and-display-contract.md](completed/TP-20261017-007-safe-spend-window-and-display-contract.md) |
 | TP-20261014-010 | Theme Contrast and Typography | Complete | 2026-10-14 | [completed/TP-20261014-010-theme-contrast-typography.md](completed/TP-20261014-010-theme-contrast-typography.md) |
 | TP-20261014-011 | Shared Fields, Buttons, Date and Select Geometry | Complete | 2026-10-14 | [completed/TP-20261014-011-shared-controls-geometry.md](completed/TP-20261014-011-shared-controls-geometry.md) |
 | TP-20261014-012 | Dropdowns, Popovers and Expandable State | Complete | 2026-10-14 | [completed/TP-20261014-012-popovers-dropdowns-expandables.md](completed/TP-20261014-012-popovers-dropdowns-expandables.md) |
@@ -72,7 +72,7 @@ See [README.md](README.md) for naming, lifecycle, execution, and authoring rules
 | TP-20261013-005 | Forecast V2 API + Scenarios + Frontend Integration | Complete | 2026-10-13 | [completed/TP-20261013-005-forecast-v2-api-scenarios-frontend.md](completed/TP-20261013-005-forecast-v2-api-scenarios-frontend.md) |
 | TP-20261017-005 | Payday Detection with Sources, Confidence and Read-only Evidence | Complete | 2026-10-17 | [completed/TP-20261017-005-payday-inference-evidence.md](completed/TP-20261017-005-payday-inference-evidence.md) |
 | TP-20261017-006 | Correct Safe-to-Spend Cash Basis and Remove Double Charges | Complete | 2026-10-17 | [completed/TP-20261017-006-safe-spend-cash-basis-reconciliation.md](completed/TP-20261017-006-safe-spend-cash-basis-reconciliation.md) |
-| TP-20261017-007 | Safe-to-Spend Protection Horizon and Headline Truth | Ready | 2026-10-17 | [active/TP-20261017-007-safe-spend-window-and-display-contract.md](active/TP-20261017-007-safe-spend-window-and-display-contract.md) |
+| TP-20261017-007 | Safe-to-Spend Protection Horizon and Headline Truth | Complete | 2026-10-17 | [completed/TP-20261017-007-safe-spend-window-and-display-contract.md](completed/TP-20261017-007-safe-spend-window-and-display-contract.md) |
 
 ## Archived
 

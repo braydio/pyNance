@@ -14,11 +14,15 @@ from app.models import Account, PlannedBill, PlanningScenario, Transaction
 TWOPLACES = Decimal("0.01")
 DEFAULT_BUFFER_CENTS = 25_000
 DEFAULT_MODE = "today"
+# Inclusive day offsets from ``as_of``. ``until_payday`` is the fallback window used when no payday is
+# validated (today..today+13 = 14 inclusive days); a validated payday ends the window the day before.
 MODE_WINDOWS = {
     "today": 0,
     "week": 6,
-    "until_payday": 14,
+    "until_payday": 13,
 }
+FALLBACK_PROTECTION_DAYS = MODE_WINDOWS["until_payday"]
+CALCULATION_VERSION = "2"
 
 
 def _outflow_filter():
@@ -311,12 +315,34 @@ def _next_income_date(as_of: date, user_id: str | None = None) -> date | None:
     return date.fromisoformat(value) if value else None
 
 
-def _horizon_end(mode: str, as_of: date, next_income_date: date | None) -> date:
-    """Resolve the inclusive planning horizon for the selected mode."""
+def _windows(mode: str, as_of: date, next_payday: date | None) -> dict:
+    """Resolve the inclusive display and protection windows.
 
-    if mode == "until_payday" and next_income_date:
-        return next_income_date
-    return as_of + timedelta(days=MODE_WINDOWS[mode])
+    ``protection`` is how far known obligations are reserved: through the day before a validated
+    payday, else a labelled 14-day fallback. A payday that is today but not yet posted is never
+    assumed to be cash (``awaiting_payday_post``) and also falls back. ``week`` protects at least its
+    own 7 days. The display window is only what the label describes; it never shrinks the protection.
+    """
+
+    awaiting = next_payday is not None and next_payday <= as_of
+    if next_payday is not None and next_payday > as_of:
+        protection_end, basis = next_payday - timedelta(days=1), "day_before_payday"
+    else:
+        protection_end, basis = as_of + timedelta(days=FALLBACK_PROTECTION_DAYS), "fallback_14_day"
+    week_end = as_of + timedelta(days=MODE_WINDOWS["week"])
+    if mode == "week" and week_end > protection_end:
+        protection_end, basis = week_end, "rolling_7_day"
+    display_end = {"today": as_of, "week": week_end}.get(mode, protection_end)
+    return {
+        "display_end": display_end,
+        "protection_end": protection_end,
+        "basis": basis,
+        "awaiting_payday_post": awaiting,
+    }
+
+
+def _window_payload(start: date, end: date, **extra) -> dict:
+    return {"start": start.isoformat(), "end": end.isoformat(), "days": (end - start).days + 1, **extra}
 
 
 def _upcoming_bill_payload(as_of: date, horizon_end: date, user_id: str | None = None) -> tuple[int, list[dict]]:
@@ -367,48 +393,94 @@ def build_safe_to_spend_payload(inputs: SafeToSpendInputs | None = None) -> dict
     spendable_cash_cents, account_payload, cash_coverage = _cash_account_payload(accounts)
     payday = _payday_prediction(as_of, inputs.user_id)
     next_income = date.fromisoformat(payday["next_payday"]) if payday["next_payday"] else None
-    horizon_end = _horizon_end(mode, as_of, next_income)
-    upcoming_outflows_cents, bills = _upcoming_bill_payload(as_of, horizon_end, inputs.user_id)
+    validated_payday = next_income if payday["next_payday"] else None
+    windows = _windows(mode, as_of, validated_payday)
+    protection_end = windows["protection_end"]
+    display_end = windows["display_end"]
+    upcoming_outflows_cents, bills = _upcoming_bill_payload(as_of, protection_end, inputs.user_id)
     spent_today_cents = _spent_between(as_of, as_of, inputs.user_id)
     pending_outflow_cents = _spent_between(as_of, as_of, inputs.user_id, pending=True)
 
     raw_amount = spendable_cash_cents - upcoming_outflows_cents - buffer_cents
-    amount_cents = max(raw_amount, 0)
-    days = max((horizon_end - as_of).days + 1, 1)
-    per_day_cents = amount_cents // days
+    total_protected_room_cents = max(raw_amount, 0)
+    protection_days = (protection_end - as_of).days + 1
+    display_days = (display_end - as_of).days + 1
+    # One protection-aware daily allowance for every mode: switching Today/Week/Payday never inflates it.
+    daily_allowance_cents = total_protected_room_cents // protection_days
+    per_day_cents = daily_allowance_cents
+    amount_cents = daily_allowance_cents
 
     if raw_amount <= 0:
         status = "do_not_spend"
         message = "Hold discretionary spending until cash, bills, or buffer assumptions improve."
     elif per_day_cents < 2_500:
         status = "tight"
-        message = f"Keep discretionary spending under ${per_day_cents / 100:,.0f} per day for this horizon."
+        message = f"Keep discretionary spending under ${per_day_cents / 100:,.0f} per day through {protection_end}."
     elif per_day_cents < 7_500:
         status = "caution"
-        message = f"You have about ${per_day_cents / 100:,.0f} per day after known bills and buffer."
+        message = (
+            f"You have about ${per_day_cents / 100:,.0f} per day through {protection_end} after known bills and buffer."
+        )
     else:
         status = "comfortable"
-        message = f"You have about ${per_day_cents / 100:,.0f} per day after known bills and buffer."
+        message = (
+            f"You have about ${per_day_cents / 100:,.0f} per day through {protection_end} after known bills and buffer."
+        )
 
-    confidence = "ready" if account_payload else "limited"
-    if not bills:
-        confidence = "estimated"
-    if confidence == "ready" and (
-        cash_coverage["availability_unverified"]
-        or cash_coverage["stale_balances"]
-        or cash_coverage["unknown_freshness"]
-    ):
-        confidence = "estimated"
+    obligation_coverage = {
+        "source": "planned_bills",
+        "recurring_projected": False,
+        "complete": False,
+        "bill_count": len(bills),
+        "through": protection_end.isoformat(),
+    }
+    warnings = []
+    if not account_payload:
+        warnings.append("No eligible cash accounts were found.")
+    if cash_coverage["availability_unverified"]:
+        warnings.append("Available balance is not reported for some accounts; current balance is used.")
+    if cash_coverage["stale_balances"] or cash_coverage["unknown_freshness"]:
+        warnings.append("Some balances are stale or have an unknown age.")
+    if cash_coverage["deficit_accounts"]:
+        warnings.append("An account is overdrawn; its deficit is deducted from your other cash.")
+    if windows["awaiting_payday_post"]:
+        warnings.append("Payday is today but has not posted; it is not counted as cash.")
+    elif validated_payday is None:
+        warnings.append("No validated payday; protecting a 14-day fallback window.")
+    elif payday.get("needs_review"):
+        warnings.append("Payday is inferred from past deposits, not confirmed.")
+    if not obligation_coverage["complete"]:
+        warnings.append("Recurring obligations are not projected yet; only planned bills are reserved.")
+
+    # ``status`` is tightness; ``confidence`` is evidence completeness and needs every warning cleared.
+    confidence = "limited" if not account_payload else ("estimated" if warnings else "ready")
 
     return {
-        "amount_cents": amount_cents if mode == "today" else per_day_cents,
-        "total_horizon_cents": amount_cents,
+        # ``amount_cents`` and ``per_day_cents`` are the daily allowance; ``total_horizon_cents`` and
+        # ``total_protected_room_cents`` are all discretionary cash through the protection end.
+        "amount_cents": amount_cents,
+        "daily_allowance_cents": daily_allowance_cents,
+        "total_horizon_cents": total_protected_room_cents,
+        "total_protected_room_cents": total_protected_room_cents,
+        "display_window_allowance_cents": daily_allowance_cents * display_days,
         "per_day_cents": per_day_cents,
+        "calculation_version": CALCULATION_VERSION,
+        "display_window": _window_payload(as_of, display_end),
+        "protection_window": _window_payload(
+            as_of,
+            protection_end,
+            basis=windows["basis"],
+            payday_verified=validated_payday is not None and not windows["awaiting_payday_post"],
+        ),
+        "awaiting_payday_post": windows["awaiting_payday_post"],
+        "default_buffer_cents": DEFAULT_BUFFER_CENTS,
+        "obligation_coverage": obligation_coverage,
+        "warnings": warnings,
         "status": status,
         "currency": "USD",
         "mode": mode,
         "as_of": as_of.isoformat(),
-        "horizon_end": horizon_end.isoformat(),
+        "horizon_end": protection_end.isoformat(),
         "next_income_date": next_income.isoformat() if next_income else None,
         "payday_prediction": {k: v for k, v in payday.items() if k != "candidates"},
         "confidence": confidence,
