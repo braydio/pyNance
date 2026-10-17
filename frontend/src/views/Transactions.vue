@@ -151,7 +151,7 @@
     <template #Recurring>
       <Card class="p-6 space-y-4 ui-radius-3 card-surface">
         <h2 class="text-2xl font-bold text-[var(--color-text-light)]">Recurring Transactions</h2>
-        <RecurringTransactionSection ref="recurringFormRef" provider="plaid" />
+        <RecurringTransactionSection ref="recurringFormRef" />
       </Card>
     </template>
 
@@ -168,7 +168,7 @@
 // View for listing and managing transactions with tabbed layout and paging.
 // Editing is restricted to date, amount, description, category and merchant name;
 // account identifiers and provider metadata remain read-only.
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTransactions } from '@/composables/useTransactions.js'
 import { fetchTransactions as fetchTransactionsApi } from '@/api/transactions'
@@ -403,14 +403,26 @@ export default {
       txType.value = ''
     }
 
-    function prefillRecurringFromTransaction(tx) {
-      if (recurringFormRef.value) {
-        recurringFormRef.value.transactionId = tx.transaction_id || ''
-        recurringFormRef.value.description = tx.description || ''
-        recurringFormRef.value.amount = parseFloat(tx.amount) || 0
-        recurringFormRef.value.notes = tx.notes || ''
-        recurringFormRef.value.showForm = true
+    /**
+     * Open the Recurring tab and pre-fill its form from a transaction row through the child's
+     * explicit `openFromTransaction` API. If the tab has not mounted yet, the call is made as soon
+     * as the child ref appears.
+     *
+     * @param {Record<string, unknown>} tx
+     */
+    async function prefillRecurringFromTransaction(tx) {
+      activeTab.value = 'Recurring'
+      await nextTick()
+      if (recurringFormRef.value?.openFromTransaction) {
+        recurringFormRef.value.openFromTransaction(tx)
+        return
       }
+      const stop = watch(recurringFormRef, (child) => {
+        if (child?.openFromTransaction) {
+          child.openFromTransaction(tx)
+          stop()
+        }
+      })
     }
 
     /**

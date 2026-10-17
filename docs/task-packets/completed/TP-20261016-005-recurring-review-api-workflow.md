@@ -1,12 +1,12 @@
 # TP-20261016-005: Recurring Review API, Durable Decisions and Usable UI
 
 **Packet ID:** TP-20261016-005  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-16  
-**Last updated:** 2026-10-16  
+**Last updated:** 2026-10-17
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261016-005-recurring-review-api-workflow.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261016-005-recurring-review-api-workflow.md`  
 **Workstream size:** One targeted implementation packet  
 **Priority:** P1  
 **Depends on:** TP-20261016-002, TP-20261016-004  
@@ -47,3 +47,13 @@ No forced auto-confirmation, no external API charges, no scheduler. Do not delet
 
 ## Implementation/handoff
 Read `AGENTS.md`, `docs/task-packets/README.md`, `INDEX.md`, `TRACKER.md`; validate only named symbols against latest main. Set In Progress in tracker before coding. Treat prerequisite packets as implemented, do not re-implement their features. Run focused tests then lint/build; commit only this workstream to main without force, mark Complete, move this packet to completed and update INDEX/TRACKER atomically. Report changed files, test output, fixture/behavior evidence, and deviations. If principal is not trusted, fail closed on new owner-scoped endpoints, not permissive fallback. Do not use Plaid Enrich/new billable APIs.
+
+## Completion report (2026-10-17)
+
+- Backend (`backend/app/routes/recurring.py`, existing blueprint, no new Blueprint): `GET /streams` (status list, account_id, page, page_size clamped 20-100), `GET /candidates` (`include_ignored`), `POST /scan` (read-only by default; `dry_run:false` saves proposals in ONE transaction, rolled back on any failure), `POST /streams` (manual create, 201), `PATCH /streams/<id>` (moving accounts re-checks the new account's owner; unknown fields rejected), `POST /streams/<id>/decision` (`confirmed|ignored|ended`), `DELETE /streams/<id>` (soft end; `?hard=true` removes). Owner is the server-side `PYNANCE_OWNER_USER_ID`; unset => 503 on every endpoint; foreign ids/accounts => 404 with nothing written.
+- Response shape (`recurring_repository.serialize_review`): `stream_id, account_id, display_name, status, source, cadence, amount_mode, amount_cash_delta, amount_range{min,max}, next_due_date, confidence, last_observed, notes, evidence_count, evidence[{date,amount}], reason_codes, explanation`. No bank transaction ids are returned or shown.
+- Durable decisions: ignored/confirmed/ended survive every rescan (`upsert_detected_candidate` returns `preserved`); suggestions stay `proposed` and are never counted as bills until confirmed. Transactions are never deleted when a stream ends.
+- Frontend: `src/api/recurring.js` wrappers for all endpoints (legacy exports kept); `RecurringTransactionSection.vue` rewritten (optional `accountId` / `accounts` props, no hardcoded `1`, no transaction-id field, account picker, Needs review / Confirmed & upcoming / collapsed Ignored & ended, candidate cards with amount range, cadence, next date, 2-5 evidence rows, explanation, Confirm / Edit / Not recurring, manual add/edit by account + name + amount + date, loading / empty / error states, aria labels); `defineExpose({ openFromTransaction, reload })`. `Transactions.vue:prefillRecurringFromTransaction` now switches to the Recurring tab and calls the child's `openFromTransaction`, waiting for the child to mount if necessary.
+- Tests: `tests/test_recurring_review_api.py` (13: owner scope, pagination clamps, dry-run vs saved scan, atomic rollback, ignored persists after rescan, confirm survives rescan, cross-owner account move 404 with nothing applied, no transaction ids leaked, 503 without owner); `RecurringTransactionSection.spec.js` (17); `TransactionsRecurringHandoff.spec.js` (2); existing `Transactions.spec.js` passes. `npm run build` passes; ESLint 0 errors.
+- Not run: the 390/1280 real-browser pass (Cypress binary is not installed in this environment and was not downloaded). The component was verified with jsdom specs only; do a visual check at both widths.
+- Unrelated failures observed (not introduced here): 36 frontend failures in `Dashboard.spec.ts`, `ChartRoutePage.spec.js`, `DashboardSections.spec.ts` and `ForecastChart.spec.ts` (files not touched by this packet; they track in-progress chart-range work); `tests/test_internal_transfer_detection.py` and other items listed in earlier packet reports.

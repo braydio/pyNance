@@ -241,6 +241,248 @@ def scan_account_for_recurring(account_id):
 
 
 # --------------------------------------
+# Review API: streams, candidates, scan, decisions
+# --------------------------------------
+
+PAGE_SIZE_MIN, PAGE_SIZE_MAX, PAGE_SIZE_DEFAULT = 20, 100, 50
+DECISIONS = {"confirmed", "ignored", "ended"}
+
+
+def _int_arg(name, default, minimum, maximum):
+    try:
+        value = int(request.args.get(name, default))
+    except (TypeError, ValueError):
+        value = default
+    return max(minimum, min(value, maximum))
+
+
+def _body():
+    data = request.get_json(silent=True)
+    return data if isinstance(data, dict) else {}
+
+
+def _guard(handler):
+    """Run ``handler(repo, owner_id)``; map repository errors to JSON and roll back on failure."""
+    from app.services import recurring_repository as repo
+
+    try:
+        return handler(repo, repo.trusted_owner_id())
+    except repo.RecurringError as exc:
+        db.session.rollback()
+        return _error_response(exc)
+    except Exception as e:
+        db.session.rollback()
+        logger.error("Recurring review request failed: %s", e, exc_info=True)
+        return jsonify({"status": "error", "message": "Unable to complete the recurring request"}), 500
+
+
+@recurring.route("/streams", methods=["GET"])
+def list_recurring_streams():
+    """List the owner's streams: ``status`` (comma list), ``account_id``, ``page``, ``page_size`` (20-100)."""
+
+    def run(repo, owner_id):
+        statuses = [s for s in (request.args.get("status") or "").split(",") if s] or None
+        if statuses and not set(statuses) <= set(repo.STATUSES):
+            raise repo.ValidationFailed("status must be one of " + ", ".join(repo.STATUSES))
+        streams = repo.list_streams(owner_id, account_id=request.args.get("account_id"), statuses=statuses)
+        page_size = _int_arg("page_size", PAGE_SIZE_DEFAULT, PAGE_SIZE_MIN, PAGE_SIZE_MAX)
+        page = _int_arg("page", 1, 1, 10_000)
+        window = streams[(page - 1) * page_size : page * page_size]
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "streams": [repo.serialize_review(s) for s in window],
+                    "page": page,
+                    "page_size": page_size,
+                    "total": len(streams),
+                }
+            ),
+            200,
+        )
+
+    return _guard(run)
+
+
+@recurring.route("/candidates", methods=["GET"])
+def list_recurring_candidates():
+    """Detected suggestions awaiting review (``include_ignored=true`` also returns dismissed ones)."""
+
+    def run(repo, owner_id):
+        wanted = (
+            ["proposed", "ignored"] if request.args.get("include_ignored", "false").lower() == "true" else ["proposed"]
+        )
+        streams = [
+            s
+            for s in repo.list_streams(owner_id, account_id=request.args.get("account_id"), statuses=wanted)
+            if s.source == "detected"
+        ]
+        return jsonify({"status": "success", "candidates": [repo.serialize_review(s) for s in streams]}), 200
+
+    return _guard(run)
+
+
+@recurring.route("/scan", methods=["POST"])
+def scan_recurring_candidates():
+    """Look for recurring patterns in stored history. Read-only unless ``dry_run`` is false.
+
+    Body: ``account_ids`` (default: all owned accounts), ``lookback_days`` (30-1000, default 400),
+    ``dry_run`` (default true). With ``dry_run: false`` all proposals are saved in one transaction;
+    confirmed, ignored and ended streams are never overwritten.
+    """
+
+    def run(repo, owner_id):
+        from app.services.forecast_v2_sources import load_v2_source_data
+        from app.services.recurring_candidate_service import detect_candidate_streams
+
+        data = _body()
+        requested = data.get("account_ids")
+        if requested is not None and not isinstance(requested, list):
+            raise repo.ValidationFailed("account_ids must be a list")
+        for account_id in requested or []:
+            repo.owned_account(owner_id, account_id)  # 404 on any foreign id, before any work
+        try:
+            lookback_days = max(30, min(int(data.get("lookback_days", 400)), 1000))
+        except (TypeError, ValueError):
+            raise repo.ValidationFailed("lookback_days must be a number") from None
+        dry_run = data.get("dry_run", True) is not False
+
+        today = date.today()
+        loaded = load_v2_source_data(
+            user_id=owner_id,
+            as_of_date=today,
+            included_account_ids=requested or None,
+            lookback_days=lookback_days,
+        )
+        found = detect_candidate_streams(loaded["transactions"], loaded["accounts"], today, lookback_days=lookback_days)
+        summary = {"created": 0, "updated": 0, "preserved": 0}
+        shown = []
+        if dry_run:
+            for candidate in found["candidates"]:
+                shown.append(
+                    {
+                        "stream_id": None,
+                        "candidate_key": candidate["candidate_key"],
+                        "account_id": candidate["account_id"],
+                        "display_name": candidate["label"],
+                        "status": "candidate",
+                        "cadence": candidate["cadence"],
+                        "amount_mode": candidate["amount_mode"],
+                        "amount_cash_delta": f"{candidate['signed_median']:.2f}",
+                        "amount_range": {
+                            "min": f"{candidate['amount_min']:.2f}",
+                            "max": f"{candidate['amount_max']:.2f}",
+                        },
+                        "next_due_date": candidate["expected_next_date"].isoformat(),
+                        "confidence": candidate["confidence"],
+                        "evidence_count": candidate["observations"],
+                        "reason_codes": candidate["reason_codes"],
+                        "ready": candidate["ready"],
+                    }
+                )
+        else:
+            saved = []
+            for candidate in found["candidates"]:
+                stream, action = repo.upsert_detected_candidate(owner_id, candidate, commit=False)
+                summary[action] += 1
+                saved.append(stream)
+            db.session.commit()  # one atomic write for the whole scan
+            shown = [repo.serialize_review(s) for s in saved]
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "dry_run": dry_run,
+                    "candidates": shown,
+                    "summary": {
+                        **summary,
+                        "candidates": len(found["candidates"]),
+                        "accounts": len(loaded["accounts"]),
+                        "history_days": found["history"]["days"],
+                        "history_incomplete": not found["history"]["complete"],
+                        "sign_excluded": loaded.get("sign_summary", {}).get("excluded", 0),
+                    },
+                }
+            ),
+            200,
+        )
+
+    return _guard(run)
+
+
+@recurring.route("/streams", methods=["POST"])
+def create_recurring_stream():
+    """Create a manual plan: ``account_id``, ``display_name``, ``amount_cash_delta``, ``cadence``, ``anchor_date``."""
+
+    def run(repo, owner_id):
+        data = _body()
+        stream = repo.create_manual(
+            owner_id,
+            account_id=data.get("account_id"),
+            display_name=data.get("display_name"),
+            amount_cash_delta=data.get("amount_cash_delta", data.get("amount")),
+            amount_mode=data.get("amount_mode", "fixed"),
+            cadence=data.get("cadence"),
+            anchor_date=data.get("anchor_date", data.get("next_due_date")),
+            notes=data.get("notes"),
+        )
+        return jsonify({"status": "success", "stream": repo.serialize_review(stream)}), 201
+
+    return _guard(run)
+
+
+@recurring.route("/streams/<stream_id>", methods=["PATCH"])
+def update_recurring_stream(stream_id):
+    """Adjust an owned stream. Moving it to another account requires owning that account too."""
+
+    def run(repo, owner_id):
+        data = _body()
+        allowed = {
+            "display_name",
+            "amount_cash_delta",
+            "amount_mode",
+            "cadence",
+            "anchor_date",
+            "notes",
+            "account_id",
+        }
+        changes = {k: v for k, v in data.items() if k in allowed}
+        unknown = set(data) - allowed
+        if unknown:
+            raise repo.ValidationFailed("cannot update: " + ", ".join(sorted(unknown)))
+        stream = repo.update_stream(owner_id, stream_id, **changes)
+        return jsonify({"status": "success", "stream": repo.serialize_review(stream)}), 200
+
+    return _guard(run)
+
+
+@recurring.route("/streams/<stream_id>/decision", methods=["POST"])
+def decide_recurring_stream(stream_id):
+    """Record the user's decision: ``confirmed``, ``ignored`` or ``ended``. Durable across rescans."""
+
+    def run(repo, owner_id):
+        decision = _body().get("decision")
+        if decision not in DECISIONS:
+            raise repo.ValidationFailed("decision must be one of " + ", ".join(sorted(DECISIONS)))
+        stream = repo.update_stream(owner_id, stream_id, status=decision)
+        return jsonify({"status": "success", "stream": repo.serialize_review(stream)}), 200
+
+    return _guard(run)
+
+
+@recurring.route("/streams/<stream_id>", methods=["DELETE"])
+def delete_recurring_stream(stream_id):
+    """End a stream (default, history kept) or remove it with ``?hard=true``. Transactions are untouched."""
+
+    def run(repo, owner_id):
+        hard = request.args.get("hard", "false").lower() == "true"
+        action = repo.delete_or_end_stream(owner_id, stream_id, hard=hard)
+        return jsonify({"status": "success", "action": action, "stream_id": stream_id}), 200
+
+    return _guard(run)
+
+
+# --------------------------------------
 # GET /<account_id>/recurring
 # Fetch all (user + auto) upcoming reminders
 # --------------------------------------

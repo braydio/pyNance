@@ -202,7 +202,16 @@ def get_stream(owner_id: str, stream_id: str) -> RecurringStream:
     return stream
 
 
-_UPDATABLE = {"display_name", "amount_cash_delta", "amount_mode", "cadence", "anchor_date", "status", "notes"}
+_UPDATABLE = {
+    "display_name",
+    "amount_cash_delta",
+    "amount_mode",
+    "cadence",
+    "anchor_date",
+    "status",
+    "notes",
+    "account_id",
+}
 
 
 def update_stream(owner_id: str, stream_id: str, **changes: Any) -> RecurringStream:
@@ -223,6 +232,8 @@ def update_stream(owner_id: str, stream_id: str, **changes: Any) -> RecurringStr
             raise ValidationFailed("amount_mode must be fixed or variable")
         elif key == "status" and value not in STATUSES:
             raise ValidationFailed("invalid status")
+        elif key == "account_id":
+            staged[key] = owned_account(owner_id, value).account_id  # new account must belong to the owner
         elif key == "display_name":
             name = str(value or "").strip()
             if not name:
@@ -409,7 +420,17 @@ def _record_evidence(stream: RecurringStream, evidence: Iterable[dict[str, Any]]
     return added
 
 
-def upsert_detected_candidate(owner_id: str, candidate: dict[str, Any]) -> tuple[RecurringStream, str]:
+def _finish(commit: bool) -> None:
+    """Commit, or just flush so a caller can commit several upserts as one atomic unit."""
+    if commit:
+        db.session.commit()
+    else:
+        db.session.flush()
+
+
+def upsert_detected_candidate(
+    owner_id: str, candidate: dict[str, Any], *, commit: bool = True
+) -> tuple[RecurringStream, str]:
     """Persist one detector candidate idempotently, keyed by ``(user_id, candidate_key)``.
 
     Returns ``(stream, action)`` with ``action`` one of ``created``, ``updated`` (a still-proposed
@@ -442,7 +463,7 @@ def upsert_detected_candidate(owner_id: str, candidate: dict[str, Any]) -> tuple
         )
         stream.last_observed = parse_date(last_observed, "last_observed") if last_observed else None
         _record_evidence(stream, evidence, "detected")
-        db.session.commit()
+        _finish(commit)
         return stream, "created"
 
     if last_observed:
@@ -451,7 +472,7 @@ def upsert_detected_candidate(owner_id: str, candidate: dict[str, Any]) -> tuple
             existing.last_observed = observed
     if existing.status != "proposed":
         _record_evidence(existing, evidence, "observed")
-        db.session.commit()
+        _finish(commit)
         return existing, "preserved"
 
     existing.amount_cash_delta = parse_amount(candidate["signed_median"])
@@ -462,5 +483,72 @@ def upsert_detected_candidate(owner_id: str, candidate: dict[str, Any]) -> tuple
     if candidate.get("confidence") is not None:
         existing.confidence = Decimal(str(candidate["confidence"])).quantize(Decimal("0.001"))
     _record_evidence(existing, evidence, "detected")
-    db.session.commit()
+    _finish(commit)
     return existing, "updated"
+
+
+def evidence_summary(
+    stream: RecurringStream, limit: int = 5
+) -> tuple[int, list[dict[str, str]], Optional[tuple[Decimal, Decimal]]]:
+    """Return ``(count, newest evidence rows, (min, max) amount)`` without exposing transaction ids."""
+    rows = (
+        RecurringStreamEvidence.query.filter_by(stream_id=stream.id)
+        .order_by(RecurringStreamEvidence.observed_at.desc(), RecurringStreamEvidence.id.desc())
+        .all()
+    )
+    amounts = [r.canonical_amount for r in rows if r.canonical_amount is not None]
+    shown = [
+        {"date": r.observed_at.isoformat(), "amount": f"{r.canonical_amount:.2f}"}
+        for r in rows[:limit]
+        if r.canonical_amount is not None
+    ]
+    return len(rows), shown, ((min(amounts), max(amounts)) if amounts else None)
+
+
+def reason_codes(stream: RecurringStream, evidence_count: int) -> list[str]:
+    """Deterministic, user-explainable reasons derived from stored state."""
+    if stream.source == "manual":
+        return ["manual_plan"]
+    if stream.source == "legacy":
+        return ["migrated_from_legacy_rule"]
+    codes = ["needs_review_insufficient_cycles" if evidence_count < 3 else f"{evidence_count}_occurrences"]
+    codes.append(f"cadence_{stream.cadence}")
+    return codes
+
+
+def explanation(stream: RecurringStream, evidence_count: int) -> str:
+    """One plain-language sentence about why a stream exists."""
+    if stream.source == "manual":
+        return "You added this plan yourself."
+    if stream.source == "legacy":
+        return "Carried over from your earlier recurring rule."
+    if evidence_count < 3:
+        return f"Seen {evidence_count} times on a {stream.cadence} pattern; one more cycle would make it reliable."
+    return f"Seen {evidence_count} times on a {stream.cadence} pattern."
+
+
+def serialize_review(stream: RecurringStream, today: Optional[date] = None, evidence_limit: int = 5) -> dict[str, Any]:
+    """Stable API shape for the review UI (no raw transaction ids)."""
+    count, shown, bounds = evidence_summary(stream, evidence_limit)
+    amount = stream.amount_cash_delta
+    low, high = bounds if bounds else (amount, amount)
+    due = next_due_date(stream, today or date.today())
+    return {
+        "stream_id": stream.id,
+        "account_id": stream.account_id,
+        "display_name": stream.display_name,
+        "status": stream.status,
+        "source": stream.source,
+        "cadence": stream.cadence,
+        "amount_mode": stream.amount_mode,
+        "amount_cash_delta": f"{amount:.2f}",
+        "amount_range": {"min": f"{min(low, amount):.2f}", "max": f"{max(high, amount):.2f}"},
+        "next_due_date": due.isoformat() if due else None,
+        "confidence": None if stream.confidence is None else f"{stream.confidence:.3f}",
+        "last_observed": stream.last_observed.isoformat() if stream.last_observed else None,
+        "notes": stream.notes,
+        "evidence_count": count,
+        "evidence": shown,
+        "reason_codes": reason_codes(stream, count),
+        "explanation": explanation(stream, count),
+    }
