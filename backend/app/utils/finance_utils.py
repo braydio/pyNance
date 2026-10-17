@@ -26,8 +26,35 @@ def _normalize_cache():
     return None
 
 
-def normalize_account_balance(balance, account_type, account_id=None):
-    """Normalize the balance: liabilities are negative, assets are positive."""
+_LIABILITY_TYPES = frozenset({"credit card", "credit", "loan", "liability"})
+_LIABILITY_SUBTYPES = frozenset(
+    {"credit card", "credit", "loan", "mortgage", "student", "student loan", "auto", "line of credit", "home equity"}
+)
+
+
+def _kind(value) -> str:
+    """Lowercase with ``_``/``-`` treated as spaces so ``credit_card`` matches ``credit card``."""
+
+    return " ".join(str(value or "").strip().lower().replace("_", " ").replace("-", " ").split())
+
+
+def is_liability_account(account_type, subtype=None) -> bool:
+    """Whether an account's balance is money owed.
+
+    An explicit credit/loan **subtype** counts even when the provider typed the whole item as
+    "investment" (a Robinhood "Credit card"); otherwise its debt would be read as a positive asset.
+    """
+
+    return _kind(account_type) in _LIABILITY_TYPES or _kind(subtype) in _LIABILITY_SUBTYPES
+
+
+def normalize_account_balance(balance, account_type, account_id=None, subtype=None):
+    """Normalize the balance: liabilities are negative, assets are positive.
+
+    Stored balances keep the provider convention (liabilities positive = owed); this is the single
+    read-side flip. Pass ``subtype`` wherever it is known so a credit card under an
+    investment-typed item is still treated as a liability.
+    """
 
     cache = _normalize_cache()
     key = None
@@ -36,21 +63,18 @@ def normalize_account_balance(balance, account_type, account_id=None):
             str(account_id) if account_id is not None else None,
             str(balance),
             str(account_type),
+            str(subtype),
         )
         if key in cache:
             return cache[key]
 
     amount = _to_decimal(balance)
-    if (account_type or "").lower() in [
-        "credit card",
-        "credit",
-        "loan",
-        "liability",
-    ]:
+    if is_liability_account(account_type, subtype):
         norm_balance = (-amount).quantize(TWOPLACES)
         logger.debug(
-            "Normalized balance: type=%s value=%s",
+            "Normalized balance: type=%s subtype=%s value=%s",
             account_type,
+            subtype,
             norm_balance,
         )
         result = norm_balance

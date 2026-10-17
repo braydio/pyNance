@@ -30,7 +30,7 @@
         <dd>{{ money(totals.liabilities) }}</dd>
       </div>
       <div class="portfolio-kpi" data-testid="kpi-net">
-        <dt>Net position</dt>
+        <dt>{{ netLabel }}</dt>
         <dd :class="amountPolarityClass(totals.net)">{{ money(totals.net) }}</dd>
       </div>
       <div class="portfolio-kpi" data-testid="kpi-utilization">
@@ -40,12 +40,19 @@
       </div>
     </dl>
 
+    <p class="portfolio-note" data-testid="scope-line">{{ scopeLine }}</p>
     <p v-if="totals.hiddenIncluded" class="portfolio-note" data-testid="hidden-included-note">
       Totals include hidden accounts.
     </p>
     <p v-else-if="totals.hiddenCount" class="portfolio-note" data-testid="hidden-excluded-note">
       {{ totals.hiddenCount }} hidden
-      {{ totals.hiddenCount === 1 ? 'account is' : 'accounts are' }} not included.
+      {{ totals.hiddenCount === 1 ? 'account is' : 'accounts are' }} not included, so these totals
+      are a partial picture.
+    </p>
+    <p v-if="totals.unknownBalances" class="portfolio-note" data-testid="unknown-balances-note">
+      {{ totals.unknownBalances }}
+      {{ totals.unknownBalances === 1 ? 'account has' : 'accounts have' }} no balance data and
+      {{ totals.unknownBalances === 1 ? 'is' : 'are' }} not counted as $0.
     </p>
 
     <div class="portfolio-chips" role="group" aria-label="Filter by account type">
@@ -95,7 +102,18 @@ const utilizationLabel = computed(() => {
 const coverageLabel = computed(() => {
   const { known, total } = totals.value.utilization
   if (!total) return 'No credit cards'
-  return `${known} of ${total} credit ${total === 1 ? 'line has' : 'lines have'} known limits`
+  return `Known credit limits: ${known}/${total} ${total === 1 ? 'card' : 'cards'}`
+})
+
+/** Net is only an unqualified total when nothing is left out. */
+const netLabel = computed(() => (totals.value.partial ? 'Visible-account net' : 'Net position'))
+
+const scopeLine = computed(() => {
+  const { accountCount, linkedCount, hiddenCount, hiddenIncluded } = totals.value
+  if (hiddenIncluded || !hiddenCount) {
+    return `${accountCount} of ${linkedCount} linked ${linkedCount === 1 ? 'account' : 'accounts'} included`
+  }
+  return `${accountCount} visible of ${linkedCount} linked; ${hiddenCount} hidden excluded`
 })
 
 const chips = computed(() => {

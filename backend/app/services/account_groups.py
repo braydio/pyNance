@@ -445,7 +445,9 @@ def _serialize_account(account: Account) -> dict:
         dict: Account payload with normalized balances.
     """
 
-    balance = normalize_account_balance(account.balance, account.type, account_id=account.account_id)
+    balance = normalize_account_balance(
+        account.balance, account.type, account_id=account.account_id, subtype=account.subtype
+    )
     last_refreshed = None
     plaid_account = getattr(account, "plaid_account", None)
     if getattr(plaid_account, "last_refreshed", None):

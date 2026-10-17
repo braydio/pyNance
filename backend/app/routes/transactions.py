@@ -17,14 +17,13 @@ from sqlalchemy import func
 from app.config import logger
 from app.extensions import db
 from app.models import Account, Category, Tag, Transaction
-from app.services import internal_transfer_review, recurring_repository
 from app.sql import account_logic
 
 transactions = Blueprint("transactions", __name__)
 
 UTC = timezone.utc
 TWOPLACES = Decimal("0.01")
-AMOUNT_EPSILON = internal_transfer_review.AMOUNT_EPSILON
+AMOUNT_EPSILON = TWOPLACES
 
 
 def _ensure_utc(dt: datetime | None) -> datetime | None:
@@ -360,6 +359,8 @@ def update_transaction():
         # touched, so a rejected pair leaves no partial change behind.
         counterpart_txn, pair_already_confirmed = None, False
         if "is_internal" in data:
+            from app.services import internal_transfer_review, recurring_repository
+
             try:
                 counterpart_txn, pair_already_confirmed = internal_transfer_review.authorize_internal_flag(
                     recurring_repository.trusted_owner_id(),
@@ -504,6 +505,8 @@ def scan_internal_transfers():
     Returns ``pairs`` (``pair_id``, ``left``, ``right``, ``evidence``, ``confidence_label``) plus
     ``range``, ``scanned_rows`` and truncation flags.
     """
+    from app.services import internal_transfer_review, recurring_repository
+
     try:
         try:
             owner_id = recurring_repository.trusted_owner_id()

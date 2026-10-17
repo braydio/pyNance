@@ -130,6 +130,7 @@
                 'portfolio-row--selected': String(account.account_id) === String(selectedId),
               }"
               :data-testid="`portfolio-row-${account.account_id}`"
+              :data-classification-conflict="classificationConflict(account) ? 'true' : null"
             >
               <div class="portfolio-row__identity">
                 <p class="portfolio-row__name">
@@ -137,6 +138,7 @@
                   <span v-if="account.is_hidden" class="portfolio-row__badge">Hidden</span>
                 </p>
                 <p class="portfolio-row__meta">
+                  <span data-testid="row-type">{{ accountTypeLabel(account) }}</span>
                   {{ maskLabel(account) }}
                   <span
                     :class="{
@@ -224,9 +226,11 @@ import {
   GROUP_LABELS,
   SORT_OPTIONS,
   accountBalance,
+  accountTypeLabel,
   accountUtilization,
   amountOwed,
   aprInfo,
+  classificationConflict,
   classifyAccount,
   connectionState,
   creditLimit,

@@ -18,7 +18,7 @@ from app.helpers.plaid_helpers import get_accounts, get_transactions
 from app.models import Account, AccountHistory, Category, PlaidAccount, PlaidItem, Tag, Transaction
 from app.sql.dialect_utils import dialect_insert
 from app.utils.category_canonical import canonicalize_category
-from app.utils.finance_utils import display_transaction_amount
+from app.utils.finance_utils import display_transaction_amount, is_liability_account
 
 ParentCategory = aliased(Category)
 
@@ -551,11 +551,13 @@ def process_transaction_amount(amount):
     return normalize_amount(amount)
 
 
-LIABILITY_ACCOUNT_TYPES = frozenset({"credit", "credit card", "credit_card", "loan", "liability"})
+LIABILITY_ACCOUNT_TYPES = frozenset(
+    {"credit", "credit card", "credit_card", "loan", "liability"}
+)  # see is_liability_account
 CREDIT_CARD_ACCOUNT_TYPES = frozenset({"credit", "credit card", "credit_card"})
 
 
-def normalize_balance(amount, account_type):
+def normalize_balance(amount, account_type, subtype=None):
     """Return the stored balance for a provider-reported ``amount``.
 
     Liabilities keep the provider convention (positive = amount owed, negative =
@@ -565,7 +567,7 @@ def normalize_balance(amount, account_type):
     """
 
     kind = account_type.lower().replace("_", " ") if account_type else None
-    if kind in LIABILITY_ACCOUNT_TYPES or (account_type or "").lower() in LIABILITY_ACCOUNT_TYPES:
+    if is_liability_account(account_type, subtype):
         return normalize_amount(amount)
     return normalize_amount({"amount": amount, "transaction_type": kind})
 
@@ -605,7 +607,9 @@ def extract_balance_fields(account, account_type=None):
     if current is None:
         current = _decimal_or_none(legacy)
     kind = (account_type or payload.get("type") or "").lower()
-    limit = _decimal_or_none(balances.get("limit")) if kind in CREDIT_CARD_ACCOUNT_TYPES else None
+    subtype_kind = str(payload.get("subtype") or "").strip().lower().replace("_", " ")
+    is_card = kind in CREDIT_CARD_ACCOUNT_TYPES or subtype_kind in CREDIT_CARD_ACCOUNT_TYPES
+    limit = _decimal_or_none(balances.get("limit")) if is_card else None
     mask = payload.get("mask")
     currency = balances.get("iso_currency_code") or balances.get("currency_code")
     return {
@@ -945,7 +949,11 @@ def upsert_accounts(
             # Explicit null handling: a valid 0 is kept, a missing value is not invented.
             balance_fields = extract_balance_fields(account, acc_type)
             balance_observed = balance_fields["current"] is not None
-            balance = normalize_balance(balance_fields["current"], acc_type) if balance_observed else None
+            balance = (
+                normalize_balance(balance_fields["current"], acc_type, account.get("subtype"))
+                if balance_observed
+                else None
+            )
             balance_fields["current"] = balance
             logger.debug("[UPSERT] Balance parsed for %s: %s", account_id, balance)
 
@@ -1448,7 +1456,7 @@ def refresh_data_for_plaid_account(access_token, account_or_id, accounts_data=No
                 fields = extract_balance_fields(acct_dict, account.type)
                 refreshed_at = datetime.now(timezone.utc)
                 if fields["current"] is not None:
-                    account.balance = normalize_balance(fields["current"], account.type)
+                    account.balance = normalize_balance(fields["current"], account.type, account.subtype)
                     account.balance_as_of = refreshed_at
                 for attr, source in (
                     ("available_balance", "available"),

@@ -1,12 +1,12 @@
 # TP-20261016-007: Accounts Classification and Financial Coverage Integrity
 
 **Packet ID:** TP-20261016-007  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-16  
-**Last updated:** 2026-10-16  
+**Last updated:** 2026-10-17
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261016-007-account-classification-coverage-truth.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261016-007-account-classification-coverage-truth.md`  
 **Workstream size:** One targeted implementation packet  
 **Priority:** P0  
 **Depends on:** None  
@@ -47,3 +47,13 @@ No Plaid relink or new account products. No estimating missing balances or undis
 
 ## Implementation/handoff
 Read `AGENTS.md`, `docs/task-packets/README.md`, `INDEX.md`, `TRACKER.md`; validate only named symbols against latest main. Set In Progress in tracker before coding. Treat prerequisite packets as implemented, do not re-implement their features. Run focused tests then lint/build; commit only this workstream to main without force, mark Complete, move this packet to completed and update INDEX/TRACKER atomically. Report changed files, test output, fixture/behavior evidence, and deviations. If principal is not trusted, fail closed on new owner-scoped endpoints, not permissive fallback. Do not use Plaid Enrich/new billable APIs.
+
+## Completion report (2026-10-17)
+
+- **Classification precedence** (identical in `frontend/src/utils/accountPortfolio.js:classifyAccount` and `backend/app/services/account_portfolio_metrics.py:classify_account_group`; both tested against the same fixture table): credit -> loan -> investment subtype -> bank subtype (checking/savings) -> investment type -> depository -> legacy `is_investment` flag -> other. Output group keys, sorting and filtering API are unchanged. `classificationConflict()` / `classification_conflict()` expose a legacy-flag mismatch as metadata (`data-classification-conflict` on a row, `classification_conflict` in metrics), never as a visible alarm.
+- **Sign bug found and fixed (beyond grouping).** Real data: all of Robinhood's accounts are typed `investment` with `is_investment = true`, and only the *subtype* says what they are. The single read-side sign flip `finance_utils.normalize_account_balance` decided liability by `type` only, so the Robinhood Credit Card's stored +$10,268.37 (provider convention: positive = owed) was read as a positive asset. New `is_liability_account(type, subtype)` honors an explicit credit/loan subtype; `normalize_account_balance(..., subtype=)` and ingestion (`normalize_balance`, `extract_balance_fields` credit-limit capture) use it, and all 11 read-side callers now pass the subtype. Stored balances and `is_investment` flags were NOT rewritten (no migration): flags mirror Plaid's item typing, and stored balances are already in provider convention.
+- **Real-data effect** (read-only check): visible-account net moves from +$229.23 to **-$20,307.51**. Robinhood Credit Card is now credit / owed $10,268.37; Checking, Savings and Spending are depository; Brokerage, Roth and IRA stay investment. 11 of 28 linked accounts are visible.
+- `AccountPortfolioOverview.vue`: scope line "11 visible of 28 linked; 17 hidden excluded" (or "N of N linked accounts included"), net labelled "Visible-account net" whenever hidden accounts are excluded (plain "Net position" otherwise), "Known credit limits: 2/4 cards" coverage, a note when accounts have no balance data (never counted as $0), mixed-currency behavior unchanged. `AccountPortfolioList.vue`: per-row type label (`accountTypeLabel`), credit/utilization only for true card rows, conflict marker.
+- Tests: `accountPortfolio.spec.js` (38), `AccountPortfolio.spec.js` (Robinhood scenario where totals, chips and coverage reconcile; scope line; partial-net label; unknown-balance note), `tests/test_account_portfolio_metrics.py` (50: shared classification table, Robinhood card sign and utilization, liability detection, ingestion keeps provider sign and captures a card limit by subtype). `npm run build` passes; ESLint 0 errors.
+- Related repairs made while verifying: `routes/transactions.py` imports are lazy again (a TP-003 regression broke `test_api_transactions`); `test_safe_to_spend_service` and `test_internal_transfer_detection` stubs updated for the new `normalize_account_balance(subtype=)` / `is_liability_account` and an empty stub `__path__`; `test_scan_internal_transfers_endpoint` rewritten for the TP-003 contract. `test_internal_transfer_detection.py` now has 1 failure (was 4): `detect_internal_transfer` no longer matches a bare "Zelle transfer" vs "Incoming" pair, an older expectation of code this packet does not own.
+- Follow-up outside this packet: `services/safe_to_spend.py:_is_cash_account` still excludes any account with `is_investment` true, so Robinhood Checking/Savings/Spending (all $0 today) would be left out of spendable cash if they held money. Not changed here.

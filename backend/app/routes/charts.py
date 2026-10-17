@@ -365,6 +365,7 @@ def get_net_assets():
                 acc.balance if acc.balance is not None else 0,
                 acc.type,
                 account_id=acc.account_id,
+                subtype=acc.subtype,
             )
             for acc in accounts
         )
@@ -533,7 +534,9 @@ def accounts_snapshot():
             "account_id": acc.account_id,
             "name": acc.name,
             "institution_name": acc.institution_name,
-            "balance": float(normalize_account_balance(acc.balance, acc.type, account_id=acc.account_id)),
+            "balance": float(
+                normalize_account_balance(acc.balance, acc.type, account_id=acc.account_id, subtype=acc.subtype)
+            ),
             "type": acc.type,
             "subtype": acc.subtype,
         }
