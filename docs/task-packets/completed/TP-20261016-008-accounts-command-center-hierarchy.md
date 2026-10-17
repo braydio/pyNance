@@ -1,12 +1,12 @@
 # TP-20261016-008: Accounts Overview Hierarchy, Width, Period and Connection Styling
 
 **Packet ID:** TP-20261016-008  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-16  
-**Last updated:** 2026-10-16  
+**Last updated:** 2026-10-17
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261016-008-accounts-command-center-hierarchy.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261016-008-accounts-command-center-hierarchy.md`  
 **Workstream size:** One targeted implementation packet  
 **Priority:** P2  
 **Depends on:** TP-20261016-007  
@@ -48,3 +48,13 @@ No new banking data, no accounts API refactor, no new chart features; preserve r
 
 ## Implementation/handoff
 Read `AGENTS.md`, `docs/task-packets/README.md`, `INDEX.md`, `TRACKER.md`; validate only named symbols against latest main. Set In Progress in tracker before coding. Treat prerequisite packets as implemented, do not re-implement their features. Run focused tests then lint/build; commit only this workstream to main without force, mark Complete, move this packet to completed and update INDEX/TRACKER atomically. Report changed files, test output, fixture/behavior evidence, and deviations. If principal is not trusted, fail closed on new owner-scoped endpoints, not permissive fallback. Do not use Plaid Enrich/new billable APIs.
+
+## Completion report (2026-10-17)
+
+- `Accounts.vue`: the actions sidebar is rendered only on **Activity** and **Connections**; Overview and Trends use the full content width (no dead right gutter). The same link/token actions (`AccountActionsSidebar`, unchanged, Plaid Link untouched) live in a compact, closed-by-default "+ Link an account" panel above the overview, so nothing is duplicated and every action stays reachable. Order is KPIs, coverage line, filters and ledger, then the analysis. The **Period** control moved into an "Activity & history" header that says what it controls (history, money movement, most-active) and that it does not change the balances above; test ids `accounts-period-bar`, `history-range-select`, `accounts-period-dates` are preserved. The reconnect banner is now a quiet amber line instead of a red 4px alarm competing with the headline numbers.
+- `AccountPortfolioOverview.vue`: borderless KPI tiles on one surface, net position emphasised (1.5rem, accent edge) over the other KPIs (1.25rem), liabilities in the negative colour, partial-coverage and unknown-balance notes in a caution surface; labels 0.875rem; tabular digits preserved.
+- `AccountPortfolioList.vue`: group > institution (1rem, no longer all-caps 0.78rem) > account (1rem) > primary amount (1.15rem) > secondary details (0.875rem); hairline dividers instead of repeated borders; long names wrap; at <=480px each row stacks identity / amount / details in one column; filter labels lighter than results.
+- `LinkedAccountsSection.vue`: every `bg-white`, `bg-surface-*`, `border-surface-*`, `dark:` and `amber-*` class replaced with theme tokens (`--surface-1/2`, `--divider`, `--color-warning`); at most two levels of surface (Card > institution fill > hairline-separated account rows); reconnect callout and badge use caution tokens; Rewards & Promotions is closed by default; a summary line ("8 institutions linked · 1 needs reconnect"); `text-muted-foreground` and 0.72rem all-caps labels replaced by `text-muted` at 0.875rem.
+- **Browser verification (headless Chrome over CDP, real data via an isolated backend on :5001, not your :5000 server):** 1280px and 390px in Nightfox and Everforest Light for Overview, and 1280px for Connections. No horizontal overflow at either width (scrollWidth equals clientWidth), no white card in Nightfox, the amber warning is legible in Everforest, the sidebar appears on Connections only, "11 visible of 28 linked; 17 hidden excluded" and "Known credit limits: 2/5 cards" render. 768px and 1440px were not captured separately.
+- Tests: `Accounts.spec.js` (34: no sidebar on Overview, sidebar on Activity/Connections, none on Trends, single link panel, period attached to analysis and ordered after the ledger), `AccountPortfolio.spec.js`, `LinkedAccountsSection.spec.js` all pass. `npm run build` passes; ESLint 0 errors. Full frontend run: 495 pass, the same 36 unrelated Dashboard / ChartRoutePage / DashboardSections / ForecastChart failures as before this packet.
+- Note for you: your Flask dev server on :5000 (started 00:29) predates the TP-007 sign fix and the new migrations, so it still serves the old (wrong-sign) Robinhood card balance. Restart it to pick up the changes.
