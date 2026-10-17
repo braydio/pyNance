@@ -7,7 +7,7 @@ from sqlalchemy import func
 
 from app.config import logger
 from app.extensions import db
-from app.models import RecurringTransaction, Transaction
+from app.models import Transaction
 from app.services.recurring_bridge import RecurringBridge
 
 recurring = Blueprint("recurring", __name__)
@@ -55,60 +55,81 @@ def _build_auto_confidence_score(occurrences, latest_date, recent_cutoff, today)
 # --------------------------------------
 
 
+def _error_response(exc):
+    """JSON error for a ``RecurringError`` using its own HTTP status."""
+    return jsonify({"status": "error", "code": exc.code, "message": str(exc)}), exc.status
+
+
+def _source_transaction_fields(owner_id, account_id, tx_id):
+    """Return ``(description, canonical_delta)`` from an owner-scoped transaction or raise."""
+    from app.services import recurring_repository as repo
+    from app.services.transaction_semantics import normalize_amount
+
+    tx = Transaction.query.filter_by(transaction_id=tx_id, account_id=account_id).first()
+    if tx is None or (tx.user_id and tx.user_id != owner_id):
+        raise repo.StreamNotFound("Transaction not found for this account")
+    result = normalize_amount(provider=getattr(tx.provider, "value", tx.provider), raw_amount=tx.amount)
+    if result.delta is None:
+        raise repo.ValidationFailed("Transaction amount direction is unknown; enter the amount manually")
+    name = tx.merchant_name if tx.merchant_name not in (None, "", "Unknown") else tx.description
+    return name or "Recurring payment", result.delta
+
+
 @recurring.route("/accounts/<account_id>/recurringTx", methods=["PUT"])
 def update_recurring_tx(account_id):
-    """Create or update a user-defined recurring transaction."""
+    """Create or update a user-defined recurring plan (legacy shape, backed by recurring streams).
+
+    ``amount`` is the signed cash amount (negative = money out). With ``tx_id`` the description and
+    amount come from that owner-scoped transaction; otherwise ``description`` and ``amount`` are
+    required. ``user_id`` in the payload is ignored: the owner is configured server-side.
+    """
+    from app.services import recurring_repository as repo
+
     try:
-        data = request.json or {}
+        owner_id = repo.trusted_owner_id()
+        repo.owned_account(owner_id, account_id)
+        data = request.get_json(silent=True) or {}
         tx_id = data.get("tx_id")
-        amount = data.get("amount", 0.0)
-        description = data.get("description", "Untitled Recurring")
-        frequency = data.get("frequency", "monthly")
-        notes = data.get("notes", "")
-        next_due_str = data.get("next_due_date")
-
-        # Resolve account ID from tx_id if available
         if tx_id:
-            tx = Transaction.query.filter_by(transaction_id=tx_id).first()
-            account_id = tx.account_id if tx else account_id
-
-        try:
-            next_due_date = (
-                datetime.strptime(next_due_str, "%Y-%m-%d").date()
-                if next_due_str
-                else date.today() + timedelta(days=30)
-            )
-        except Exception as e:
-            logger.warning("Invalid date format for 'next_due_date': %s", e)
-            next_due_date = date.today() + timedelta(days=30)
-
-        existing = RecurringTransaction.query.filter_by(
-            account_id=account_id, description=description, amount=amount
-        ).first()
-
-        if existing:
-            existing.frequency = frequency
-            existing.notes = notes
-            existing.next_due_date = next_due_date
+            description, amount = _source_transaction_fields(owner_id, account_id, tx_id)
         else:
-            db.session.add(
-                RecurringTransaction(
-                    account_id=account_id,
-                    description=description,
-                    amount=amount,
-                    frequency=frequency,
-                    next_due_date=next_due_date,
-                    notes=notes,
-                )
+            description = (data.get("description") or "").strip()
+            if not description or data.get("amount") is None:
+                raise repo.ValidationFailed("description and amount are required without tx_id")
+            amount = data.get("amount")
+        frequency = data.get("frequency", "monthly")
+        next_due = data.get("next_due_date")
+        anchor = repo.parse_date(next_due, "next_due_date") if next_due else date.today() + timedelta(days=30)
+        notes = data.get("notes", "")
+
+        existing = repo.find_by_name_and_amount(owner_id, account_id, description, amount)
+        if len(existing) > 1:
+            raise repo.AmbiguousMatch("Several recurring plans match; update one by id")
+        if existing:
+            repo.update_stream(
+                owner_id,
+                existing[0].id,
+                cadence=frequency,
+                notes=notes,
+                anchor_date=anchor,
+                status="confirmed",
             )
-
-        db.session.commit()
-        return (
-            jsonify({"status": "success", "message": "Recurring transaction saved."}),
-            200,
-        )
-
+        else:
+            repo.create_manual(
+                owner_id,
+                account_id=account_id,
+                display_name=description,
+                amount_cash_delta=amount,
+                amount_mode=data.get("amount_mode", "fixed"),
+                cadence=frequency,
+                anchor_date=anchor,
+                notes=notes,
+            )
+        return jsonify({"status": "success", "message": "Recurring transaction saved."}), 200
+    except repo.RecurringError as exc:
+        return _error_response(exc)
     except Exception as e:
+        db.session.rollback()
         logger.error("Error saving recurring transaction: %s", e, exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -121,33 +142,33 @@ def update_recurring_tx(account_id):
 
 @recurring.route("/accounts/<account_id>/recurringTx", methods=["DELETE"])
 def delete_recurring_tx(account_id):
-    """Delete a user-defined recurring transaction."""
+    """End a recurring plan matched by description and amount (legacy shape).
+
+    Several matches return 409: the caller must use the ID-based endpoint instead of guessing.
+    """
+    from app.services import recurring_repository as repo
+
     try:
-        data = request.get_json() or {}
+        owner_id = repo.trusted_owner_id()
+        data = request.get_json(silent=True) or {}
         description = data.get("description")
         amount = data.get("amount")
-
         if not description or amount is None:
-            return (
-                jsonify({"status": "error", "message": "Missing required fields."}),
-                400,
+            return jsonify({"status": "error", "message": "Missing required fields."}), 400
+
+        matches = repo.find_by_name_and_amount(owner_id, account_id, description, amount)
+        if not matches:
+            return jsonify({"status": "error", "message": "No matching recurring rule found."}), 404
+        if len(matches) > 1:
+            raise repo.AmbiguousMatch(
+                "Multiple recurring rules match this description and amount; delete by stream id instead."
             )
-
-        match = RecurringTransaction.query.filter_by(
-            account_id=account_id, description=description, amount=amount
-        ).first()
-
-        if not match:
-            return (
-                jsonify({"status": "error", "message": "No matching recurring rule found."}),
-                404,
-            )
-
-        db.session.delete(match)
-        db.session.commit()
+        repo.delete_or_end_stream(owner_id, matches[0].id)
         return jsonify({"status": "success", "message": "Recurring rule deleted."}), 200
-
+    except repo.RecurringError as exc:
+        return _error_response(exc)
     except Exception as e:
+        db.session.rollback()
         logger.error("Failed to delete recurring transaction: %s", e, exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -257,33 +278,40 @@ def get_structured_recurring(account_id):
                     }
                 )
 
-        # User-defined reminders
-        user_rows = RecurringTransaction.query.filter_by(account_id=account_id).all()
-        for row in user_rows:
-            if not row.next_due_date:
-                continue
-            next_due = row.next_due_date
-            if 0 <= (next_due - today).days <= 7:
-                getattr(row, "transaction", row)
-                reminders.append(
-                    {
-                        "source": "user",
-                        "account_id": account_id,
-                        "description": row.description,
-                        "amount": display_transaction_amount(row),
-                        "next_due_date": next_due.strftime("%Y-%m-%d"),
-                        "days_until_due": (next_due - today).days,
-                        "notes": row.notes,
-                        "frequency": row.frequency,
-                        "auto_detection": {
-                            "occurrences": 1,
-                            "latest_transaction_date": next_due.strftime("%Y-%m-%d"),
-                            "confidence_score": 35,
-                        },
-                    }
-                )
+        # User-defined reminders come from confirmed recurring streams. Without a configured
+        # owner no stream is read (fail closed); auto-detected reminders above are unaffected.
+        streams_available = True
+        try:
+            from app.services import recurring_repository as repo
 
-        return jsonify({"status": "success", "reminders": reminders}), 200
+            owner_id = repo.trusted_owner_id()
+            streams = repo.list_streams(owner_id, account_id=account_id, statuses=["confirmed"])
+        except repo.RecurringError:
+            streams, streams_available = [], False
+        for stream in streams:
+            next_due = repo.next_due_date(stream, today)
+            if next_due is None or not 0 <= (next_due - today).days <= 7:
+                continue
+            reminders.append(
+                {
+                    "source": "user",
+                    "account_id": account_id,
+                    "stream_id": stream.id,
+                    "description": stream.display_name,
+                    "amount": float(stream.amount_cash_delta),
+                    "next_due_date": next_due.strftime("%Y-%m-%d"),
+                    "days_until_due": (next_due - today).days,
+                    "notes": stream.notes,
+                    "frequency": stream.cadence,
+                    "auto_detection": {
+                        "occurrences": 1,
+                        "latest_transaction_date": next_due.strftime("%Y-%m-%d"),
+                        "confidence_score": 35,
+                    },
+                }
+            )
+
+        return jsonify({"status": "success", "reminders": reminders, "streams_available": streams_available}), 200
 
     except Exception as e:
         logger.error(

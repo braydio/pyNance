@@ -37,6 +37,7 @@ EXPECTED = {
         "LOCALAI_URL": "http://localhost:5051",
         "LOCALAI_MODEL": "REPLACE_ME",
         "TEXTGEN_URL": "http://localhost:5051",
+        "PYNANCE_OWNER_USER_ID": "",
         "RETRIEVAL_LIMIT": "5",
         "MAX_ITERATIONS": "10",
         "RETRY_DELAY": "1.0",

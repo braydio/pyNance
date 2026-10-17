@@ -1,12 +1,12 @@
 # TP-20261016-002: Recurring Stream Persistence, Account Scope and Legacy API Repair
 
 **Packet ID:** TP-20261016-002  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-16  
-**Last updated:** 2026-10-16  
+**Last updated:** 2026-10-17
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261016-002-recurring-schema-api-integrity.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261016-002-recurring-schema-api-integrity.md`  
 **Workstream size:** One targeted implementation packet  
 **Priority:** P0  
 **Depends on:** None  
@@ -46,3 +46,15 @@ Do not add fictitious Transactions, break existing scan URL, silently delete leg
 
 ## Implementation/handoff
 Read `AGENTS.md`, `docs/task-packets/README.md`, `INDEX.md`, `TRACKER.md`; validate only named symbols against latest main. Set In Progress in tracker before coding. Treat prerequisite packets as implemented, do not re-implement their features. Run focused tests then lint/build; commit only this workstream to main without force, mark Complete, move this packet to completed and update INDEX/TRACKER atomically. Report changed files, test output, fixture/behavior evidence, and deviations. If principal is not trusted, fail closed on new owner-scoped endpoints, not permissive fallback. Do not use Plaid Enrich/new billable APIs.
+
+## Completion report (2026-10-17)
+
+- Models: `RecurringStream` and `RecurringStreamEvidence` (`backend/app/models/transaction_models.py`, exported from `app.models`) with CHECK constraints, the two specified indexes, and a non-unique merchant key. Evidence uses a logical `transaction_id` (no FK) and `UNIQUE(stream_id, transaction_id)`.
+- Migration `b7d2e4f6a8c1_recurring_streams.py` (down_revision `a1c4e8b2d6f9`, the only head): creates both tables and copies valid legacy `recurring_transactions` rows as `source='legacy'` streams (Plaid sign negated; orphan / ownerless / unknown-cadence / manual-sign rows skipped and counted in the migration log). Legacy table untouched. Verified on dev Postgres: upgrade, downgrade, re-upgrade; CHECK constraints enforced. The dev legacy table was empty (counters all 0); the copy path is covered on SQLite in `tests/test_recurring_repository.py`.
+- `backend/app/services/recurring_repository.py`: `create_manual`, `update_stream`, `delete_or_end_stream`, `list_streams`, `find_by_name_and_amount`, `next_due_date`, `propose_detected`. Account membership is validated before writes; amounts are `Decimal` cents.
+- Trust boundary: the app has no authenticated principal, so owner = server-only `PYNANCE_OWNER_USER_ID`. Unset => mutations return 503 `owner_not_configured`; payload `user_id` is ignored; foreign accounts/streams return 404 with no mutation.
+- `routes/recurring.py`: legacy `PUT`/`DELETE .../recurringTx` and `GET /<account_id>/recurring` keep their response shapes but use streams. DELETE with several matches returns 409 `ambiguous_match`. GET no longer reads the broken legacy columns; reminders come from confirmed streams due within 7 days, plus `streams_available` (false when the owner is unconfigured).
+- `sql/recurring_logic.upsert_recurring`: no fabricated `Transaction`; a hit with no real transaction becomes a `proposed`/`detected` stream (never overwrites a confirmed/ignored/ended decision).
+- Tests: `tests/test_recurring_repository.py` (20) and fixed `tests/test_routes_recurring.py` (2). Related suites unchanged: `test_transaction_semantics`, `test_forecast_v2_*`.
+- Action required: set `PYNANCE_OWNER_USER_ID=Brayden` in `backend/.env` (all 28 accounts use that `user_id`); documented in `backend/.env.example` and the env-template checker.
+- Deviations: `test_recurring_bridge.py` is skipped on main before and after; the export of `recurring_transactions` and other readers of the legacy table (`forecast_engine`, `forecast_logic`, `routes/accounts.py`) were left as-is (out of scope).
