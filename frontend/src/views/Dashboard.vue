@@ -166,7 +166,7 @@ import TopAccountSnapshot from '@/components/widgets/TopAccountSnapshot.vue'
 import SkeletonCard from '@/components/ui/SkeletonCard.vue'
 import api from '@/services/api'
 import { uniqueReconnectConnections } from '@/utils/plaidConnectionStatus'
-import { formatDateInput, useDateRange } from '@/composables/useDateRange'
+import { formatDateInput, useDateRange, getChartPresetRange, CHART_RANGE_PRESETS } from '@/composables/useDateRange'
 import { fetchTransactions as fetchTransactionsApi } from '@/api/transactions'
 import { fetchCategoryTransactions, fetchMerchantTransactions } from '@/api/charts'
 import { useCategories } from '@/composables/useCategories'
@@ -242,12 +242,7 @@ let safeToSpendToken = 0
  * @returns {{ start: string; end: string }} Inclusive date boundaries.
  */
 function getPresetRange(mode, now = new Date()) {
-  const end = formatDateInput(now)
-  if (mode === 'rolling_30') {
-    const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29)
-    return { start: formatDateInput(startDate), end }
-  }
-  return { start: formatDateInput(new Date(now.getFullYear(), now.getMonth(), 1)), end }
+  return getChartPresetRange(mode, now)
 }
 
 const catSummary = ref({ total: 0, startDate: '', endDate: '' })
@@ -291,7 +286,7 @@ const { dateRange = ref({ start: '', end: '' }), debouncedRange = ref({ start: '
  * @param {'mtd'|'rolling_30'} mode - Preset to apply.
  */
 function setDashboardPeriodPreset(mode) {
-  if (mode !== 'mtd' && mode !== 'rolling_30') return
+  if (!CHART_RANGE_PRESETS.some((option) => option.value === mode)) return
   const range = getPresetRange(mode)
   dateRange.value = { ...range }
   debouncedRange.value = { ...range }
@@ -301,11 +296,13 @@ function setDashboardPeriodPreset(mode) {
 
 function setManualStartDate(value) {
   dateRange.value.start = value
+  netTimeframe.value = 'custom'
   selectedPreset.value = 'custom'
 }
 
 function setManualEndDate(value) {
   dateRange.value.end = value
+  netTimeframe.value = 'custom'
   selectedPreset.value = 'custom'
 }
 

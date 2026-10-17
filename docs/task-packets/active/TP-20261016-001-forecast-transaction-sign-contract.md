@@ -1,12 +1,12 @@
 # TP-20261016-001: Forecast Transaction Sign Contract and Reconciliation
 
 **Packet ID:** TP-20261016-001  
-**Status:** Complete  
+**Status:** Ready  
 **Created:** 2026-10-16  
-**Last updated:** 2026-10-17
+**Last updated:** 2026-10-16  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/completed/TP-20261016-001-forecast-transaction-sign-contract.md`  
+**Canonical path:** `docs/task-packets/active/TP-20261016-001-forecast-transaction-sign-contract.md`  
 **Workstream size:** One targeted implementation packet  
 **Priority:** P0  
 **Depends on:** None  
@@ -48,12 +48,3 @@ No rewriting all historical transactions; no new UI; no recurrence inference cha
 
 ## Implementation/handoff
 Read `AGENTS.md`, `docs/task-packets/README.md`, `INDEX.md`, `TRACKER.md`; validate only named symbols against latest main. Set In Progress in tracker before coding. Treat prerequisite packets as implemented, do not re-implement their features. Run focused tests then lint/build; commit only this workstream to main without force, mark Complete, move this packet to completed and update INDEX/TRACKER atomically. Report changed files, test output, fixture/behavior evidence, and deviations. If principal is not trusted, fail closed on new owner-scoped endpoints, not permissive fallback. Do not use Plaid Enrich/new billable APIs.
-
-## Completion report (2026-10-17)
-
-- Added `backend/app/services/transaction_semantics.py` (`normalize_amount`, `canonical_account_delta`, `account_bucket`) with the per-provider table; Plaid is `-raw`, manual needs an explicit direction, unknown/non-finite amounts return `None` with `sign_unknown` / `invalid_amount`.
-- `load_v2_source_data` now forwards canonical `amount` plus `raw_amount`, `amount_semantics`, `account_bucket`, `source_provider`; unknown-sign rows are excluded and counted in `sign_summary`; saved recurring rule amounts use the same contract. `compute_v2_forecast` surfaces a `sign_unknown_excluded` warning.
-- `routes/forecast.py`: `_load_historical_aggregates` groups canonical deltas per day (owner-scoped, cash + liability accounts, pending/internal/unknown excluded); auto wage/rent detection uses canonical deltas.
-- `forecast/v2_validation.history_loaders`: documented canonical units, realized rows limited to the supplied accounts (no second negate, no look-ahead).
-- Tests: new `tests/test_transaction_semantics.py` (23 cases covering every packet fixture); `tests/forecast_v2_world.py` and `tests/test_forecast_v2_adapters.py` fixtures converted to Plaid-signed rows. Focused set passes per file; other failures in the repo are pre-existing and identical on a clean baseline.
-- Deviations: `tests/test_forecast_route.py` is skipped on main before and after (its module stubs fail to import), so route behavior is covered in `test_transaction_semantics.py` and `test_forecast_v2_api.py` instead.

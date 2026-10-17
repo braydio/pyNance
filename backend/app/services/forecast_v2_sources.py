@@ -17,7 +17,6 @@ from typing import Any, Iterable, Optional
 from forecast.v2_sources import DEFAULT_OPTIONS, build_v2_inputs, normalize_merchant_key
 
 from app.models import Account, AccountHistory, RecurringTransaction, Transaction
-from app.services.transaction_semantics import account_bucket, normalize_amount
 
 
 def _as_date(value: date | str) -> date:
@@ -43,10 +42,6 @@ def load_v2_source_data(
 
     Returns:
         ``{"accounts", "transactions", "recurring_rules", "ignored_account_ids", "as_of_date"}``.
-        ``transactions`` carry the canonical ``amount`` (``+`` inflow / ``-`` outflow, see
-        ``transaction_semantics``) plus ``raw_amount``, ``amount_semantics``, ``account_bucket`` and
-        ``source_provider`` for audit; rows whose sign cannot be determined are left out and counted
-        in ``sign_summary`` instead of being assumed to be expenses.
         Each account carries ``balance``/``as_of`` from ``AccountHistory`` on or before
         ``as_of_date``; ``balance`` is ``None`` when no snapshot exists (today's balance is
         deliberately not substituted).
@@ -75,7 +70,6 @@ def load_v2_source_data(
             "recurring_rules": [],
             "ignored_account_ids": ignored,
             "as_of_date": as_of,
-            "sign_summary": {"normalized": 0, "excluded": 0, "by_reason": {}},
         }
 
     snapshots: dict[str, AccountHistory] = {}
@@ -111,40 +105,23 @@ def load_v2_source_data(
         .order_by(Transaction.date, Transaction.transaction_id)
         .all()
     )
-    buckets = {a["account_id"]: account_bucket(a) for a in accounts}
-    tx_dicts = []
-    excluded_by_reason: dict[str, int] = {}
-    for t in transactions:
-        provider = getattr(t.provider, "value", t.provider)
-        semantics = normalize_amount(provider=provider, raw_amount=t.amount)
-        if semantics.delta is None:
-            excluded_by_reason[semantics.warning] = excluded_by_reason.get(semantics.warning, 0) + 1
-            continue
-        tx_dicts.append(
-            {
-                "transaction_id": t.transaction_id,
-                "account_id": t.account_id,
-                "date": t.date,
-                "amount": semantics.delta,
-                "raw_amount": t.amount,
-                "amount_semantics": semantics.semantics,
-                "account_bucket": buckets.get(t.account_id),
-                "source_provider": str(provider),
-                "name": t.description,
-                "merchant_name": t.merchant_name if t.merchant_name != "Unknown" else None,
-                "merchant_slug": t.merchant_slug,
-                "category_slug": t.category_slug,
-                "pending": bool(t.pending),
-                "is_internal": bool(t.is_internal),
-                "internal_match_id": t.internal_match_id,
-                "transfer_type": t.transfer_type,
-            }
-        )
-    sign_summary = {
-        "normalized": len(tx_dicts),
-        "excluded": sum(excluded_by_reason.values()),
-        "by_reason": excluded_by_reason,
-    }
+    tx_dicts = [
+        {
+            "transaction_id": t.transaction_id,
+            "account_id": t.account_id,
+            "date": t.date,
+            "amount": t.amount,
+            "name": t.description,
+            "merchant_name": t.merchant_name if t.merchant_name != "Unknown" else None,
+            "merchant_slug": t.merchant_slug,
+            "category_slug": t.category_slug,
+            "pending": bool(t.pending),
+            "is_internal": bool(t.is_internal),
+            "internal_match_id": t.internal_match_id,
+            "transfer_type": t.transfer_type,
+        }
+        for t in transactions
+    ]
 
     rules = []
     saved = (
@@ -155,11 +132,6 @@ def load_v2_source_data(
     for rule in saved:
         source = rule.transaction
         if source is None:
-            continue
-        rule_sign = normalize_amount(
-            provider=getattr(source.provider, "value", source.provider), raw_amount=source.amount
-        )
-        if rule_sign.delta is None:
             continue
         rules.append(
             {
@@ -172,7 +144,7 @@ def load_v2_source_data(
                         "description": source.description,
                     }
                 ),
-                "amount": rule_sign.delta,
+                "amount": source.amount,
                 "cadence": rule.frequency,
                 "anchor_date": rule.next_due_date,
                 "source_transaction_ids": [source.transaction_id],
@@ -184,7 +156,6 @@ def load_v2_source_data(
         "recurring_rules": rules,
         "ignored_account_ids": ignored,
         "as_of_date": as_of,
-        "sign_summary": sign_summary,
     }
 
 
@@ -228,7 +199,6 @@ def build_user_v2_inputs(
     )
     result["account_snapshots"] = data["accounts"]
     result["ignored_account_ids"] = data["ignored_account_ids"]
-    result["sign_summary"] = data["sign_summary"]
     return result
 
 

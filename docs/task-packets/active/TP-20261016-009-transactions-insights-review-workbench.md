@@ -3,7 +3,7 @@
 **Packet ID:** TP-20261016-009  
 **Status:** Ready  
 **Created:** 2026-10-16  
-**Last updated:** 2026-10-16  
+**Last updated:** 2026-10-17  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
 **Canonical path:** `docs/task-packets/active/TP-20261016-009-transactions-insights-review-workbench.md`  
@@ -37,6 +37,9 @@ Transactions screenshot has big table dominated by nested X/Y scroll and separat
 3. `frontend/src/views/Transactions.vue`: introduce compact summary metrics (Spending, Needs Review, Recurring Candidates) and prioritized actionable queue above explorer. One toolbar with search, period preset, account, sort (`Newest`, `Oldest`, `Largest spend`, `Amount`, `Merchant`, `Category`), Filter button; Advanced disclosure holds date, type, category, merchant, tags and column visibility. Preserve CSV export all filtered rows and saved filters, show `10 on this page · 2,005 matching` not `30 shown` unless truly loaded; label signed total precisely if shown. Review-card clicks apply a filter or focus target; no auto-mutating finance records.
 4. `UpdateTransactionsTable.vue`: preserve edit and explicit columns functionality; remove fixed min 50vh inner vertical scroll for paginated 10/25-row view, keep local horizontal overflow for wide columns; sticky table head only when useful; amounts right-aligned; keyboard sort with aria-sort, 2-line merchant/category where safe. Distinguish related transfer/refund rows; no new duplicate table component. Rename top tabs `Activity`, `Recurring`, `Transfer Review` as 003; default activity remains.
 5. Use unified recurring/transfer counts from packets 003/005, not per-page rescans on every mount; server cache TTL 5-15m keyed by owner+filters or only refresh on explicit user action; invalidate on edit/refresh. Avoid extra Plaid calls.
+
+## 2026-10-17 downstream integration: consistent income semantics
+**Do not implement a parallel metric.** This packet's `transaction_insights.py` must consume `transaction_flow_classification.classify_reporting_flow` from TP-20261017-003 and share owner/date scope with `charts.get_daily_net`; its `inflow` field must be expressly labeled economic income vs all credit cash movements (add separate transfers/unclassified subtotals). Pass confirmed transfer changes to the Daily Net and modal refresh in TP-20261017-004. For the Oct 13 synthetic fixture, Zelle +200 and ambiguous brokerage credit +100 are not +300 income. TP-20261017-004 owns chart/modal UI; do not redesign them here.
 
 ## Exact contracts and acceptance fixtures
 - Insight counts reflect all matching records, not page slice. Card purchase is not income because signed incorrectly; fees are category/counterparty evidence; possible duplicates are labeled possible, never automatically removed.

@@ -6,8 +6,8 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 
 | Packet ID | Title | Status | Priority | Depends on | Target | Last updated | Packet |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| TP-20261016-001 | Forecast Transaction Sign Contract and Reconciliation | Complete | P0 | None | main | 2026-10-17 | [packet](completed/TP-20261016-001-forecast-transaction-sign-contract.md) |
-| TP-20261016-002 | Recurring Stream Persistence, Account Scope and Legacy API Repair | In Progress | P0 | None | main | 2026-10-16 | [packet](active/TP-20261016-002-recurring-schema-api-integrity.md) |
+| TP-20261016-001 | Forecast Transaction Sign Contract and Reconciliation | Ready | P0 | None | main | 2026-10-16 | [packet](active/TP-20261016-001-forecast-transaction-sign-contract.md) |
+| TP-20261016-002 | Recurring Stream Persistence, Account Scope and Legacy API Repair | Ready | P0 | None | main | 2026-10-16 | [packet](active/TP-20261016-002-recurring-schema-api-integrity.md) |
 | TP-20261016-003 | Transfer Matching Security, Scope, Evidence and Review | Ready | P0 | TP-20261016-001 | main | 2026-10-16 | [packet](active/TP-20261016-003-transfer-review-scan-safety.md) |
 | TP-20261016-004 | Unify Recurrence Detector with Forecast Pattern Evidence | Ready | P1 | TP-20261016-001, TP-20261016-002 | main | 2026-10-16 | [packet](active/TP-20261016-004-recurring-pattern-detection-unified.md) |
 | TP-20261016-005 | Recurring Review API, Durable Decisions and Usable UI | Ready | P1 | TP-20261016-002, TP-20261016-004 | main | 2026-10-16 | [packet](active/TP-20261016-005-recurring-review-api-workflow.md) |
@@ -19,6 +19,8 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 | TP-20261016-011 | Cross-Page Financial Truth and Interaction Regression Gate | Ready | P1 | TP-20261016-001 through TP-20261016-010 | main | 2026-10-16 | [packet](active/TP-20261016-011-end-to-end-financial-ux-regression.md) |
 | TP-20261017-001 | Project Recurring Cash Obligations into Safe-to-Spend | Ready | P0 | TP-20261016-001, TP-20261016-002, TP-20261016-004, TP-20261016-005 | main | 2026-10-17 | [packet](active/TP-20261017-001-recurring-safe-to-spend-obligation-projection.md) |
 | TP-20261017-002 | Explain Recurring Reserves and Missing-Coverage Reasons in Safe-to-Spend | Ready | P1 | TP-20261017-001, TP-20261016-005 | main | 2026-10-17 | [packet](active/TP-20261017-002-safe-to-spend-obligation-explanation-ui.md) |
+| TP-20261017-003 | Classify Economic Flows Before Daily Net Aggregation | Ready | P0 | TP-20261016-001, TP-20261016-003 | main | 2026-10-17 | [packet](active/TP-20261017-003-economic-flow-classification-dashboard.md) |
+| TP-20261017-004 | Reconcile Daily Net Chart and Transaction Modal | Ready | P1 | TP-20261017-003, TP-20261016-009 | main | 2026-10-17 | [packet](active/TP-20261017-004-daily-net-modal-reconciliation.md) |
 | TP-20261014-010 | Theme Contrast and Typography | Complete | High | None | main | 2026-10-14 | [packet](completed/TP-20261014-010-theme-contrast-typography.md) |
 | TP-20261014-011 | Shared Fields, Buttons, Date and Select Geometry | Complete | High | TP-20261014-010 | main | 2026-10-14 | [packet](completed/TP-20261014-011-shared-controls-geometry.md) |
 | TP-20261014-012 | Dropdowns, Popovers and Expandable State | Complete | High | TP-20261014-010, TP-20261014-011 | main | 2026-10-14 | [packet](completed/TP-20261014-012-popovers-dropdowns-expandables.md) |

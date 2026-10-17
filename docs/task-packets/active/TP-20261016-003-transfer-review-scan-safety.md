@@ -3,7 +3,7 @@
 **Packet ID:** TP-20261016-003  
 **Status:** Ready  
 **Created:** 2026-10-16  
-**Last updated:** 2026-10-16  
+**Last updated:** 2026-10-17  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
 **Canonical path:** `docs/task-packets/active/TP-20261016-003-transfer-review-scan-safety.md`  
@@ -33,6 +33,9 @@ Transfer Matching Security, Scope, Evidence and Review. Complete only the named 
 2. Use canonical account delta from 001 for optional explanation, but matching equality/opposite should compare normalized comparable signs; if ambiguous sign skip. Default same-account matching false; exceptional same-account corrections require explicit opt-in and stronger evidence. Keep scoring for sort but return `{pair_id, left:{transaction_id,date,account_label,merchant,amount}, right:..., evidence:{amount_gap_cents,day_gap,shared_tokens,transfer_keyword,low_confidence}, confidence_label:'strong|review'}`; labels are rule based, not guessed numeric percentages. Preserve existing top-level `pairs` array or adapt client/tests atomically.
 3. `PUT /api/transactions/update` validation: verify requested transaction and counterpart share trusted owner, account ownership, opposite signs, unchanged pending state, and one-to-one linkage before marking BOTH `is_internal` and `internal_match_id`. Add idempotency/replay safe confirmation; reject cross-owner pair 403 without partial changes.
 4. `InternalTransferScanner.vue` label `Transfer Review` in `Transactions.vue` tabs, introduce one-sentence purpose, last scan range, results count, paired transaction cards, evidence bullet, Confirm Pair and Not a Transfer (nonpersistent dismissal in this packet), done/error state. Avoid raw match score/time_delta_hours-only UX; no automatic mutation on scan.
+
+## 2026-10-17 correction: one-sided movement is not recognized income
+A daily dashboard modal showed a +$200 self-Zelle account transfer and a +$100 brokerage-labeled inflow counted as $300 Income. This is a **reporting classification defect even before a reciprocal pair is found**. Pair detector here remains evidence-based and must not fabricate a pair or mutate `is_internal` on an unmatched row. Preserve category/source evidence and user correction for the read-only classifier in TP-20261017-003; a likely one-sided owned transfer goes to neutral `transfer` if supported, uncertain deposits go to `unclassified` review, **not automatic income**. Wire confirmed pair changes to reporting cache invalidation for chart/modal TP-20261017-004. Do not duplicate their reporting computation inside this packet.
 
 ## Exact contracts and acceptance fixtures
 - GET-like scan remains POST but read-only; cannot scan across tenants. No candidates on missing auth. Same-account refund does not auto-classify as transfer. Confirm requires both in-scope IDs.

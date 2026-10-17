@@ -15,9 +15,17 @@
         </details>
       </div>
 
-      <button type="button" class="toggle-button" @click="toggleView">
-        Switch to {{ viewType === 'Month' ? 'Year' : 'Month' }}
-      </button>
+      <div class="forecast-range-options" role="group" aria-label="Forecast horizon">
+        <button
+          v-for="option in forecastRanges"
+          :key="option.value"
+          type="button"
+          class="toggle-button"
+          :class="{ active: viewType === option.value }"
+          :aria-pressed="viewType === option.value"
+          @click="emit('update:viewType', option.value)"
+        >{{ option.label }}</button>
+      </div>
     </div>
 
     <div v-if="!hasData" class="chart-empty">Forecast chart data is not available yet.</div>
@@ -214,12 +222,11 @@ const hasData = computed(
     chartDatasets.value.some((dataset) => dataset.data.some((value) => value !== null)),
 )
 
-/**
- * Emit the opposite timeframe while leaving the active aspect untouched.
- */
-function toggleView() {
-  emit('update:viewType', props.viewType === 'Month' ? 'Year' : 'Month')
-}
+const forecastRanges = [
+  { value: 'Month', label: '1M' },
+  { value: 'Quarter', label: '3M' },
+  { value: 'Year', label: '1Y' },
+]
 
 /**
  * Keep the methodology copy compact until the user requests it.
@@ -562,4 +569,9 @@ watch(
   font-size: 0.9rem;
   color: var(--text-muted);
 }
+</style>
+
+<style scoped>
+.forecast-range-options { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+.forecast-range-options .toggle-button.active { border-color: var(--color-accent-cyan); color: var(--color-accent-cyan); }
 </style>

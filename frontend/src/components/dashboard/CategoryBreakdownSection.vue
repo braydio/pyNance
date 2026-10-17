@@ -22,6 +22,11 @@
       </div>
       <ChartWidgetTopBar>
         <template #controls>
+          <router-link
+            class="accent-toggle-btn"
+            :to="{ path: '/charts/category', query: { start_date: startDate, end_date: endDate, breakdown: breakdownType } }"
+            aria-label="Expand spending category chart"
+          >Expand chart</router-link>
           <div class="flex flex-wrap gap-2 items-center">
             <div class="inline-flex rounded-lg border border-[var(--divider)] overflow-hidden">
               <BaseButton

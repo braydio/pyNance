@@ -523,14 +523,14 @@ function buildComparisonContext() {
   // rolling_30 compares against a fixed 30-day window; custom compares against the
   // immediately preceding window with the same inclusive day count. Day math goes
   // through UTC day numbers so DST shifts cannot add or drop a day.
-  const days = timeframe.value === 'custom' ? 1 + (toUtcDay(end) - toUtcDay(start)) : 30
+  const days = timeframe.value === 'rolling_30' ? 30 : 1 + (toUtcDay(end) - toUtcDay(start))
   if (!(days >= 1)) return null
   const currentStart = start
   const priorEnd = fromUtcDay(toUtcDay(currentStart) - 1)
   const priorStart = fromUtcDay(toUtcDay(priorEnd) - (days - 1))
 
   return {
-    mode: timeframe.value === 'custom' ? 'custom' : 'rolling_30',
+    mode: timeframe.value === 'rolling_30' ? 'rolling_30' : 'previous_period',
     days,
     priorStart,
     priorEnd,
@@ -734,7 +734,7 @@ async function renderChart() {
   if (showComparisonOverlay.value) {
     const ctx = buildComparisonContext()
     comparisonSeries = buildComparisonSeries(labels, comparisonData.value, ctx)
-    comparisonLabel = timeframe.value === 'custom' ? 'Previous period' : 'This Day Last Month'
+    comparisonLabel = timeframe.value === 'mtd' ? 'This Day Last Month' : 'Previous period'
     datasets.push(
       buildLineDataset(comparisonLabel, comparisonSeries, comparisonColor, {
         borderDash: [8, 8],

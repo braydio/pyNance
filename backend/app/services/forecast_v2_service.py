@@ -405,16 +405,6 @@ def compute_v2_forecast(payload: dict[str, Any], *, today: Optional[date] = None
 
         base_events = inputs["scheduled_events"] + inputs["residual_events"]
         baseline = run_ledger(base_events, parsed["adjustments"])
-        sign_summary = data.get("sign_summary") or {}
-        if sign_summary.get("excluded"):
-            warnings.append(
-                {
-                    "code": "sign_unknown_excluded",
-                    "message": "Some transactions had an unknown amount direction and were excluded from the forecast.",
-                    "count": sign_summary["excluded"],
-                    "by_reason": sign_summary.get("by_reason", {}),
-                }
-            )
         if data["ignored_account_ids"]:
             warnings.append(
                 {

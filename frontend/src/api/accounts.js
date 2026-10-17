@@ -47,8 +47,11 @@ export function toLocalIsoDate(date) {
  * @returns {{ start: string, end: string }} Inclusive local start and end dates.
  */
 export function rangeToDates(range = '30d', now = new Date()) {
-  const days = Math.max(parseInt(range, 10) || 30, 1)
   const end = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  if (range === 'ytd') {
+    return { start: toLocalIsoDate(new Date(now.getFullYear(), 0, 1)), end: toLocalIsoDate(end) }
+  }
+  const days = Math.max(parseInt(range, 10) || 30, 1)
   const start = new Date(end.getFullYear(), end.getMonth(), end.getDate() - (days - 1))
   return { start: toLocalIsoDate(start), end: toLocalIsoDate(end) }
 }

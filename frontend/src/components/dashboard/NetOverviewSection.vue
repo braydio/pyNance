@@ -117,6 +117,11 @@
           @update:end-date="emit('update:end-date', $event)"
           @update:zoomed-out="emit('update:zoomed-out', $event)"
         />
+        <router-link
+          class="accent-toggle-btn daily-net-timeframe-btn"
+          :to="{ path: '/charts/cashflow', query: { start_date: activeRange.start, end_date: activeRange.end } }"
+          aria-label="Expand net income chart"
+        >Expand chart</router-link>
       </div>
       <DailyNetChart
         :start-date="activeRange.start"
@@ -159,27 +164,15 @@
               />
               <div class="daily-net-timeframe-toggle" data-testid="daily-net-timeframe-toggle">
                 <button
+                  v-for="option in CHART_RANGE_PRESETS"
+                  :key="option.value"
                   class="accent-toggle-btn angular-chart-chip daily-net-timeframe-btn"
-                  :class="{
-                    'accent-toggle-btn--active angular-chart-chip--active': netTimeframe === 'mtd',
-                  }"
+                  :class="{ 'accent-toggle-btn--active angular-chart-chip--active': netTimeframe === option.value }"
                   type="button"
-                  :aria-pressed="netTimeframe === 'mtd'"
-                  @click="emit('update:net-timeframe', 'mtd')"
+                  :aria-pressed="netTimeframe === option.value"
+                  @click="emit('update:net-timeframe', option.value)"
                 >
-                  MTD
-                </button>
-                <button
-                  class="accent-toggle-btn angular-chart-chip daily-net-timeframe-btn"
-                  :class="{
-                    'accent-toggle-btn--active angular-chart-chip--active':
-                      netTimeframe === 'rolling_30',
-                  }"
-                  type="button"
-                  :aria-pressed="netTimeframe === 'rolling_30'"
-                  @click="emit('update:net-timeframe', 'rolling_30')"
-                >
-                  Rolling 30
+                  {{ option.label }}
                 </button>
                 <span
                   v-if="netTimeframe === 'custom'"
@@ -218,6 +211,7 @@ import { computed, ref } from 'vue'
 import DailyNetChart from '@/components/charts/DailyNetChart.vue'
 import ChartDetailsSidebar from '@/components/charts/ChartDetailsSidebar.vue'
 import DateRangeSelector from '@/components/DateRangeSelector.vue'
+import { CHART_RANGE_PRESETS } from '@/composables/useDateRange'
 import SafeToSpendCard from '@/components/dashboard/SafeToSpendCard.vue'
 import FinancialSummary from '@/components/statistics/FinancialSummary.vue'
 import { formatAmount } from '@/utils/format'
@@ -238,7 +232,7 @@ const props = defineProps({
   netTimeframe: {
     type: String,
     default: 'mtd',
-    validator: (value) => ['mtd', 'rolling_30', 'custom'].includes(value),
+    validator: (value) => CHART_RANGE_PRESETS.some((option) => option.value === value) || value === 'custom',
   },
   zoomedOut: { type: Boolean, default: false },
   netSummary: { type: Object, required: true },
@@ -520,6 +514,7 @@ const periodText = computed(() => {
 .daily-net-timeframe-toggle {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.25rem;
 }
 
