@@ -27,10 +27,12 @@
       </div>
       <div class="portfolio-kpi" data-testid="kpi-liabilities">
         <dt>Liabilities</dt>
-        <dd>{{ money(totals.liabilities) }}</dd>
+        <dd :class="amountPolarityClass(totals.liabilities ? -totals.liabilities : 0)">
+          {{ money(totals.liabilities) }}
+        </dd>
       </div>
-      <div class="portfolio-kpi" data-testid="kpi-net">
-        <dt>Net position</dt>
+      <div class="portfolio-kpi portfolio-kpi--primary" data-testid="kpi-net">
+        <dt>{{ netLabel }}</dt>
         <dd :class="amountPolarityClass(totals.net)">{{ money(totals.net) }}</dd>
       </div>
       <div class="portfolio-kpi" data-testid="kpi-utilization">
@@ -40,12 +42,27 @@
       </div>
     </dl>
 
+    <p class="portfolio-note" data-testid="scope-line">{{ scopeLine }}</p>
     <p v-if="totals.hiddenIncluded" class="portfolio-note" data-testid="hidden-included-note">
       Totals include hidden accounts.
     </p>
-    <p v-else-if="totals.hiddenCount" class="portfolio-note" data-testid="hidden-excluded-note">
+    <p
+      v-else-if="totals.hiddenCount"
+      class="portfolio-note portfolio-note--caution"
+      data-testid="hidden-excluded-note"
+    >
       {{ totals.hiddenCount }} hidden
-      {{ totals.hiddenCount === 1 ? 'account is' : 'accounts are' }} not included.
+      {{ totals.hiddenCount === 1 ? 'account is' : 'accounts are' }} not included, so these totals
+      are a partial picture.
+    </p>
+    <p
+      v-if="totals.unknownBalances"
+      class="portfolio-note portfolio-note--caution"
+      data-testid="unknown-balances-note"
+    >
+      {{ totals.unknownBalances }}
+      {{ totals.unknownBalances === 1 ? 'account has' : 'accounts have' }} no balance data and
+      {{ totals.unknownBalances === 1 ? 'is' : 'are' }} not counted as $0.
     </p>
 
     <div class="portfolio-chips" role="group" aria-label="Filter by account type">
@@ -95,7 +112,18 @@ const utilizationLabel = computed(() => {
 const coverageLabel = computed(() => {
   const { known, total } = totals.value.utilization
   if (!total) return 'No credit cards'
-  return `${known} of ${total} credit ${total === 1 ? 'line has' : 'lines have'} known limits`
+  return `Known credit limits: ${known}/${total} ${total === 1 ? 'card' : 'cards'}`
+})
+
+/** Net is only an unqualified total when nothing is left out. */
+const netLabel = computed(() => (totals.value.partial ? 'Visible-account net' : 'Net position'))
+
+const scopeLine = computed(() => {
+  const { accountCount, linkedCount, hiddenCount, hiddenIncluded } = totals.value
+  if (hiddenIncluded || !hiddenCount) {
+    return `${accountCount} of ${linkedCount} linked ${linkedCount === 1 ? 'account' : 'accounts'} included`
+  }
+  return `${accountCount} visible of ${linkedCount} linked; ${hiddenCount} hidden excluded`
 })
 
 const chips = computed(() => {
@@ -126,42 +154,61 @@ const chips = computed(() => {
   gap: 0.75rem;
 }
 
+/* KPI tiles share the card's surface instead of boxing each number again. */
 .portfolio-kpis {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
   gap: 0.75rem;
   margin: 0;
 }
 
 .portfolio-kpi {
-  padding: 0.6rem 0.8rem;
-  border: 1px solid var(--themed-border);
+  padding: 0.7rem 0.9rem;
   border-radius: 0.6rem;
-  background: var(--table-surface);
+  background: var(--surface-1);
 }
 
 .portfolio-kpi dt {
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   color: var(--color-text-muted);
 }
 
 .portfolio-kpi dd {
   margin: 0.15rem 0 0;
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
+/* Net position is the headline: larger, with an accent edge. */
+.portfolio-kpi--primary {
+  background: var(--surface-2);
+  border-left: 4px solid var(--color-accent-cyan);
+}
+
+.portfolio-kpi--primary dd {
+  font-size: 1.5rem;
+}
+
 .portfolio-kpi dd.portfolio-kpi__sub {
-  font-size: 0.72rem;
+  font-size: 0.875rem;
   font-weight: 400;
   color: var(--color-text-muted);
 }
 
 .portfolio-note {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   color: var(--color-text-muted);
+}
+
+/* A partial picture is a real caution: amber edge and readable text on any theme. */
+.portfolio-note--caution {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  color: var(--color-text-light, inherit);
+  background: color-mix(in srgb, var(--color-warning) 12%, var(--surface-1));
+  border-left: 4px solid color-mix(in srgb, var(--color-warning) 70%, transparent);
 }
 
 .portfolio-chips {
@@ -201,7 +248,7 @@ const chips = computed(() => {
 }
 
 .portfolio-chip__amount {
-  font-size: 0.72rem;
+  font-size: 0.875rem;
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
 }

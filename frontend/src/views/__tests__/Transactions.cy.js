@@ -26,7 +26,7 @@ describe('Transactions tabs', () => {
     cy.get('updatetransactionstable-stub').should('exist')
     cy.get('[data-testid="tabbed-nav"]').contains('Recurring').click()
     cy.get('recurringtransactionsection-stub').should('exist')
-    cy.get('[data-testid="tabbed-nav"]').contains('Scanner').click()
+    cy.get('[data-testid="tabbed-nav"]').contains('Transfer Review').click()
     cy.get('internaltransferscanner-stub').should('exist')
   })
 })

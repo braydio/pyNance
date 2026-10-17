@@ -93,20 +93,50 @@ describe('Accounts.vue', () => {
     expect(wrapper.html()).toMatchSnapshot()
   })
 
-  it('passes AccountActionsSidebar into the tab layout sidebar slot', () => {
-    const wrapper = shallowMount(Accounts, {
-      global: {
-        stubs: {
-          TabbedPageLayout: {
-            template: '<div><slot name="sidebar" /></div>',
+  describe('actions sidebar', () => {
+    const LayoutStub = {
+      props: ['modelValue'],
+      emits: ['update:modelValue'],
+      template: `<div>
+        <span data-testid="active">{{ modelValue }}</span>
+        <button v-for="tab in ['Summary', 'Transactions', 'Charts', 'Connections']" :key="tab"
+          :data-testid="'go-' + tab" @click="$emit('update:modelValue', tab)" />
+        <aside v-if="$slots.sidebar" data-testid="tabbed-sidebar"><slot name="sidebar" /></aside>
+      </div>`,
+    }
+    const mountPage = () =>
+      shallowMount(Accounts, {
+        global: {
+          stubs: {
+            TabbedPageLayout: LayoutStub,
+            AccountActionsSidebar: true,
+            LinkedAccountsSection: true,
           },
-          AccountActionsSidebar: true,
-          LinkedAccountsSection: true,
         },
-      },
+      })
+
+    it('does not reserve a sidebar gutter on the Overview tab', () => {
+      const wrapper = mountPage()
+      expect(wrapper.get('[data-testid="active"]').text()).toBe('Summary')
+      expect(wrapper.find('[data-testid="tabbed-sidebar"]').exists()).toBe(false)
     })
 
-    expect(wrapper.find('account-actions-sidebar-stub').exists()).toBe(true)
+    it.each(['Transactions', 'Connections'])(
+      'shows the actions sidebar on the %s tab',
+      async (tab) => {
+        const wrapper = mountPage()
+        await wrapper.get(`[data-testid="go-${tab}"]`).trigger('click')
+        expect(
+          wrapper.find('[data-testid="tabbed-sidebar"] account-actions-sidebar-stub').exists(),
+        ).toBe(true)
+      },
+    )
+
+    it('leaves Trends full width as well', async () => {
+      const wrapper = mountPage()
+      await wrapper.get('[data-testid="go-Charts"]').trigger('click')
+      expect(wrapper.find('[data-testid="tabbed-sidebar"]').exists()).toBe(false)
+    })
   })
 
   it('renders non-zero net summary values from the response data envelope', async () => {
@@ -677,6 +707,31 @@ describe('Accounts.vue', () => {
       mask: '4242',
       interest_paid_recent: { total: 12.5, window_days: 90 },
     }
+
+    it('keeps the link actions in a compact panel on Overview instead of a sidebar', async () => {
+      const wrapper = mountSummary([card])
+      await flushPromises()
+      const panel = wrapper.get('[data-testid="link-account-panel"]')
+      expect(panel.text()).toContain('Link an account')
+      expect(panel.find('account-actions-sidebar-stub').exists()).toBe(true)
+      expect(wrapper.findAll('account-actions-sidebar-stub')).toHaveLength(1) // no duplicated actions
+      expect(panel.element.hasAttribute('open')).toBe(false)
+    })
+
+    it('attaches the period to the analysis it controls and says it is not a global filter', async () => {
+      const wrapper = mountSummary([card])
+      await flushPromises()
+      const header = wrapper.get('[data-testid="accounts-period-bar"]')
+      expect(header.text()).toContain('Activity & history')
+      expect(header.get('[data-testid="accounts-period-scope"]').text()).toContain(
+        'does not change the balances above',
+      )
+      expect(header.find('[data-testid="history-range-select"]').exists()).toBe(true)
+      // The portfolio overview and ledger come before the period control.
+      const html = wrapper.html()
+      expect(html.indexOf('portfolio-overview')).toBeLessThan(html.indexOf('accounts-period-bar'))
+      expect(html.indexOf('portfolio-list')).toBeLessThan(html.indexOf('accounts-period-bar'))
+    })
 
     it('uses one breakdown request for the selected period instead of per-account calls', async () => {
       const wrapper = mountSummary([card, { ...card, account_id: 'acc-2', name: 'Other' }])

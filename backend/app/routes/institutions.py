@@ -35,7 +35,9 @@ def list_institutions():
                     "name": acc.name,
                     "type": acc.type,
                     "subtype": acc.subtype,
-                    "balance": float(normalize_account_balance(acc.balance, acc.type, account_id=acc.account_id)),
+                    "balance": float(
+                        normalize_account_balance(acc.balance, acc.type, account_id=acc.account_id, subtype=acc.subtype)
+                    ),
                     "link_type": acc.link_type,
                 }
             )

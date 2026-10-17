@@ -55,6 +55,13 @@ DEFAULT_OPTIONS: dict[str, Any] = {
     "min_weekday_samples": 4,
     "winsor_percentile": 0.05,
     "pending_match_days": 7,
+    # Recurrence inference looks further back than the residual model so quarterly and yearly
+    # patterns can be seen; the residual model still uses ``lookback_days``.
+    "stream_lookback_days": 400,
+    # A variable bill may drift up to this much between its smallest and largest amount.
+    "max_cluster_spread": 0.30,
+    # Amounts within this relative spread are a fixed amount; wider spread is a variable amount.
+    "fixed_amount_tolerance": 0.01,
 }
 ZERO = Decimal("0.00")
 _SUPPORTED_FREQUENCIES = {
@@ -64,6 +71,10 @@ _SUPPORTED_FREQUENCIES = {
     "every_two_weeks": "biweekly",
     "semimonthly": "semimonthly",
     "monthly": "monthly",
+    "quarterly": "quarterly",
+    "yearly": "yearly",
+    "annual": "yearly",
+    "annually": "yearly",
     "once": "once",
 }
 
@@ -222,25 +233,50 @@ def _classify_basic(usable: list[dict[str, Any]], accounts: Mapping[str, str], o
 # --------------------------------------------------------------------------- recurrence
 
 
+def _month_index(day: date) -> int:
+    return day.year * 12 + day.month - 1
+
+
 def _detect_cadence(dates: Sequence[date]) -> Optional[dict[str, Any]]:
-    """Classify the cadence of a sorted list of distinct dates, or ``None`` if irregular."""
+    """Classify the cadence of a sorted list of distinct dates, or ``None`` if irregular.
+
+    Monthly, quarterly and yearly patterns compare **calendar months** (a bill paid on the 31st,
+    then the 28th, then the 31st is still monthly), not a fixed number of days.
+    """
     if len(dates) < 2:
         return None
     gaps = [(b - a).days for a, b in zip(dates, dates[1:])]
+    month_gaps = [_month_index(b) - _month_index(a) for a, b in zip(dates, dates[1:])]
 
     def share(lo: int, hi: int) -> float:
         return sum(lo <= g <= hi for g in gaps) / len(gaps)
+
+    def month_share(months: int, lo: int, hi: int) -> float:
+        return sum(m == months and lo <= g <= hi for m, g in zip(month_gaps, gaps)) / len(gaps)
+
+    def anchored(mode_day: int) -> float:
+        return sum(_near_monthly_anchor(d, mode_day) <= 3 for d in dates) / len(dates)
+
+    def mode_day() -> int:
+        doms = Counter(d.day for d in dates)
+        return sorted(doms.items(), key=lambda kv: (-kv[1], -kv[0]))[0][0]
 
     if share(6, 8) >= 0.8:
         return {"cadence": "weekly", "fit": share(6, 8)}
     if share(13, 15) >= 0.8:
         return {"cadence": "biweekly", "fit": share(13, 15)}
-    if share(27, 34) >= 0.8:
-        doms = Counter(d.day for d in dates)
-        mode_day = sorted(doms.items(), key=lambda kv: (-kv[1], -kv[0]))[0][0]
-        fit = sum(_near_monthly_anchor(d, mode_day) <= 3 for d in dates) / len(dates)
-        if fit >= 0.75:
-            return {"cadence": "monthly", "fit": min(fit, share(27, 34)), "day": mode_day}
+    for cadence, months, lo, hi in (("monthly", 1, 24, 38), ("quarterly", 3, 80, 100)):
+        fit_share = month_share(months, lo, hi)
+        if fit_share >= 0.8:
+            day = mode_day()
+            fit = anchored(day)
+            if fit >= 0.75:
+                return {"cadence": cadence, "fit": min(fit, fit_share), "day": day}
+            return None
+    if month_share(12, 350, 380) >= 0.8:
+        day = mode_day()
+        if anchored(day) >= 0.75:
+            return {"cadence": "yearly", "fit": min(anchored(day), month_share(12, 350, 380)), "day": day}
         return None
     if len(dates) >= 4 and share(12, 18) >= 0.8:
         days = sorted(d.day for d in dates)
@@ -259,18 +295,26 @@ def _detect_cadence(dates: Sequence[date]) -> Optional[dict[str, Any]]:
     return None
 
 
-def _cluster_amounts(items: list[dict[str, Any]], tolerance: float) -> list[list[dict[str, Any]]]:
-    """Split one merchant's transactions into amount clusters (separate subscriptions)."""
+def _cluster_amounts(
+    items: list[dict[str, Any]], tolerance: float, max_spread: float = 0.30
+) -> list[list[dict[str, Any]]]:
+    """Split one merchant's transactions into amount clusters (separate subscriptions / tiers).
+
+    Amounts chain into a cluster while each step is within ``tolerance`` of the previous amount
+    and the whole cluster stays within ``max_spread``, so a variable utility ($83, $91, $97) is one
+    stream while distinct plan tiers ($9.99, $15.49, $22.99) stay separate. Clusters are returned in
+    ascending amount order, which keeps their tier index stable across rescans.
+    """
     clusters: list[list[dict[str, Any]]] = []
+    step, spread = Decimal(1) + Decimal(str(tolerance)), Decimal(1) + Decimal(str(max_spread))
     for item in sorted(items, key=lambda t: (abs(t["_amount"]), t["_date"], t["transaction_id"])):
         magnitude = abs(item["_amount"])
-        for cluster in clusters:
-            anchor = abs(cluster[0]["_amount"])
-            if magnitude <= anchor * (Decimal(1) + Decimal(str(tolerance))):
-                cluster.append(item)
-                break
-        else:
-            clusters.append([item])
+        if clusters:
+            last, first = abs(clusters[-1][-1]["_amount"]), abs(clusters[-1][0]["_amount"])
+            if magnitude <= last * step and magnitude <= first * spread:
+                clusters[-1].append(item)
+                continue
+        clusters.append([item])
     return clusters
 
 
@@ -295,9 +339,11 @@ def _infer_streams(candidates: list[dict[str, Any]], as_of: date, opts: Mapping[
     for tx in candidates:
         if tx["_amount"] != 0:
             groups[(tx["account_id"], tx["_merchant"], 1 if tx["_amount"] > 0 else -1)].append(tx)
+    min_occurrences = int(opts["min_occurrences"])
     streams: list[dict[str, Any]] = []
     for (account_id, merchant, sign), items in sorted(groups.items()):
-        for cluster_index, cluster in enumerate(_cluster_amounts(items, float(opts["amount_tolerance"]))):
+        clusters = _cluster_amounts(items, float(opts["amount_tolerance"]), float(opts["max_cluster_spread"]))
+        for cluster_index, cluster in enumerate(clusters):
             dates = sorted({t["_date"] for t in cluster})
             detected = _detect_cadence(dates) if len(dates) >= 2 else None
             amounts = [t["_amount"] for t in cluster]
@@ -305,13 +351,18 @@ def _infer_streams(candidates: list[dict[str, Any]], as_of: date, opts: Mapping[
             dispersion = (
                 0.0 if median == 0 else round(min(0.25, float(max(abs(a - median) for a in amounts) / abs(median))), 4)
             )
+            spread = 0.0 if median == 0 else float((max(amounts) - min(amounts)) / abs(median))
             stream: dict[str, Any] = {
                 "stream_id": _stream_id(account_id, merchant, sign, cluster_index),
                 "origin": "inferred",
                 "account_id": account_id,
                 "merchant_key": merchant,
                 "sign": sign,
+                "tier": cluster_index,
                 "amount": median,
+                "amount_min": min(amounts),
+                "amount_max": max(amounts),
+                "amount_mode": "fixed" if spread <= float(opts["fixed_amount_tolerance"]) else "variable",
                 "amount_dispersion": dispersion,
                 "transactions": cluster,
                 "dates": dates,
@@ -319,9 +370,11 @@ def _infer_streams(candidates: list[dict[str, Any]], as_of: date, opts: Mapping[
                 "cadence": None,
                 "confidence": 0.0,
                 "reason": "",
+                "reason_codes": [],
             }
             if detected is None or len(dates) < 2:
                 stream["reason"] = "no_regular_cadence" if len(dates) > 1 else "single_occurrence"
+                stream["reason_codes"] = [stream["reason"]]
             else:
                 n = len(dates)
                 evidence = min(0.95, 0.55 + 0.1 * (n - 2))
@@ -331,9 +384,58 @@ def _infer_streams(candidates: list[dict[str, Any]], as_of: date, opts: Mapping[
                     days=detected.get("days"),
                     day=detected.get("day"),
                 )
-                stream["reason"] = f"{n}_occurrences"
+                if n < min_occurrences:
+                    # Two aligned cycles are evidence worth reviewing, never a confirmed bill.
+                    stream["reason"] = "needs_review_insufficient_cycles"
+                    stream["reason_codes"] = [stream["reason"], f"cadence_{detected['cadence']}"]
+                else:
+                    stream["reason"] = f"{n}_occurrences"
+                    stream["reason_codes"] = [stream["reason"], f"cadence_{detected['cadence']}"]
             streams.append(stream)
     return streams
+
+
+def infer_candidate_streams(
+    *,
+    transactions: Iterable[Any],
+    accounts: Iterable[Any],
+    as_of_date: date | str,
+    lookback_days: int = 400,
+    options: Optional[Mapping[str, Any]] = None,
+) -> dict[str, Any]:
+    """Detect recurring-stream candidates from posted history. Pure: no database, no side effects.
+
+    This is the single recurrence detector; ``build_v2_inputs`` uses the same ``_infer_streams`` so
+    the forecast and the review inventory never disagree. Transactions must already be canonical
+    account deltas (``+`` inflow / ``-`` outflow). Pending, duplicate, internal-transfer and non-cash
+    rows are excluded exactly as in the forecast pipeline.
+
+    Returns:
+        ``{"streams", "rejected", "history": {"first_date", "last_date", "days", "requested_days",
+        "complete"}}`` where each stream carries cadence, amount statistics, ``reason_codes`` and its
+        member transactions.
+    """
+    opts = {**DEFAULT_OPTIONS, **(options or {}), "stream_lookback_days": int(lookback_days)}
+    as_of = _to_date(as_of_date, field_name="as_of_date")
+    start = as_of - timedelta(days=int(lookback_days) - 1)
+    account_bucket = {str(_read(a, "account_id")): classify_forecast_account(a) for a in accounts}
+    usable, rejected = _prepare(transactions, account_bucket, as_of, start)
+    _, candidates = _classify_basic(usable, account_bucket, opts)
+    streams = _infer_streams(candidates, as_of, opts)
+    posted = [t["_date"] for t in usable if not t.get("pending")]
+    first = min(posted) if posted else None
+    days = (as_of - first).days + 1 if first else 0
+    return {
+        "streams": streams,
+        "rejected": rejected,
+        "history": {
+            "first_date": first.isoformat() if first else None,
+            "last_date": max(posted).isoformat() if posted else None,
+            "days": days,
+            "requested_days": int(lookback_days),
+            "complete": days >= int(lookback_days),
+        },
+    }
 
 
 def _next_anchor(stream: Mapping[str, Any]) -> date:
@@ -342,13 +444,15 @@ def _next_anchor(stream: Mapping[str, Any]) -> date:
     cadence = stream["cadence"]
     if cadence in {"weekly", "biweekly"}:
         return last
-    if cadence == "monthly":
+    if cadence in {"monthly", "quarterly", "yearly"}:
         return _monthly_anchor(last, stream.get("day") or last.day)
     return last - timedelta(days=45)  # semimonthly rules carry explicit days
 
 
 def _lapsed(stream: Mapping[str, Any], as_of: date) -> bool:
-    gap = {"weekly": 7, "biweekly": 14, "semimonthly": 16, "monthly": 31}.get(stream["cadence"])
+    gap = {"weekly": 7, "biweekly": 14, "semimonthly": 16, "monthly": 31, "quarterly": 92, "yearly": 366}.get(
+        stream["cadence"]
+    )
     return gap is not None and (as_of - stream["last_seen"]).days > gap * 2.5
 
 
@@ -440,10 +544,29 @@ def _rule_to_stream(rule: Any, origin: str) -> dict[str, Any]:
         "confidence": 1.0 if origin == "manual" else 0.9,
         "reason": f"{origin}_rule",
         "source_transaction_ids": [str(t) for t in (_read(rule, "source_transaction_ids") or [])],
+        "event_role": str(_read(rule, "event_role", "ordinary_expense") or "ordinary_expense"),
+        "funding_account_id": (
+            None if _read(rule, "funding_account_id") is None else str(_read(rule, "funding_account_id"))
+        ),
+        "destination_account_id": (
+            None if _read(rule, "destination_account_id") is None else str(_read(rule, "destination_account_id"))
+        ),
     }
     if cadence is None:
         stream["reason"] = f"unsupported_cadence:{raw_cadence or 'missing'}"
     return stream
+
+
+def _payment_accounts_valid(stream: Mapping[str, Any], account_bucket: Mapping[str, str]) -> bool:
+    """A payment stream needs a cash funding account and a liability destination, both in scope."""
+    funding, destination = stream.get("funding_account_id"), stream.get("destination_account_id")
+    return (
+        funding is not None
+        and destination is not None
+        and funding != destination
+        and account_bucket.get(funding) == BUCKET_CASH
+        and account_bucket.get(destination) == BUCKET_LIABILITY
+    )
 
 
 def build_v2_inputs(
@@ -492,10 +615,23 @@ def build_v2_inputs(
     end = start + timedelta(days=horizon_days - 1)
     disabled, confirmed = set(map(str, disabled_source_ids)), set(map(str, confirmed_source_ids))
     window_start = as_of - timedelta(days=int(opts["lookback_days"]) - 1)
+    stream_start = as_of - timedelta(days=max(int(opts["stream_lookback_days"]), int(opts["lookback_days"])) - 1)
 
+    accounts = list(accounts)
     account_bucket = {str(_read(a, "account_id")): classify_forecast_account(a) for a in accounts}
-    usable, rejected = _prepare(transactions, account_bucket, as_of, window_start)
+    account_kind = {
+        str(_read(a, "account_id")): "loan" if "loan" in f"{_read(a, 'type')} {_read(a, 'subtype')}".lower() else "card"
+        for a in accounts
+    }
+    # Recurrence inference sees ``stream_lookback_days`` of history; allocation, reconciliation and
+    # the residual model keep using the shorter ``lookback_days`` window exactly as before.
+    usable_all, rejected = _prepare(transactions, account_bucket, as_of, stream_start)
+    usable = [t for t in usable_all if t["_date"] >= window_start]
+    rejected["before_window"] += len(usable_all) - len(usable)
     audit_by_key, candidates = _classify_basic(usable, account_bucket, opts)
+    stream_candidates = (
+        candidates if len(usable) == len(usable_all) else _classify_basic(usable_all, account_bucket, opts)[1]
+    )
 
     # Streams: manual > saved rules > inferred. Earlier origins claim their transactions first.
     rule_streams = [_rule_to_stream(r, "manual") for r in manual_rules] + [
@@ -505,7 +641,7 @@ def build_v2_inputs(
     streams: list[dict[str, Any]] = []
     for stream in rule_streams:
         members = []
-        for tx in candidates:
+        for tx in stream_candidates:
             if tx["transaction_id"] in claimed:
                 continue
             by_id = tx["transaction_id"] in stream["source_transaction_ids"]
@@ -524,14 +660,19 @@ def build_v2_inputs(
             stream["state"] = "disabled"
         elif stream["cadence"] is None:
             stream["state"] = "unsupported"
+        elif stream.get("event_role") == "liability_payment" and not _payment_accounts_valid(stream, account_bucket):
+            # Never invent a payment: both ends must be in scope as a cash account and a liability.
+            stream["state"], stream["reason"] = "unsupported", "payment_accounts_not_in_scope"
         else:
             stream["state"] = "promoted"
             for tx in members:
                 claimed[tx["transaction_id"]] = stream["stream_id"]
         streams.append(stream)
+    payment_streams = [s for s in streams if s["state"] == "promoted" and s.get("event_role") == "liability_payment"]
+    settled_cards = {s["destination_account_id"] for s in payment_streams}
     suppressed = {(s["account_id"], s["merchant_key"], s["sign"]) for s in streams if s["merchant_key"]}
 
-    unclaimed = [t for t in candidates if t["transaction_id"] not in claimed]
+    unclaimed = [t for t in stream_candidates if t["transaction_id"] not in claimed]
     for stream in _infer_streams(unclaimed, as_of, opts):
         key = (stream["account_id"], stream["merchant_key"], stream["sign"])
         if key in suppressed or (None, key[1], key[2]) in suppressed:
@@ -560,6 +701,7 @@ def build_v2_inputs(
     # Allocate the buckets, one audit entry per transaction.
     audit = [e for e in audit_by_key.values()]
     residual_rows: list[dict[str, Any]] = []
+    settled_rows: dict[str, list[dict[str, Any]]] = defaultdict(list)
     reason_by_tx: dict[str, str] = {}
     for s in streams:
         if s["state"] in {"proposed", "disabled", "lapsed"}:
@@ -569,6 +711,12 @@ def build_v2_inputs(
         owner = claimed.get(tx["transaction_id"])
         if owner:
             audit.append(_entry(tx, "scheduled", "promoted_stream", stream_id=owner))
+            continue
+        if tx["account_id"] in settled_cards:
+            # A verified payment schedule settles this card, so its purchases raise the amount owed
+            # instead of also being counted as immediate cash spend.
+            settled_rows[tx["account_id"]].append(tx)
+            audit.append(_entry(tx, "liability_charge", "settled_by_payment_schedule"))
             continue
         reason = reason_by_tx.get(tx["transaction_id"], "variable_spending")
         residual_rows.append(tx)
@@ -581,6 +729,14 @@ def build_v2_inputs(
         if stream["state"] != "promoted":
             continue
         kind = "scheduled_income" if stream["sign"] > 0 else "scheduled_bill"
+        is_payment = stream.get("event_role") == "liability_payment"
+        on_settled_card = not is_payment and stream["account_id"] in settled_cards
+        if is_payment:
+            kind = "liability_payment"
+        elif on_settled_card:
+            if stream["sign"] > 0:
+                continue  # a credit to a settled card is not modeled as cash
+            kind = "liability_charge"  # raises the amount owed; the payment schedule moves the cash
         if stream["origin"] == "inferred" or stream["origin"] == "inferred_confirmed":
             anchor, days = _next_anchor(stream), stream.get("days")
             end_date = None
@@ -591,11 +747,23 @@ def build_v2_inputs(
                 "source": {"manual": "manual", "recurring_rule": "recurring"}.get(stream["origin"], "inferred"),
                 "source_id": stream["stream_id"],
                 "kind": kind,
-                "amount": stream["amount"],
+                # A payment is always a positive movement magnitude from funding to destination.
+                "amount": abs(stream["amount"]) if is_payment or on_settled_card else stream["amount"],
                 # Charges on a card are cash-spend proxies with no known funding account.
                 "account_id": (
-                    None if account_bucket.get(stream["account_id"]) == BUCKET_LIABILITY else stream["account_id"]
+                    stream["funding_account_id"]
+                    if is_payment
+                    else (
+                        stream["account_id"]
+                        if on_settled_card
+                        else (
+                            None
+                            if account_bucket.get(stream["account_id"]) == BUCKET_LIABILITY
+                            else stream["account_id"]
+                        )
+                    )
                 ),
+                "counterparty_account_id": stream["destination_account_id"] if is_payment else None,
                 "cadence": stream["cadence"],
                 "anchor_date": anchor,
                 "days": days,
@@ -606,6 +774,18 @@ def build_v2_inputs(
                     "origin": stream["origin"],
                     "amount_dispersion": stream.get("amount_dispersion", 0.0),
                     "label": stream.get("label") or stream.get("merchant_key"),
+                    **(
+                        {
+                            "event_role": "liability_payment",
+                            "principal_split": (
+                                "unknown"
+                                if account_kind.get(stream["destination_account_id"]) == "loan"
+                                else "not_applicable"
+                            ),
+                        }
+                        if is_payment
+                        else {}
+                    ),
                     "source_transaction_ids": [t["transaction_id"] for t in stream["transactions"]][-12:],
                 },
             }
@@ -640,6 +820,53 @@ def build_v2_inputs(
                 )
             )
 
+    # Settled cards: purchases raise the amount owed (liability_charge); the scheduled payment above is
+    # the only thing that moves cash, so nothing is counted twice.
+    for card in sorted(settled_cards):
+        card_model = _residual_model(settled_rows.get(card, []), grid_start, as_of, opts)
+        for offset in range(horizon_days):
+            day = start + timedelta(days=offset)
+            spend = -card_model["spend_by_weekday"].get(day.weekday(), ZERO)
+            if spend <= 0:
+                continue
+            residual_events.append(
+                ForecastV2Event(
+                    event_id=f"residual:charge:{card}:{day.isoformat()}",
+                    date=day,
+                    amount=spend,
+                    account_id=card,
+                    kind="liability_charge",
+                    source_id=f"charge:{card}",
+                    source="residual",
+                    confidence=None,
+                    metadata={"component": "card_spend", "model": card_model["status"]},
+                )
+            )
+
+    liability_ids = sorted(a for a, b in account_bucket.items() if b == BUCKET_LIABILITY)
+    unmodeled = [a for a in liability_ids if a not in settled_cards]
+    debt_payment_coverage = {
+        "mode": "proxy" if not settled_cards else "settlement" if not unmodeled else "mixed",
+        "included": [
+            {
+                "stream_id": e.source_id,
+                "date": e.date.isoformat(),
+                "amount": f"{e.amount:.2f}",
+                "source": e.source,
+                "funding_account_id": e.account_id,
+                "destination_account_id": e.counterparty_account_id,
+            }
+            for e in scheduled
+            if e.kind == "liability_payment"
+        ],
+        "settled_account_ids": sorted(settled_cards),
+        "unmodeled_account_count": len(unmodeled),
+        "unknown_payment_account_ids": unmodeled,
+        "invalid_payment_stream_ids": sorted(
+            s["stream_id"] for s in streams if s.get("event_role") == "liability_payment" and s["state"] != "promoted"
+        ),
+    }
+
     counts = Counter(e["bucket"] for e in audit)
     totals: dict[str, Decimal] = defaultdict(lambda: ZERO)
     for entry in audit:
@@ -666,6 +893,7 @@ def build_v2_inputs(
                 "status": stream["state"],
                 "origin": stream["origin"],
                 "kind": "income" if stream["sign"] > 0 else "bill",
+                "event_role": stream.get("event_role", "ordinary_expense"),
                 "account_id": stream["account_id"],
                 "merchant_key": stream.get("merchant_key"),
                 "cadence": stream["cadence"],
@@ -684,6 +912,7 @@ def build_v2_inputs(
         "residual_events": residual_events,
         "proposed_rules": [s for s in stream_audit if s["status"] in {"proposed", "lapsed"}],
         "streams": stream_audit,
+        "debt_payment_coverage": debt_payment_coverage,
         "allocation_audit": audit,
         "reconciliation": reconciliation,
         "coverage": {

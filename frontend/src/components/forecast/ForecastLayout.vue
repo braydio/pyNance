@@ -66,6 +66,17 @@
       :loading="isLoading"
     />
 
+    <div
+      v-if="forecastCallouts.length"
+      class="card glass text-sm forecast-callouts"
+      role="status"
+      data-testid="forecast-callouts"
+    >
+      <ul>
+        <li v-for="callout in forecastCallouts" :key="callout">{{ callout }}</li>
+      </ul>
+    </div>
+
     <ForecastBreakdown
       :forecast-items="forecastItems"
       :view-type="viewType"
@@ -475,6 +486,7 @@ import {
 } from '@/composables/useForecastData'
 import { useAccountGroups } from '@/composables/useAccountGroups'
 import api from '@/services/api'
+import { formatSignedCashflow } from '@/utils/format'
 
 type ForecastAccountOption = {
   account_id: string
@@ -599,6 +611,21 @@ const uncertainty = computed(() => forecastData.uncertainty?.value ?? null)
 const netWorth = computed(() => forecastData.netWorth?.value ?? null)
 const drivers = computed(() => forecastData.drivers?.value ?? [])
 const dataQuality = computed(() => forecastData.dataQuality?.value ?? null)
+/** Plain-language caveats shown above the breakdown: warnings, thin history, unconfirmed patterns. */
+const forecastCallouts = computed(() => {
+  const quality = dataQuality.value
+  if (!quality) return []
+  const lines = (quality.warnings ?? []).map((warning) => warning.message)
+  if (quality.proposed_streams) {
+    lines.push(
+      `${quality.proposed_streams} possible recurring payment(s) are not used until they have more history or you confirm them.`,
+    )
+  }
+  if (quality.confidence === 'low' || quality.confidence === 'insufficient') {
+    lines.push('Recent history is limited, so variable spending is a rough estimate.')
+  }
+  return lines
+})
 const scenarioResults = computed(() => forecastData.scenarioResults?.value ?? [])
 const scenarioLines = computed(() =>
   scenarioResults.value.filter((scenario) => scenario.id !== 'baseline'),
@@ -911,8 +938,7 @@ useModalA11y({
  * @returns Signed USD string.
  */
 function formatSignedCurrency(value: number) {
-  const absoluteAmount = currencyFormatter.format(Math.abs(Number(value || 0)))
-  return `${value < 0 ? '-' : '+'}${absoluteAmount}`
+  return formatSignedCashflow(value)
 }
 
 /**

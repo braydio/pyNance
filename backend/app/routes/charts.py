@@ -3,7 +3,7 @@
 # TODO: move business logic to accounts_logic and transactions_logic modules
 import traceback
 from collections import defaultdict
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Any, Dict
 
 from flask import Blueprint, g, has_request_context, jsonify, request
@@ -365,6 +365,7 @@ def get_net_assets():
                 acc.balance if acc.balance is not None else 0,
                 acc.type,
                 account_id=acc.account_id,
+                subtype=acc.subtype,
             )
             for acc in accounts
         )
@@ -405,111 +406,86 @@ def get_net_assets():
 
 @charts.route("/daily_net", methods=["GET"])
 def get_daily_net() -> Dict[str, Dict[str, Any]]:
+    """Return per-day economic flows for the trusted owner.
+
+    Each posted, visible transaction is classified once by
+    ``transaction_flow_classification`` (income, expense, refund, transfer, debt settlement,
+    investment movement or unclassified). Per day:
+
+    * ``income``, ``expenses`` (negative) and ``net`` keep their ``{source, parsedValue}`` shape.
+      ``net`` is economic: income + expenses + refunds. Cash that merely moved between the owner's
+      own accounts, paid a card or loan, or went to an investment account is **not** income or
+      spending.
+    * ``refunds``, ``transfer_in``, ``transfer_out``, ``debt_settlement``, ``investment_movement``,
+      ``unclassified_inflows`` and ``unclassified_outflows`` are plain floats (magnitudes) and
+      ``transaction_count`` / ``transfer_count`` / ``unclassified_count`` are integers. Bank balance
+      movement is the sum of the economic and cash-movement fields, never ``net`` alone.
+    * ``coverage`` (top level) counts classified versus unclassified rows so a gap is visible.
+
+    The owner comes from the server (``PYNANCE_OWNER_USER_ID``); without one this fails closed
+    with 503 rather than aggregating other users' data.
     """
-    Returns a dict mapping YYYY-MM-DD string to:
-      {
-        "date": str,
-        "income": { "source": str, "parsedValue": float },
-        "expenses": { "source": str, "parsedValue": float },
-        "net": { "source": str, "parsedValue": float },
-        "transaction_count": int
-      }
-    All amounts are floats. Income is always positive. Expenses are always negative.
-    """
+    from app.services import recurring_repository
+    from app.services.transaction_flow_classification import load_classified_flows, rollup_by_day
+
     start_date_str = request.args.get("start_date")
     end_date_str = request.args.get("end_date")
-
-    # Default to last 30 days if not provided
-    if start_date_str:
-        start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-    else:
-        start_date = (datetime.now() - timedelta(days=30)).date()
-    if end_date_str:
-        end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
-    else:
-        end_date = datetime.now().date()
+    try:
+        # Default to the last 30 days if not provided
+        start_date = (
+            datetime.strptime(start_date_str, "%Y-%m-%d").date()
+            if start_date_str
+            else (datetime.now() - timedelta(days=30)).date()
+        )
+        end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else datetime.now().date()
+    except ValueError:
+        return jsonify({"status": "error", "message": "Dates must be YYYY-MM-DD"}), 400
+    if start_date > end_date:
+        return jsonify({"status": "error", "message": "start_date must not be after end_date"}), 400
+    try:
+        owner_id = recurring_repository.trusted_owner_id()
+    except recurring_repository.OwnerNotConfigured as exc:
+        return jsonify({"status": "error", "code": exc.code, "message": str(exc)}), exc.status
 
     logger.info("[daily_net] start_date=%s, end_date=%s", start_date, end_date)
+    flows = load_classified_flows(owner_id, start_date, end_date)
+    days = rollup_by_day(flows)
 
-    # Align filtering with transactions listing: exclude hidden accounts
-    # (is_hidden == False) and internal transfers so tooltip counts match
-    # the transactions modal and tables.
-    transactions = (
-        db.session.query(Transaction)
-        .join(Account, Transaction.account_id == Account.account_id)
-        .filter(Account.is_hidden.is_(False))
-        .filter(Transaction.date >= start_date)
-        .filter(Transaction.date <= end_date)
-        .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
-        .all()
-    )
+    def money(value) -> Dict[str, Any]:
+        rounded = round(float(value), 2)
+        return {"source": str(rounded), "parsedValue": rounded}
 
-    logger.info(
-        "[daily_net] Transaction count in date range: %d",
-        len(transactions),
-    )
-
-    day_map: Dict[str, Dict[str, Any]] = defaultdict(
-        lambda: {
-            "date": "",
-            "income": 0.0,
-            "expenses": 0.0,
-            "net": 0.0,
-            "transaction_count": 0,
-        }
-    )
-
-    for tx in transactions:
-        tx_date = tx.date
-        if isinstance(tx_date, datetime):
-            if tx_date.tzinfo is None:
-                tx_date = tx_date.replace(tzinfo=timezone.utc)
-            else:
-                tx_date = tx_date.astimezone(timezone.utc)
-            tx_date = tx_date.date()
-        elif not isinstance(tx_date, date):
-            continue
-        day_str = tx_date.strftime("%Y-%m-%d")
-        # Normalize transaction amount for UI: expenses negative, income positive
-        amount = display_transaction_amount(tx)
-
-        d = day_map[day_str]
-        d["date"] = day_str
-        d["transaction_count"] += 1
-
-        # Positive amounts are income; negative amounts are expenses
-        if amount > 0:
-            d["income"] += amount
-        elif amount < 0:
-            d["expenses"] += amount
-        d["net"] += amount
-
-    # Format results into a list of day buckets
     data = []
-    for day in sorted(day_map.keys()):
-        v = day_map[day]
+    for day in sorted(days):
+        v = days[day]
         data.append(
             {
-                "date": v["date"],
-                "income": {
-                    "source": str(round(v["income"], 2)),
-                    "parsedValue": round(v["income"], 2),
-                },
-                "expenses": {
-                    "source": str(round(v["expenses"], 2)),
-                    "parsedValue": round(v["expenses"], 2),
-                },
-                "net": {
-                    "source": str(round(v["net"], 2)),
-                    "parsedValue": round(v["net"], 2),
-                },
+                "date": day,
+                "income": money(v["income"]),
+                "expenses": money(v["expenses"]),
+                "net": money(v["net"]),
                 "transaction_count": v["transaction_count"],
+                "refunds": round(float(v["refunds"]), 2),
+                "transfer_in": round(float(v["transfer_in"]), 2),
+                "transfer_out": round(float(v["transfer_out"]), 2),
+                "debt_settlement": round(float(v["debt_settlement"]), 2),
+                "investment_movement": round(float(v["investment_movement"]), 2),
+                "unclassified_inflows": round(float(v["unclassified_inflows"]), 2),
+                "unclassified_outflows": round(float(v["unclassified_outflows"]), 2),
+                "transfer_count": v["transfer_count"],
+                "unclassified_count": v["unclassified_count"],
             }
         )
-
+    unclassified = sum(1 for f in flows if f.flow_kind == "unclassified")
+    coverage = {
+        "classified_count": len(flows) - unclassified,
+        "unclassified_count": unclassified,
+        "needs_review": unclassified > 0,
+        "basis": "economic_flow",
+    }
     logger.info("[daily_net] Returning %d day buckets", len(data))
     # Return a consistent payload for frontend consumption
-    return jsonify({"status": "success", "data": data}), 200
+    return jsonify({"status": "success", "data": data, "coverage": coverage}), 200
 
 
 @charts.route("/accounts-snapshot", methods=["GET"])
@@ -533,7 +509,9 @@ def accounts_snapshot():
             "account_id": acc.account_id,
             "name": acc.name,
             "institution_name": acc.institution_name,
-            "balance": float(normalize_account_balance(acc.balance, acc.type, account_id=acc.account_id)),
+            "balance": float(
+                normalize_account_balance(acc.balance, acc.type, account_id=acc.account_id, subtype=acc.subtype)
+            ),
             "type": acc.type,
             "subtype": acc.subtype,
         }

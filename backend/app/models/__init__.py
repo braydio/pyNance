@@ -17,7 +17,7 @@ from .account_models import (
 from .app_settings import LlmSettings
 
 # Institutions & linked accounts
-from .institution_models import Institution, PlaidAccount, PlaidItem, PlaidWebhookLog
+from .institution_models import Institution, PlaidAccount, PlaidItem
 from .investment_models import InvestmentHolding, InvestmentTransaction, Security
 
 # Mixins
@@ -31,6 +31,8 @@ from .transaction_models import (
     Category,
     PlaidSourceEvent,
     PlaidTransactionMeta,
+    RecurringStream,
+    RecurringStreamEvidence,
     RecurringTransaction,
     Tag,
     Transaction,
@@ -46,7 +48,6 @@ __all__ = [
     "Institution",
     "PlaidAccount",
     "PlaidItem",
-    "PlaidWebhookLog",
     # Accounts
     "Account",
     "AccountGroup",
@@ -61,6 +62,8 @@ __all__ = [
     "Transaction",
     "transaction_tags",
     "RecurringTransaction",
+    "RecurringStream",
+    "RecurringStreamEvidence",
     "TransactionRule",
     "PlaidTransactionMeta",
     "PlaidSourceEvent",

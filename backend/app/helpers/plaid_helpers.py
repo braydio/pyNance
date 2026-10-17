@@ -26,7 +26,7 @@ from plaid.model.products import Products
 from plaid.model.transactions_get_request import TransactionsGetRequest
 from plaid.model.transactions_get_request_options import TransactionsGetRequestOptions
 
-from app.config import BACKEND_PUBLIC_URL, FILES, PLAID_CLIENT_NAME, PLAID_REDIRECT_URI, logger, plaid_client
+from app.config import FILES, PLAID_CLIENT_NAME, PLAID_REDIRECT_URI, logger, plaid_client
 from app.extensions import db
 from app.models import Category
 from app.sql.forecast_logic import update_account_history
@@ -225,12 +225,6 @@ def generate_link_token(user_id: str, products=None):
         product_enums = [Products(p) for p in products]
         country_enum = [CountryCode("US")]
 
-        webhook_url = None
-        if BACKEND_PUBLIC_URL:
-            # Ensure no trailing slash
-            base = str(BACKEND_PUBLIC_URL).rstrip("/")
-            webhook_url = f"{base}/api/webhooks/plaid"
-
         request_kwargs = dict(
             user=LinkTokenCreateRequestUser(client_user_id=user_id),
             client_name=PLAID_CLIENT_NAME,
@@ -238,9 +232,6 @@ def generate_link_token(user_id: str, products=None):
             language="en",
             country_codes=country_enum,
         )
-        # Only include webhook when configured; Plaid rejects None
-        if webhook_url:
-            request_kwargs["webhook"] = webhook_url
         if PLAID_REDIRECT_URI:
             request_kwargs["redirect_uri"] = PLAID_REDIRECT_URI
 
@@ -260,11 +251,6 @@ def generate_update_link_token(user_id: str, access_token: str):
     logger.info("Generating Plaid update link token for user %s", user_id)
     try:
         country_enum = [CountryCode("US")]
-        webhook_url = None
-        if BACKEND_PUBLIC_URL:
-            base = str(BACKEND_PUBLIC_URL).rstrip("/")
-            webhook_url = f"{base}/api/webhooks/plaid"
-
         request_kwargs = dict(
             user=LinkTokenCreateRequestUser(client_user_id=str(user_id)),
             client_name=PLAID_CLIENT_NAME,
@@ -272,8 +258,6 @@ def generate_update_link_token(user_id: str, access_token: str):
             country_codes=country_enum,
             access_token=access_token,
         )
-        if webhook_url:
-            request_kwargs["webhook"] = webhook_url
         if PLAID_REDIRECT_URI:
             request_kwargs["redirect_uri"] = PLAID_REDIRECT_URI
 

@@ -65,7 +65,9 @@ def get_or_compute_account_history(
             if cached_history:
                 return cached_history
 
-        current_balance = normalize_account_balance(account.balance, account.type, account_id=account.account_id)
+        current_balance = normalize_account_balance(
+            account.balance, account.type, account_id=account.account_id, subtype=account.subtype
+        )
         fresh_history = compute_fresh_history(
             account_id,
             current_balance,

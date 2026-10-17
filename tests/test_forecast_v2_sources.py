@@ -209,12 +209,12 @@ def test_saved_recurring_rule_with_unsupported_cadence_is_reported_not_guessed()
         "rule_id": "recurring:9",
         "account_id": "chk",
         "amount": -80,
-        "cadence": "yearly",
+        "cadence": "every_other_tuesday",
         "anchor_date": "2026-12-01",
     }
     result = run(groceries(), recurring_rules=[rule])
     stream = next(s for s in result["streams"] if s["stream_id"] == "recurring:9")
-    assert stream["status"] == "unsupported" and "yearly" in stream["reason"]
+    assert stream["status"] == "unsupported" and "every_other_tuesday" in stream["reason"]
     assert result["scheduled_events"] == []
 
 

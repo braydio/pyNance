@@ -53,9 +53,16 @@ def history_loaders(
     balance is the latest snapshot **on or before** the cutoff plus the same transactions (the
     forecast pipeline itself drops anything after the cutoff). ``load_truth(day)`` is the cash total on
     exactly that day, or ``None`` unless every cash account has a snapshot that day.
+
+    Units: ``transactions`` must already be canonical account deltas (``+`` inflow / ``-`` outflow,
+    as produced by ``app.services.transaction_semantics`` at the loader boundary). Inputs and realized
+    rows share these units, so ``_match_realized`` compares signs directly and never negates again.
+    Transactions on accounts outside ``accounts`` are ignored (account scope), and realized rows are
+    limited to ``cutoff < date <= end`` (no look-ahead).
     """
     account_list = [dict(a) if isinstance(a, Mapping) else dict(vars(a)) for a in accounts]
-    tx_list = list(transactions)
+    scoped_ids = {str(a["account_id"]) for a in account_list}
+    tx_list = [t for t in transactions if str(_read(t, "account_id")) in scoped_ids]
     snaps: dict[str, dict[date, Decimal]] = {}
     for snap in snapshots:
         snaps.setdefault(str(_read(snap, "account_id")), {})[_to_date(_read(snap, "date"))] = _to_decimal(

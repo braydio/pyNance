@@ -59,25 +59,11 @@ Experimental financial planning features including:
 
 ---
 
-# Sync & Webhooks
+# Sync
 
 ## Transaction Sync
 
 Plaid transaction ingestion uses delta-based synchronization with persistent cursors.
-
-### Webhook Endpoint
-
-```text
-POST /api/webhooks/plaid
-```
-
-Handles:
-
-```text
-TRANSACTIONS:SYNC_UPDATES_AVAILABLE
-```
-
-and triggers targeted account refreshes.
 
 ### Manual Sync
 
@@ -86,15 +72,6 @@ POST /api/plaid/transactions/sync
 ```
 
 exists for targeted/manual refresh workflows.
-
-## Investment Webhooks
-
-Supported webhook events:
-
-| Event | Behavior |
-|---|---|
-| `INVESTMENTS_TRANSACTIONS` | Refresh investment transactions |
-| `HOLDINGS` | Refresh holdings and securities |
 
 ## Raw Payload Storage
 
@@ -108,78 +85,6 @@ See:
 
 ```text
 docs/RAW_PAYLOAD_STORAGE.md
-```
-
----
-
-# Plaid Webhook Configuration
-
-Webhook URL:
-
-```text
-/api/webhooks/plaid
-```
-
-## New Plaid Items
-
-Set:
-
-```env
-BACKEND_PUBLIC_URL=https://your-public-url
-```
-
-inside:
-
-```text
-backend/.env
-```
-
-When using a Cloudflare Worker or reverse proxy, point this variable to the externally accessible endpoint.
-
-Generated Link tokens automatically include:
-
-```text
-<BACKEND_PUBLIC_URL>/api/webhooks/plaid
-```
-
-After updating `BACKEND_PUBLIC_URL`, regenerate Plaid Link tokens so Plaid registers the new webhook URL.
-
----
-
-## Existing Plaid Items
-
-Update webhook URLs manually:
-
-```bash
-curl -X POST \
-  -H 'Content-Type: application/json' \
-  -d '{"item_id":"<PLAID_ITEM_ID>"}' \
-  <BACKEND_PUBLIC_URL>/api/plaid/webhook/update
-```
-
-You may also provide:
-
-```json
-{
-  "account_id": "<ACCOUNT_ID>"
-}
-```
-
-or override directly:
-
-```json
-{
-  "webhook_url": "https://.../api/webhooks/plaid"
-}
-```
-
-### Bulk Update
-
-```bash
-curl -X POST \
-  -H 'Content-Type: application/json' \
-  -d '{}' \
-  <BACKEND_PUBLIC_URL>/api/plaid/webhook/update_all
 ```
 
 ---

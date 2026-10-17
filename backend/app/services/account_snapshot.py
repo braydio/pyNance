@@ -132,7 +132,9 @@ def _default_snapshot_ids(accounts: Sequence[Account]) -> List[str]:
             continue
 
         balance_value = getattr(account, "balance", 0) or 0
-        normalized_balance = normalize_account_balance(balance_value, getattr(account, "type", "") or "")
+        normalized_balance = normalize_account_balance(
+            balance_value, getattr(account, "type", "") or "", subtype=getattr(account, "subtype", None)
+        )
         try:
             numeric_balance = float(normalized_balance)
         except (TypeError, ValueError):  # pragma: no cover - defensive
@@ -239,7 +241,9 @@ def _build_payload(
 
 
 def _serialize_account(account: Account) -> dict:
-    normalized_balance = normalize_account_balance(account.balance, account.type, account_id=account.account_id)
+    normalized_balance = normalize_account_balance(
+        account.balance, account.type, account_id=account.account_id, subtype=account.subtype
+    )
     last_refreshed = None
     plaid_account = getattr(account, "plaid_account", None)
 

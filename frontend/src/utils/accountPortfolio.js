@@ -15,7 +15,7 @@ export const GROUP_LABELS = {
   other: 'Other',
 }
 
-const CREDIT_ALIASES = new Set(['credit', 'credit card', 'credit_card', 'creditcard'])
+const CREDIT_ALIASES = new Set(['credit', 'credit card', 'creditcard'])
 const LOAN_ALIASES = new Set([
   'loan',
   'liability',
@@ -24,9 +24,10 @@ const LOAN_ALIASES = new Set([
   'student loan',
   'auto',
   'line of credit',
-  'line_of_credit',
   'home equity',
 ])
+// Bank-style subtypes that identify a spendable deposit account even under an investment-typed item.
+const BANK_SUBTYPES = new Set(['checking', 'savings', 'depository'])
 const DEPOSITORY_ALIASES = new Set([
   'depository',
   'checking',
@@ -36,7 +37,8 @@ const DEPOSITORY_ALIASES = new Set([
   'money market',
   'cd',
 ])
-const INVESTMENT_ALIASES = new Set(['investment', 'brokerage', '401k', 'ira', 'roth', 'retirement'])
+const INVESTMENT_PATTERN =
+  /\b(investment|brokerage|ira|roth|401\(?k\)?|403\(?b\)?|retirement|pension)\b/
 
 function norm(value) {
   return String(value ?? '')
@@ -50,6 +52,45 @@ function num(value) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+/** Lowercase and collapse separators so `credit_card`, `Credit-Card` and `credit card` compare equal. */
+function compact(value) {
+  return norm(value).replace(/[_-]+/g, ' ').replace(/\s+/g, ' ')
+}
+
+function looksInvestment(value) {
+  return INVESTMENT_PATTERN.test(compact(value))
+}
+
+/**
+ * Classify an account and say why. Explicit type/subtype wins over the legacy `is_investment` flag,
+ * because a provider can type a whole item as "investment" while each account's subtype says what it
+ * really is (for example a Robinhood "Credit card" or "Savings").
+ *
+ * Precedence: credit, loan, investment subtype, bank-style subtype (checking/savings), investment
+ * type, depository, then the `is_investment` flag, then other.
+ *
+ * @param {object} account Account row from the accounts API.
+ * @returns {{ group: 'depository'|'credit'|'loan'|'investment'|'other', reason: string }}
+ */
+function resolveClassification(account) {
+  const type = compact(account?.account_type ?? account?.type)
+  const subtype = compact(account?.subtype)
+  if ([subtype, type].some((value) => CREDIT_ALIASES.has(value))) {
+    return { group: 'credit', reason: 'explicit_credit' }
+  }
+  if ([subtype, type].some((value) => LOAN_ALIASES.has(value))) {
+    return { group: 'loan', reason: 'explicit_loan' }
+  }
+  if (looksInvestment(subtype)) return { group: 'investment', reason: 'investment_subtype' }
+  if (BANK_SUBTYPES.has(subtype)) return { group: 'depository', reason: 'bank_subtype' }
+  if (looksInvestment(type)) return { group: 'investment', reason: 'investment_type' }
+  if ([type, subtype].some((value) => DEPOSITORY_ALIASES.has(value))) {
+    return { group: 'depository', reason: 'depository_type' }
+  }
+  if (account?.is_investment) return { group: 'investment', reason: 'is_investment_flag' }
+  return { group: 'other', reason: 'unrecognized' }
+}
+
 /**
  * Classify an account into one of GROUPS (accepts lowercase provider types).
  *
@@ -57,22 +98,46 @@ function num(value) {
  * @returns {'depository'|'credit'|'loan'|'investment'|'other'} Portfolio group.
  */
 export function classifyAccount(account) {
-  if (account?.is_investment) return 'investment'
-  const type = norm(account?.account_type ?? account?.type)
-  const subtype = norm(account?.subtype)
-  for (const value of [type, subtype]) {
-    if (CREDIT_ALIASES.has(value)) return 'credit'
-  }
-  for (const value of [type, subtype]) {
-    if (LOAN_ALIASES.has(value)) return 'loan'
-  }
-  for (const value of [type, subtype]) {
-    if (INVESTMENT_ALIASES.has(value)) return 'investment'
-  }
-  for (const value of [type, subtype]) {
-    if (DEPOSITORY_ALIASES.has(value)) return 'depository'
-  }
-  return 'other'
+  return resolveClassification(account).group
+}
+
+/**
+ * Report when the legacy `is_investment` flag disagrees with the explicit type/subtype, so the
+ * ledger can show the right group while diagnostics still record the mismatch.
+ *
+ * @param {object} account Account row.
+ * @returns {{ flag: 'is_investment', classified: string, reason: string } | null} Conflict or null.
+ */
+export function classificationConflict(account) {
+  if (!account?.is_investment) return null
+  const { group, reason } = resolveClassification(account)
+  if (group === 'investment' || group === 'other') return null
+  return { flag: 'is_investment', classified: group, reason }
+}
+
+const GROUP_SINGULAR = {
+  depository: 'Deposit account',
+  credit: 'Credit card',
+  loan: 'Loan',
+  investment: 'Investment account',
+  other: 'Account',
+}
+
+/**
+ * Human label for an account's type, consistent with its portfolio group: the provider subtype
+ * when it fits the group (Checking, Savings, Brokerage, Ira), else the group's singular name.
+ *
+ * @param {object} account Account row.
+ * @returns {string} Label such as `Credit card`, `Savings` or `Roth`.
+ */
+export function accountTypeLabel(account) {
+  const group = classifyAccount(account)
+  const subtype = String(account?.subtype ?? '').trim()
+  if (!subtype) return GROUP_SINGULAR[group]
+  const fits = classifyAccount({ type: account?.type, subtype }) === group
+  if (!fits) return GROUP_SINGULAR[group]
+  if (group === 'investment' && /^ira$/i.test(subtype)) return 'IRA'
+  return subtype.charAt(0).toUpperCase() + subtype.slice(1).toLowerCase()
 }
 
 export function isLiabilityGroup(group) {
@@ -194,10 +259,17 @@ export function portfolioTotals(accounts = [], { includeHidden = false } = {}) {
   })
 
   const money = (value) => (mixedCurrency ? null : value)
+  const unknownBalances = included.filter((account) => accountBalance(account) === null).length
+  const hiddenCount = accounts.filter((account) => account?.is_hidden).length
   return {
     accountCount: included.length,
+    linkedCount: accounts.length,
+    // Totals leave out hidden accounts, so they describe the visible accounts only.
+    partial: !includeHidden && hiddenCount > 0,
+    unknownBalances,
+    classificationConflicts: included.filter((account) => classificationConflict(account)).length,
     hiddenIncluded: includeHidden,
-    hiddenCount: accounts.filter((account) => account?.is_hidden).length,
+    hiddenCount,
     currency: currencies.size === 1 ? [...currencies][0] : currencies.size ? null : 'USD',
     mixedCurrency,
     assets: money(assets),

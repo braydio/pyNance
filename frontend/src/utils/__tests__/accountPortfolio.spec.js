@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   aprInfo,
+  classificationConflict,
   classifyAccount,
   creditUtilization,
   filterPortfolioAccounts,
@@ -37,12 +38,41 @@ describe('classifyAccount', () => {
     [{ type: 'credit_card' }, 'credit'],
     [{ type: 'loan' }, 'loan'],
     [{ type: 'brokerage', is_investment: false }, 'investment'],
-    [{ type: 'depository', is_investment: true }, 'investment'],
+    // Explicit type/subtype wins over the legacy is_investment flag.
+    [{ type: 'depository', is_investment: true }, 'depository'],
+    [{ type: 'investment', subtype: 'Credit card', is_investment: true }, 'credit'],
+    [{ type: 'investment', subtype: 'Savings', is_investment: true }, 'depository'],
+    [{ type: 'investment', subtype: 'Checking', is_investment: true }, 'depository'],
+    [{ type: 'investment', subtype: 'Brokerage', is_investment: true }, 'investment'],
+    [{ type: 'investment', subtype: 'Roth', is_investment: true }, 'investment'],
+    [{ type: 'investment', subtype: 'Ira', is_investment: true }, 'investment'],
+    [{ type: 'investment', subtype: 'cash management' }, 'investment'],
+    [{ type: 'depository', subtype: 'Checking', is_investment: false }, 'depository'],
+    [{ type: 'credit', subtype: 'Credit card' }, 'credit'],
+    [{ type: 'other', subtype: 'Roth IRA' }, 'investment'],
+    [{ type: 'other', is_investment: true }, 'investment'],
+    [{ type: 'loan', subtype: 'student', is_investment: true }, 'loan'],
     [{ account_type: 'investment' }, 'investment'],
     [{ type: 'weird' }, 'other'],
     [{}, 'other'],
   ])('%j -> %s', (account, expected) => {
     expect(classifyAccount(account)).toBe(expected)
+  })
+})
+
+describe('classificationConflict', () => {
+  it('reports a legacy flag that disagrees with the explicit type, and nothing else', () => {
+    expect(
+      classificationConflict({ type: 'investment', subtype: 'Credit card', is_investment: true }),
+    ).toEqual({ flag: 'is_investment', classified: 'credit', reason: 'explicit_credit' })
+    expect(classificationConflict({ type: 'depository', is_investment: true })).toMatchObject({
+      classified: 'depository',
+    })
+    expect(
+      classificationConflict({ type: 'investment', subtype: 'Ira', is_investment: true }),
+    ).toBe(null)
+    expect(classificationConflict({ type: 'credit', is_investment: false })).toBe(null)
+    expect(classificationConflict({})).toBe(null)
   })
 })
 

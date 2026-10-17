@@ -1,8 +1,9 @@
 from datetime import date, datetime, timedelta
+from decimal import Decimal
 
 from flask import Blueprint, jsonify, request
 from forecast.engine import compute_forecast
-from sqlalchemy import case, func
+from sqlalchemy import func
 
 from app.config import logger
 from app.extensions import db
@@ -13,6 +14,7 @@ from app.services.forecast_v2_service import (
     ForecastV2RequestError,
     compute_v2_forecast,
 )
+from app.services.transaction_semantics import account_bucket, canonical_account_delta
 
 forecast = Blueprint("forecast", __name__)
 LOOKBACK_DAYS = 90
@@ -245,46 +247,64 @@ def _load_latest_snapshots(
     return snapshots
 
 
+def _canonical_delta(tx: Transaction) -> Decimal | None:
+    """Return the canonical account delta (``+`` inflow) for ``tx`` or ``None`` when unknown."""
+    provider = getattr(tx.provider, "value", tx.provider)
+    return canonical_account_delta(provider=provider, raw_amount=tx.amount)
+
+
 def _load_historical_aggregates(
     user_id: str,
     start_date: date,
     included_account_ids: list[str] | None = None,
     excluded_account_ids: list[str] | None = None,
 ) -> list[dict[str, object]]:
-    """Return daily inflow/outflow aggregates for the lookback window."""
+    """Return daily inflow/outflow aggregates for the lookback window.
+
+    Amounts are canonical account deltas (see ``transaction_semantics``), not the raw stored
+    sign. Scope: the caller's own non-hidden cash and liability accounts; pending, internal
+    transfer and unknown-direction rows are excluded.
+    """
     included_ids = included_account_ids or []
     excluded_ids = excluded_account_ids or []
 
     lookback_start = start_date - timedelta(days=LOOKBACK_DAYS)
-    date_expr = func.date(Transaction.date).label("date")
-    inflow_sum = func.sum(case((Transaction.amount > 0, Transaction.amount), else_=0)).label("inflow")
-    outflow_sum = func.sum(case((Transaction.amount < 0, func.abs(Transaction.amount)), else_=0)).label("outflow")
-
     query = (
-        db.session.query(date_expr, inflow_sum, outflow_sum)
+        db.session.query(Transaction, Account)
         .join(Account, Transaction.account_id == Account.account_id)
         .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
         .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
+        .filter((Transaction.pending.is_(False)) | (Transaction.pending.is_(None)))
         .filter(Transaction.date >= lookback_start)
         .filter(Transaction.date <= start_date)
     )
-    if user_id and not included_ids:
-        query = query.filter(
-            (Account.user_id == user_id) | (Transaction.user_id == user_id) | (Account.user_id.is_(None))
-        )
+    if user_id:
+        query = query.filter(Account.user_id == user_id)
     if included_ids:
         query = query.filter(Transaction.account_id.in_(included_ids))
     if excluded_ids:
         query = query.filter(~Transaction.account_id.in_(excluded_ids))
 
-    rows = query.group_by(date_expr).order_by(date_expr).all()
+    totals: dict[object, list[Decimal]] = {}
+    for tx, account in query.all():
+        if account_bucket(
+            {"type": account.type, "subtype": account.subtype, "is_investment": account.is_investment}
+        ) not in (
+            "cash",
+            "liability",
+        ):
+            continue
+        delta = _canonical_delta(tx)
+        if delta is None:
+            continue
+        day = tx.date.date() if isinstance(tx.date, datetime) else tx.date
+        bucket = totals.setdefault(day, [Decimal(0), Decimal(0)])
+        if delta > 0:
+            bucket[0] += delta
+        elif delta < 0:
+            bucket[1] += -delta
     return [
-        {
-            "date": row.date,
-            "inflow": float(row.inflow or 0),
-            "outflow": float(row.outflow or 0),
-        }
-        for row in rows
+        {"date": day, "inflow": float(values[0]), "outflow": float(values[1])} for day, values in sorted(totals.items())
     ]
 
 
@@ -535,8 +555,8 @@ def _auto_wage_adjustments(
 
     wage_rows: list[Transaction] = []
     for tx in query.order_by(Transaction.date.asc()).all():
-        amount = float(tx.amount or 0)
-        if amount <= 0:
+        delta = _canonical_delta(tx)
+        if delta is None or delta <= 0:
             continue
         if _looks_like_wage_income(tx):
             wage_rows.append(tx)
@@ -550,7 +570,7 @@ def _auto_wage_adjustments(
     if not observed_dates:
         return []
 
-    positive_amounts = [float(row.amount or 0) for row in wage_rows if float(row.amount or 0) > 0]
+    positive_amounts = [float(_canonical_delta(row)) for row in wage_rows]
     if not positive_amounts:
         return []
     avg_wage_amount = round(sum(positive_amounts) / len(positive_amounts), 2)
@@ -632,8 +652,8 @@ def _auto_rent_adjustments(
 
     rent_rows: list[Transaction] = []
     for tx in query.order_by(Transaction.date.asc()).all():
-        amount = float(tx.amount or 0)
-        if amount >= 0:
+        delta = _canonical_delta(tx)
+        if delta is None or delta >= 0:
             continue
         if _looks_like_rent_expense(tx):
             rent_rows.append(tx)
@@ -647,7 +667,7 @@ def _auto_rent_adjustments(
     if not observed_dates:
         return []
 
-    expense_amounts = [abs(float(row.amount or 0)) for row in rent_rows if float(row.amount or 0) < 0]
+    expense_amounts = [abs(float(_canonical_delta(row))) for row in rent_rows]
     if not expense_amounts:
         return []
     avg_rent_amount = round(sum(expense_amounts) / len(expense_amounts), 2)

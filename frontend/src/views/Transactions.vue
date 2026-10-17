@@ -10,7 +10,19 @@
     </template>
     <!-- Activity Tab -->
     <template #Activity>
-      <!-- One compact toolbar: search + filters + import + export -->
+      <!-- Summary metrics and prioritized review queue (server-side, over ALL matching rows) -->
+      <Card class="p-4 md:p-6 ui-radius-3 card-surface">
+        <TransactionInsightsPanel
+          :insights="insights"
+          :loading="insightsLoading"
+          :error="insightsError"
+          :scope-label="insightsScopeLabel"
+          @apply="applyReviewItem"
+          @refresh="loadInsights(true)"
+        />
+      </Card>
+
+      <!-- One compact toolbar: search + period + account + sort + filters + import -->
       <div id="activity-toolbar" class="activity-toolbar surface-quiet p-3 md:p-4">
         <div class="activity-toolbar__row">
           <label class="activity-toolbar__search" for="transactions-search">
@@ -24,6 +36,23 @@
               class="input ui-control-input w-full pl-9 pr-3 py-2 search-input"
             />
           </label>
+          <label class="activity-toolbar__select">
+            <span class="sr-only">Period</span>
+            <select v-model="periodPreset" class="input" data-testid="period-preset">
+              <option v-for="option in periodOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </label>
+          <AccountFilter v-model="accountFilter" />
+          <label class="activity-toolbar__select">
+            <span class="sr-only">Sort by</span>
+            <select v-model="sortOption" class="input" data-testid="sort-select">
+              <option v-for="option in sortOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </label>
           <button
             type="button"
             class="btn btn-outline activity-toolbar__filters-toggle"
@@ -32,7 +61,9 @@
             :aria-expanded="filtersOpen"
             @click="filtersOpen = !filtersOpen"
           >
-            Filters<span v-if="activeFilterChips.length"> ({{ activeFilterChips.length }})</span>
+            Advanced filters<span v-if="activeFilterChips.length">
+              ({{ activeFilterChips.length }})</span
+            >
           </button>
           <button
             v-if="hasActiveFilters || searchQuery"
@@ -67,7 +98,6 @@
             @update:startDate="startDate = $event"
             @update:endDate="endDate = $event"
           />
-          <AccountFilter v-model="accountFilter" />
           <TypeSelector v-model="txType" />
         </div>
         <div v-if="importOpen" id="activity-import" class="activity-toolbar__import">
@@ -81,7 +111,7 @@
           <h2 class="section-title">
             Transactions
             <span v-if="!isLoading && !error" class="result-count" data-testid="result-count">
-              · {{ filterSummary.transactionCount }} shown
+              · {{ resultCountLabel }}
             </span>
           </h2>
           <button
@@ -98,8 +128,11 @@
           class="filter-summary"
           data-testid="filter-summary"
         >
-          <span class="filter-summary__total">
-            Total {{ formatCurrency(filterSummary.totalAmount) }}
+          <span
+            class="filter-summary__total"
+            :title="'Signed total of the rows on this page only (money out is negative).'"
+          >
+            This page, signed total {{ formatCurrency(filterSummary.totalAmount) }}
           </span>
           <ul class="filter-summary__chips" aria-label="Active filters">
             <li v-for="chip in activeFilterChips" :key="chip" class="pill pill-subtle">
@@ -151,11 +184,11 @@
     <template #Recurring>
       <Card class="p-6 space-y-4 ui-radius-3 card-surface">
         <h2 class="text-2xl font-bold text-[var(--color-text-light)]">Recurring Transactions</h2>
-        <RecurringTransactionSection ref="recurringFormRef" provider="plaid" />
+        <RecurringTransactionSection ref="recurringFormRef" />
       </Card>
     </template>
 
-    <!-- Scanner Tab -->
+    <!-- Transfer Review Tab (slot id stays `Scanner`) -->
     <template #Scanner>
       <Card class="p-6 ui-radius-3 card-surface">
         <InternalTransferScanner />
@@ -168,10 +201,12 @@
 // View for listing and managing transactions with tabbed layout and paging.
 // Editing is restricted to date, amount, description, category and merchant name;
 // account identifiers and provider metadata remain read-only.
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTransactions } from '@/composables/useTransactions.js'
 import { fetchTransactions as fetchTransactionsApi } from '@/api/transactions'
+import api from '@/services/api'
+import { formatDateInput } from '@/composables/useDateRange.js'
 import UpdateTransactionsTable from '@/components/tables/UpdateTransactionsTable.vue'
 import RecurringTransactionSection from '@/components/recurring/RecurringTransactionSection.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
@@ -179,6 +214,7 @@ import Card from '@/components/ui/Card.vue'
 import { CreditCard, Search } from 'lucide-vue-next'
 import TabbedPageLayout from '@/components/layout/TabbedPageLayout.vue'
 import InternalTransferScanner from '@/components/transactions/InternalTransferScanner.vue'
+import TransactionInsightsPanel from '@/components/transactions/TransactionInsightsPanel.vue'
 import DateRangeSelector from '@/components/DateRangeSelector.vue'
 import AccountFilter from '@/components/AccountFilter.vue'
 import TypeSelector from '@/components/TypeSelector.vue'
@@ -196,6 +232,7 @@ export default {
     Card,
     TabbedPageLayout,
     InternalTransferScanner,
+    TransactionInsightsPanel,
     DateRangeSelector,
     AccountFilter,
     TypeSelector,
@@ -269,12 +306,76 @@ export default {
     syncQueryParam(endDate, ['end_date'])
     syncQueryParam(txType, ['tx_type', 'type'])
 
+    /** Server-side ordering across ALL matching rows (not just the loaded page). */
+    const sortOptions = [
+      { value: 'date_desc', label: 'Newest' },
+      { value: 'date_asc', label: 'Oldest' },
+      { value: 'spend_desc', label: 'Largest spend' },
+      { value: 'amount_desc', label: 'Amount' },
+      { value: 'merchant_asc', label: 'Merchant' },
+      { value: 'category_asc', label: 'Category' },
+    ]
+    const sortOption = ref('date_desc')
+
+    const periodOptions = [
+      { value: '', label: 'All time' },
+      { value: '30d', label: 'Last 30 days' },
+      { value: 'mtd', label: 'This month' },
+      { value: '90d', label: 'Last 90 days' },
+      { value: 'ytd', label: 'Year to date' },
+      { value: 'custom', label: 'Custom dates' },
+    ]
+
+    /** Inclusive local-calendar dates for a preset. */
+    function rangeForPreset(preset, now = new Date()) {
+      const end = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      const shift = (days) => new Date(end.getFullYear(), end.getMonth(), end.getDate() - days)
+      if (preset === '30d') return { start: formatDateInput(shift(29)), end: formatDateInput(end) }
+      if (preset === '90d') return { start: formatDateInput(shift(89)), end: formatDateInput(end) }
+      if (preset === 'mtd') {
+        return {
+          start: formatDateInput(new Date(end.getFullYear(), end.getMonth(), 1)),
+          end: formatDateInput(end),
+        }
+      }
+      if (preset === 'ytd') {
+        return {
+          start: formatDateInput(new Date(end.getFullYear(), 0, 1)),
+          end: formatDateInput(end),
+        }
+      }
+      return { start: '', end: '' }
+    }
+
+    /** The preset shown in the toolbar follows the actual dates, so manual dates read "Custom". */
+    const periodPreset = computed({
+      get() {
+        if (!startDate.value && !endDate.value) return ''
+        for (const option of periodOptions) {
+          if (!option.value || option.value === 'custom') continue
+          const range = rangeForPreset(option.value)
+          if (range.start === startDate.value && range.end === endDate.value) return option.value
+        }
+        return 'custom'
+      },
+      set(value) {
+        if (value === 'custom') {
+          filtersOpen.value = true
+          return
+        }
+        const range = rangeForPreset(value)
+        startDate.value = range.start
+        endDate.value = range.end
+      },
+    })
+
     const filters = computed(() => {
       const f = {}
       if (startDate.value) f.start_date = startDate.value
       if (endDate.value) f.end_date = endDate.value
       if (accountFilter.value) f.account_ids = [accountFilter.value]
       if (txType.value) f.tx_type = txType.value
+      if (sortOption.value && sortOption.value !== 'date_desc') f.sort = sortOption.value
       return f
     })
 
@@ -296,6 +397,17 @@ export default {
       targetTransactionIdRef: targetTransactionId,
     })
 
+    // A server-side order is authoritative: switch the loaded-page client sort off so it cannot
+    // reshuffle rows by date. Back to "Newest" restores the default client sort.
+    watch(sortOption, (value) => {
+      if (value === 'date_desc') {
+        sortKey.value = 'date'
+        sortOrder.value = -1
+      } else {
+        sortKey.value = null
+      }
+    })
+
     /**
      * Provide a stable, human-readable message for retryable errors.
      *
@@ -306,7 +418,7 @@ export default {
     )
 
     const recurringFormRef = ref(null)
-    const tabs = ['Activity', 'Recurring', 'Scanner']
+    const tabs = ['Activity', 'Recurring', { label: 'Transfer Review', slot: 'Scanner' }]
     const activeTab = ref('Activity')
 
     /**
@@ -334,10 +446,25 @@ export default {
      *
      * @returns {{transactionCount: number, totalAmount: number, uniqueCounts: Record<string, number>}}
      */
+    /** Rows actually shown on the current page (everything loaded while a search is active). */
+    const pageRows = computed(() => {
+      const all = Array.isArray(filteredTransactions.value) ? filteredTransactions.value : []
+      if (searchQuery.value.trim()) return all
+      const start = (currentPage.value - 1) * initialPageSize
+      return all.slice(start, start + initialPageSize)
+    })
+
+    /** Count label that never presents a page as the whole matching set. */
+    const resultCountLabel = computed(() => {
+      if (searchQuery.value.trim()) {
+        return `${pageRows.value.length} found in loaded pages`
+      }
+      const matching = Number(totalCount.value || 0).toLocaleString('en-US')
+      return `${pageRows.value.length} on this page · ${matching} matching`
+    })
+
     const filterSummary = computed(() => {
-      const transactions = Array.isArray(filteredTransactions.value)
-        ? filteredTransactions.value
-        : []
+      const transactions = pageRows.value
       const uniqueCategories = new Set()
       const uniqueMerchants = new Set()
       const uniqueAccounts = new Set()
@@ -389,6 +516,74 @@ export default {
       return chips
     })
 
+    // --- Insights: server-side summaries and review queue over ALL matching rows --------------------
+    const insights = ref(null)
+    const insightsLoading = ref(false)
+    const insightsError = ref('')
+    let insightsTimer = null
+
+    /** Plain-language scope for the summary, so it is never mistaken for the table's range. */
+    const insightsScopeLabel = computed(() => {
+      const range =
+        startDate.value || endDate.value
+          ? `${startDate.value || '…'} – ${endDate.value || 'today'}`
+          : 'Last 30 days (pick a period to change)'
+      return accountFilter.value ? `${range} · selected account` : range
+    })
+
+    async function loadInsights(refresh = false) {
+      insightsLoading.value = true
+      insightsError.value = ''
+      try {
+        const res = await api.getTransactionInsights({
+          start_date: startDate.value || undefined,
+          end_date: endDate.value || undefined,
+          account_ids: accountFilter.value ? [accountFilter.value] : undefined,
+          refresh: refresh ? true : undefined,
+        })
+        insights.value = res?.data ?? null
+      } catch (err) {
+        console.error('Failed to load transaction insights', err)
+        const data = err?.response?.data
+        insightsError.value =
+          data?.code === 'owner_not_configured'
+            ? 'The summary is not set up on this server yet (PYNANCE_OWNER_USER_ID is missing).'
+            : data?.message || 'Unable to load the summary.'
+      } finally {
+        insightsLoading.value = false
+      }
+    }
+
+    watch([startDate, endDate, accountFilter], () => {
+      clearTimeout(insightsTimer)
+      insightsTimer = setTimeout(() => loadInsights(), 300)
+    })
+
+    /**
+     * Apply a review-queue item: open Transfer Review, or narrow the explorer to the evidence.
+     * Never edits a transaction.
+     *
+     * @param {{kind: string, filter?: Record<string, unknown>, transaction_ids?: string[]}} item
+     */
+    function applyReviewItem(item) {
+      if (item.kind === 'transfer_candidate') {
+        activeTab.value = 'Scanner'
+        return
+      }
+      const filter = item.filter || {}
+      if (filter.start_date || filter.end_date) {
+        startDate.value = String(filter.start_date || '')
+        endDate.value = String(filter.end_date || '')
+      }
+      if (filter.search) searchQuery.value = String(filter.search)
+      else if (filter.uncategorized) searchQuery.value = 'Uncategorized'
+      else if (filter.category_contains) searchQuery.value = String(filter.category_contains)
+      else searchQuery.value = item.transaction_ids?.[0] || ''
+      nextTick(() =>
+        document.getElementById('activity-toolbar')?.scrollIntoView?.({ block: 'start' }),
+      )
+    }
+
     /** Reset all top-level filters (search is cleared separately by the user). */
     /** Reset the search box together with every filter (toolbar "Clear"). */
     function clearSearchAndFilters() {
@@ -403,14 +598,26 @@ export default {
       txType.value = ''
     }
 
-    function prefillRecurringFromTransaction(tx) {
-      if (recurringFormRef.value) {
-        recurringFormRef.value.transactionId = tx.transaction_id || ''
-        recurringFormRef.value.description = tx.description || ''
-        recurringFormRef.value.amount = parseFloat(tx.amount) || 0
-        recurringFormRef.value.notes = tx.notes || ''
-        recurringFormRef.value.showForm = true
+    /**
+     * Open the Recurring tab and pre-fill its form from a transaction row through the child's
+     * explicit `openFromTransaction` API. If the tab has not mounted yet, the call is made as soon
+     * as the child ref appears.
+     *
+     * @param {Record<string, unknown>} tx
+     */
+    async function prefillRecurringFromTransaction(tx) {
+      activeTab.value = 'Recurring'
+      await nextTick()
+      if (recurringFormRef.value?.openFromTransaction) {
+        recurringFormRef.value.openFromTransaction(tx)
+        return
       }
+      const stop = watch(recurringFormRef, (child) => {
+        if (child?.openFromTransaction) {
+          child.openFromTransaction(tx)
+          stop()
+        }
+      })
     }
 
     /**
@@ -527,6 +734,7 @@ export default {
       if (txidParam) {
         searchQuery.value = txidParam
       }
+      loadInsights()
     })
 
     return {
@@ -564,6 +772,17 @@ export default {
       clearSearchAndFilters,
       filterSummary,
       formatCurrency,
+      sortOptions,
+      sortOption,
+      periodOptions,
+      periodPreset,
+      resultCountLabel,
+      insights,
+      insightsLoading,
+      insightsError,
+      insightsScopeLabel,
+      loadInsights,
+      applyReviewItem,
     }
   },
 }
@@ -625,6 +844,13 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+/* Compact selects share one row with the search box instead of each taking a full line. */
+.activity-toolbar__row :deep(select) {
+  width: auto;
+  min-width: 9rem;
+  max-width: 16rem;
 }
 
 .activity-toolbar__row {
