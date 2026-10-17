@@ -11,6 +11,7 @@ import logging
 from .constants import DATABASE_NAME, DB_IDENTITY, FILES, SQLALCHEMY_DATABASE_URI, SQLALCHEMY_ENGINE_OPTIONS
 from .environment import (
     ARBIT_EXPORTER_URL,
+    BACKEND_PUBLIC_URL,
     CLIENT_NAME,
     DB_SCHEMA,
     ENABLE_ARBIT_DASHBOARD,
@@ -23,6 +24,7 @@ from .environment import (
     PLAID_ENV,
     PLAID_REDIRECT_URI,
     PLAID_SECRET,
+    PLAID_WEBHOOK_SECRET,
     PRODUCTS,
 )
 from .log_setup import LOG_LEVEL, setup_logger
@@ -45,12 +47,14 @@ __all__ = [
     "CLIENT_NAME",
     "ENABLE_ARBIT_DASHBOARD",
     "ARBIT_EXPORTER_URL",
+    "BACKEND_PUBLIC_URL",
     # plaid
     "PLAID_CLIENT_NAME",
     "PLAID_CLIENT_ID",
     "PLAID_SECRET",
     "PLAID_ENV",
     "PLAID_REDIRECT_URI",
+    "PLAID_WEBHOOK_SECRET",
     "PLAID_BASE_URL",
     "plaid_client",
     "PRODUCTS",

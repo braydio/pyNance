@@ -7,6 +7,7 @@ os.environ.setdefault("SQLALCHEMY_DATABASE_URI", "sqlite:///:memory:")
 import pytest
 from app.extensions import db
 from app.models import Account, PlaidAccount, PlaidItem
+from app.routes import plaid_webhook
 from app.routes.accounts import _append_refresh_error
 from app.routes.accounts import accounts as accounts_blueprint
 from app.sql.account_logic import (
@@ -85,6 +86,36 @@ def test_non_reauth_item_error_is_not_cleared(database):
     item.last_error = '{"status":"error","code":"INSTITUTION_DOWN"}'
     mark_refresh_success(links[0], commit=True)
     assert "INSTITUTION_DOWN" in item.last_error
+
+
+def test_item_webhooks_set_and_clear_reauth_without_faking_refresh(database, monkeypatch):
+    app, item, _links = database
+    prior_refresh = item.last_refreshed
+    monkeypatch.setattr(plaid_webhook, "_verify_plaid_signature", lambda _request: (True, None))
+    app.register_blueprint(plaid_webhook.plaid_webhooks, url_prefix="/webhooks")
+    with app.test_client() as client:
+        response = client.post(
+            "/webhooks/plaid",
+            json={
+                "webhook_type": "ITEM",
+                "webhook_code": "ERROR",
+                "item_id": item.item_id,
+                "error": {
+                    "error_code": "ITEM_LOGIN_REQUIRED",
+                    "error_message": "Credentials changed",
+                    "error_code_reason": "USER_ACTION_REQUIRED",
+                },
+            },
+        )
+        assert response.status_code == 200
+        assert serialized_plaid_item_connection_status(item)["requires_reauth"] is True
+        repaired = client.post(
+            "/webhooks/plaid",
+            json={"webhook_type": "ITEM", "webhook_code": "LOGIN_REPAIRED", "item_id": item.item_id},
+        )
+    assert repaired.status_code == 200
+    assert serialized_plaid_item_connection_status(item)["state"] == "healthy"
+    assert item.last_refreshed == prior_refresh
 
 
 def test_account_endpoints_expose_item_connection_status_without_secrets(database):

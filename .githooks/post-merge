@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# Runs once after a merge or pull to keep the Chroma index in sync
+
+echo "[CHROMA] Running index update after merge..."
+python scripts/chroma_index.py

@@ -17,7 +17,7 @@ from .account_models import (
 from .app_settings import LlmSettings
 
 # Institutions & linked accounts
-from .institution_models import Institution, PlaidAccount, PlaidItem
+from .institution_models import Institution, PlaidAccount, PlaidItem, PlaidWebhookLog
 from .investment_models import InvestmentHolding, InvestmentTransaction, Security
 
 # Mixins
@@ -46,6 +46,7 @@ __all__ = [
     "Institution",
     "PlaidAccount",
     "PlaidItem",
+    "PlaidWebhookLog",
     # Accounts
     "Account",
     "AccountGroup",

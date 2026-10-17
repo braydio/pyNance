@@ -1,0 +1,55 @@
+diff --git a/frontend/src/components/charts/DailyNetChart.vue b/frontend/src/components/charts/DailyNetChart.vue
+index 20d79f3..flatavg001 100644
+--- a/frontend/src/components/charts/DailyNetChart.vue
++++ b/frontend/src/components/charts/DailyNetChart.vue
+@@ -1150,12 +1150,37 @@ async function renderChart() {
+   if (showAvgIncome.value)
+-    datasets.push({
+-      type: 'line',
+-      label: 'Avg Income',
+-      data: labels.map(() => avgIncome)
+-    })
+-
+-  if (showAvgExpenses.value)
+-    datasets.push({
+-      type: 'line',
+-      label: 'Avg Expenses',
+-      data: labels.map(() => avgExpenses)
+-    })
++  // --- Flat average income/expenses lines ---
++  if (showAvgIncome.value) {
++    const avgIncome =
++      income.length > 0
++        ? income.reduce((a, b) => a + b, 0) / income.length
++        : 0
++    datasets.push({
++      type: 'line',
++      label: 'Avg Income',
++      data: Array(labels.length).fill(avgIncome),
++      borderColor:
++        getComputedStyle(document.documentElement).getPropertyValue('--color-accent-cyan') ||
++        '#4ade80',
++      borderWidth: 2,
++      pointRadius: 0,
++      fill: false,
++    })
++  }
++
++  if (showAvgExpenses.value) {
++    const avgExpenses =
++      expenses.length > 0
++        ? expenses.reduce((a, b) => a + b, 0) / expenses.length
++        : 0
++    datasets.push({
++      type: 'line',
++      label: 'Avg Expenses',
++      data: Array(labels.length).fill(avgExpenses),
++      borderColor:
++        getComputedStyle(document.documentElement).getPropertyValue('--color-accent-red') ||
++        '#ef4444',
++      borderWidth: 2,
++      pointRadius: 0,
++      fill: false,
++    })
++  }
++  // --- end patch ---

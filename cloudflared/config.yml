@@ -1,0 +1,8 @@
+tunnel: plaid-braydio
+credentials-file: /home/braydenchaffee/Projects/pyNance/cloudflared/plaid-braydio.json
+
+ingress:
+  - hostname: plaid-braydio.duckdns.org
+    service: http://localhost:5000
+  - service: http_status:404
+
