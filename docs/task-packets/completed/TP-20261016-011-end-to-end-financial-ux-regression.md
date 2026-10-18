@@ -1,12 +1,12 @@
 # TP-20261016-011: Cross-Page Financial Truth and Interaction Regression Gate
 
 **Packet ID:** TP-20261016-011  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-16  
-**Last updated:** 2026-10-16  
+**Last updated:** 2026-10-18  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261016-011-end-to-end-financial-ux-regression.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261016-011-end-to-end-financial-ux-regression.md`  
 **Workstream size:** One targeted implementation packet  
 **Priority:** P1  
 **Depends on:** TP-20261016-001 through TP-20261016-010  
@@ -48,3 +48,10 @@ No unrelated page audit (Planning/Investments/Settings deferred until later user
 
 ## Implementation/handoff
 Read `AGENTS.md`, `docs/task-packets/README.md`, `INDEX.md`, `TRACKER.md`; validate only named symbols against latest main. Set In Progress in tracker before coding. Treat prerequisite packets as implemented, do not re-implement their features. Run focused tests then lint/build; commit only this workstream to main without force, mark Complete, move this packet to completed and update INDEX/TRACKER atomically. Report changed files, test output, fixture/behavior evidence, and deviations. If principal is not trusted, fail closed on new owner-scoped endpoints, not permissive fallback. Do not use Plaid Enrich/new billable APIs.
+
+## Completion report (2026-10-18)
+
+- Added `tests/test_financial_truth_gate.py` (5 pass: signs, one card expense, hidden exclusion, no invented income, idempotent recurring scans with ignores preserved, owner-scoped fail-closed `/scan-internal`), `frontend/cypress/e2e/financial-workflows-gate.cy.js` and `docs/frontend/FINANCIAL_WORKFLOWS_QA_2026-10-16.md`. Fixed the stale `ForecastChart.spec.ts` toggle expectation.
+- Pytest suites from the validation command pass per file except the pre-existing `test_internal_transfer_detection.py::test_detect_internal_transfer_without_description_match`. Vitest: 560 pass, 36 fail (30 + 1 known on `main`, 4 in `ChartRoutePage.spec.js`, a missing-router test setup). `npm run build` passes; lint has 2 errors in untouched files.
+- Deviation: the Cypress matrix is one new file rather than additions to the three named specs. **Cypress was not run** (binary not installed, no preview server), so all three routes are marked BLOCKED/unverified in the QA doc; no screenshots.
+- No product regressions were found, so no earlier-packet code was changed.

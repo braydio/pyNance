@@ -225,7 +225,8 @@ describe('ForecastChart', () => {
       props: baseProps,
     })
 
-    await wrapper.get('.toggle-button').trigger('click')
+    const oneYear = wrapper.findAll('.toggle-button').find((button) => button.text() === '1Y')
+    await oneYear!.trigger('click')
 
     expect(wrapper.emitted('update:viewType')).toEqual([['Year']])
   })
