@@ -1308,6 +1308,10 @@ def get_paginated_transactions(
                 "reporting_flow_kind": flow["flow_kind"],
                 "flow_confidence": flow["confidence"],
                 "flow_reason_codes": flow["reason_codes"],
+                # Signed cash effect on the row's account and the part of it that is economic
+                # (income/expense/refund only); both are ``None`` when the sign is ambiguous.
+                "signed_account_delta": _money_or_none(flow["signed_account_delta"]),
+                "economic_amount": _money_or_none(flow["economic_amount"]),
                 "isEditing": False,
                 "tags": _serialize_transaction_tags(txn),
                 "running_balance": (float(running_balance) if running_balance is not None else None),
@@ -1327,6 +1331,12 @@ def get_paginated_transactions(
         _set_cached_tx_page(cache_key, (serialized, total), meta)
 
     return serialized, total, meta
+
+
+def _money_or_none(value):
+    """Round a ``Decimal`` amount to a float with cents, keeping ``None``."""
+
+    return None if value is None else round(float(value), 2)
 
 
 _NEWEST_FIRST = ("date_desc",)

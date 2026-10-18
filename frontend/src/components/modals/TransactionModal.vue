@@ -76,7 +76,9 @@
           </div>
           <div class="flex flex-col items-center">
             <span class="text-[10px] tracking-widest text-[var(--color-text-muted)] uppercase mb-1"
-              >Income</span
+              >Income<span v-if="flowSummary.classified" class="normal-case tracking-normal">
+                (excl. transfers)</span
+              ></span
             >
             <span class="text-xl font-extrabold text-[var(--color-accent-green)] drop-shadow-sm">{{
               formatAmount(summary.income)
@@ -99,6 +101,24 @@
               {{ formatAmount(summary.net) }}
             </span>
           </div>
+        </div>
+        <!-- Cash movement that is not income or spending, kept visible but out of Net -->
+        <div
+          v-if="movementLines.length || notices.length"
+          class="px-8 py-2 text-xs text-[var(--color-text-muted)] border-b border-[var(--color-accent-purple)]/20"
+          data-testid="movement-summary"
+        >
+          <ul v-if="movementLines.length" class="flex flex-wrap justify-center gap-x-6 gap-y-1">
+            <li v-for="line in movementLines" :key="line">{{ line }}</li>
+          </ul>
+          <p
+            v-for="note in notices"
+            :key="note"
+            class="mt-1 text-center text-[var(--color-accent-yellow)]"
+            role="status"
+          >
+            {{ note }}
+          </p>
         </div>
         <!-- END SUMMARY BAR -->
         <div class="flex-1 min-h-0 p-6 overflow-y-auto">
@@ -123,6 +143,7 @@ import { useModalA11y } from '@/composables/useModalA11y'
 import { useRouter } from 'vue-router'
 import ModalTransactionsDisplay from '../tables/ModalTransactionsDisplay.vue'
 import { formatAmount } from '@/utils/format'
+import { disagreesWithChart, summarizeFlows } from '@/utils/flowSummary'
 
 /**
  * Modal dialog displaying a list of transactions with a summary bar and optional subtitle.
@@ -136,6 +157,10 @@ const props = defineProps({
   kind: { type: String, default: 'date' }, // 'date' | 'category' | 'merchant'
   showDateColumn: { type: Boolean, default: true },
   hideCategoryVisuals: { type: Boolean, default: true },
+  // Chart values for the same day ({income, expenses, net}); a disagreement is surfaced, never hidden.
+  reference: { type: Object, default: null },
+  // Server-provided caveat, e.g. only part of a very large day was loaded.
+  notice: { type: String, default: '' },
 })
 
 const dialogRef = ref(null)
@@ -181,7 +206,15 @@ const detailsHeader = computed(() => (props.kind === 'merchant' ? 'Description' 
 const primaryField = computed(() => (props.kind === 'merchant' ? 'description' : 'merchant_name'))
 
 // --- SUMMARY COMPUTATION ---
+const flowSummary = computed(() => summarizeFlows(props.transactions))
+
+// Income/Expense/Net use the backend's economic classification; feeds without one keep the legacy
+// sign split so category and merchant drill-downs behave as before.
 const summary = computed(() => {
+  if (flowSummary.value.classified) {
+    const { income, expense, net } = flowSummary.value
+    return { income, expense, net }
+  }
   let expense = 0
   let income = 0
   if (Array.isArray(props.transactions)) {
@@ -191,11 +224,42 @@ const summary = computed(() => {
       else income += amt
     })
   }
-  return {
-    expense,
-    income,
-    net: income + expense,
+  return { expense, income, net: income + expense }
+})
+
+const movementLines = computed(() => {
+  const f = flowSummary.value
+  if (!f.classified) return []
+  const lines = []
+  if (f.refunds) lines.push(`Refunds ${formatAmount(f.refunds)} (in Net)`)
+  if (f.transferCount) {
+    lines.push(
+      `Transfers in ${formatAmount(f.transfersIn)} / out ${formatAmount(-f.transfersOut)} (${f.transferCount}, not in Net)`,
+    )
   }
+  if (f.debtCount)
+    lines.push(`Debt payments ${formatAmount(-f.debtPayments)} (${f.debtCount}, not in Net)`)
+  if (f.investmentCount) {
+    lines.push(`Investment moves ${formatAmount(f.investment)} (${f.investmentCount}, not in Net)`)
+  }
+  if (f.unclassifiedCount) {
+    lines.push(
+      `Needs classification: ${f.unclassifiedCount} (${formatAmount(f.unclassifiedAmount)}, not in Net)`,
+    )
+  }
+  return lines
+})
+
+const notices = computed(() => {
+  const list = []
+  if (props.notice) list.push(props.notice)
+  if (flowSummary.value.pendingCount) {
+    list.push(`${flowSummary.value.pendingCount} pending not included in totals`)
+  }
+  if (disagreesWithChart(flowSummary.value, props.reference)) {
+    list.push('These totals differ from the chart for this day; some activity may not be loaded.')
+  }
+  return list
 })
 
 /**

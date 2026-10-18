@@ -44,3 +44,7 @@ The chart now manages explicit request/UI state with local reactive flags:
 - `hasError`: shows an error banner with a retry action when either API request fails or returns a non-success status.
 
 When `hasError` or `isEmpty` is active, chart rendering is deferred and the canvas/legend are hidden to avoid stale visuals.
+
+## Economic activity vs cash movement (TP-20261017-004)
+
+The chart's `income`, `expenses` and `net` are **economic**: income + expenses + refunds as classified by `transaction_flow_classification`. Own-account transfers, card/loan payments, investment deposits and unresolved credits are cash movement and never count as income. The same buckets expose `transfer_in/out`, `debt_settlement`, `investment_movement` and `unclassified_*` so a day's bank movement can be reconciled. Labels and tooltips should read "Income (excl. transfers)", "Expense" and "Net".

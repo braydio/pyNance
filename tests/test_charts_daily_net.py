@@ -217,3 +217,26 @@ def test_include_transfers_is_owner_bound_and_fails_closed(app, monkeypatch):
     response = listing(app.test_client(), include_transfers="true", **RANGE)
     assert response.status_code == 503 and response.get_json()["code"] == "owner_not_configured"
     assert listing(app.test_client(), **RANGE).status_code == 200  # the plain explorer keeps working
+
+
+def test_row_economic_amounts_reconcile_with_the_daily_net_buckets(app):
+    """The modal's rows and the chart's day bucket come from one classifier and must add up."""
+    seed_screenshot_day()
+    client = app.test_client()
+    day = {d["date"]: d for d in daily(client).get_json()["data"]}
+    rows = listing(client, include_transfers="true", **RANGE).get_json()["data"]["transactions"]
+    for date_key, bucket in day.items():
+        mine = [t for t in rows if t["date"] == date_key]
+
+        def total(kind, field="economic_amount"):
+            return round(sum(t[field] or 0 for t in mine if t["reporting_flow_kind"] == kind), 2)
+
+        assert total("income") == bucket["income"]["parsedValue"]
+        assert total("expense") == bucket["expenses"]["parsedValue"]
+        assert total("refund") == bucket["refunds"]
+        assert round(total("income") + total("expense") + total("refund"), 2) == bucket["net"]["parsedValue"]
+        assert sum(1 for t in mine if t["reporting_flow_kind"] == "transfer") == bucket["transfer_count"]
+        assert sum(1 for t in mine if t["reporting_flow_kind"] == "unclassified") == bucket["unclassified_count"]
+        assert all(
+            t["economic_amount"] is None for t in mine if t["reporting_flow_kind"] in {"transfer", "debt_settlement"}
+        )

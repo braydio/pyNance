@@ -86,3 +86,14 @@ themed shortcut chip that mirrors the active key binding.
 Review modal action buttons also inherit the shared two-tone button treatment from `main.css`, including
 hover highlights and a pressed-state inversion (filled to outlined) so approve/edit/next actions remain
 visually distinct while stepping through each batch.
+
+## Daily Net click-through reconciliation (TP-20261017-004)
+
+Clicking a day opens `TransactionModal` with `GET /api/transactions/get_transactions?include_transfers=true` for that day, paged (up to 5 x 1,000 rows) by `utils/dailyModal.js`. Rows carry the backend's `reporting_flow_kind`, `flow_confidence`, `flow_reason_codes`, `signed_account_delta` and `economic_amount`; `utils/flowSummary.js` only adds them up, it never classifies.
+
+- Income / Expense / Net use economic rows only. Transfers in/out, debt payments, investment moves and rows needing classification appear as separate "not in Net" lines; refunds are in Net.
+- Pending rows are listed but excluded from totals (the chart uses posted rows) and counted in a notice.
+- If the modal's economic totals differ from the clicked chart bucket, or only part of a very large day loaded, a notice says so instead of implying the numbers match.
+- `ModalTransactionsDisplay` keeps transfer rows visible but neutral, with a `Transfer` / `Debt payment` / `Investment` / `Review` chip whose tooltip gives the backend reason. A `Review` chip means the backend could not classify the row (for example an unpaired brokerage transfer); it is not a verification. Clicking a row still opens it in Transactions to confirm a transfer pair or edit it.
+- Category and merchant modals fed by unclassified endpoints keep the legacy sign-based summary.
+- Refresh: the modal closes when a row opens Transactions, and the dashboard (chart and modal) refetch on return; there is no polling.

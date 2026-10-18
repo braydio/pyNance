@@ -33,7 +33,7 @@
             <div
               :class="[
                 'absolute left-0 top-5 bottom-3 w-0.5 rounded-full opacity-90',
-                tx.amount > 0 ? 'bg-[var(--color-accent-green)]' : 'bg-[var(--color-accent-red)]',
+                accentClass(tx),
               ]"
             ></div>
             <div class="pl-4 flex items-center gap-2">
@@ -68,6 +68,14 @@
                 <div class="text-xs text-[var(--color-text-muted)] truncate">
                   {{ rowSecondaryLabel(tx) }}
                 </div>
+                <span
+                  v-if="flowChipLabel(tx)"
+                  class="mt-1 inline-flex w-fit items-center rounded border border-[var(--color-text-muted)]/50 px-1.5 text-[0.65rem] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]"
+                  data-testid="flow-chip"
+                  :title="flowTitle(tx)"
+                  :aria-label="flowTitle(tx)"
+                  >{{ flowChipLabel(tx) }}</span
+                >
                 <div
                   v-if="showCategoryVisuals && getCategoryDisplayName(tx)"
                   class="text-xs text-[var(--color-accent-purple)] italic mt-1"
@@ -78,16 +86,7 @@
             </div>
           </td>
           <td class="px-6 py-4 text-right whitespace-nowrap">
-            <span
-              :class="[
-                'font-bold tracking-tight group-hover:opacity-80',
-                tx.amount > 0
-                  ? 'text-[var(--color-accent-green)]'
-                  : tx.amount < 0
-                    ? 'text-[var(--color-accent-red)]'
-                    : 'text-[var(--color-text-light)]',
-              ]"
-            >
+            <span :class="['font-bold tracking-tight group-hover:opacity-80', amountClass(tx)]">
               {{ formatAmount(tx.amount) }}
             </span>
           </td>
@@ -113,6 +112,7 @@
 
 <script setup>
 import { formatAmount as utilFormatAmount } from '../../utils/format'
+import { flowChipLabel, flowTitle, hasFlowKind } from '../../utils/flowSummary'
 
 const props = defineProps({
   transactions: { type: Array, default: () => [] },
@@ -130,6 +130,29 @@ function formatAmount(amount) {
   if (amount == null) return '-'
   return utilFormatAmount(amount)
 }
+const ECONOMIC_KINDS = ['income', 'expense', 'refund']
+
+/**
+ * Text colour for the amount: green/red only for economic rows (or feeds without a
+ * classification); transfers, debt payments and rows needing review stay neutral.
+ */
+function amountClass(tx) {
+  if (hasFlowKind(tx) && !ECONOMIC_KINDS.includes(tx.reporting_flow_kind)) {
+    return 'text-[var(--color-text-light)]'
+  }
+  if (tx.amount > 0) return 'text-[var(--color-accent-green)]'
+  if (tx.amount < 0) return 'text-[var(--color-accent-red)]'
+  return 'text-[var(--color-text-light)]'
+}
+
+/** Accent bar colour matching `amountClass`. */
+function accentClass(tx) {
+  if (hasFlowKind(tx) && !ECONOMIC_KINDS.includes(tx.reporting_flow_kind)) {
+    return 'bg-[var(--color-text-muted)]'
+  }
+  return tx.amount > 0 ? 'bg-[var(--color-accent-green)]' : 'bg-[var(--color-accent-red)]'
+}
+
 /**
  * Generate initials from a name string (up to 2 chars).
  */

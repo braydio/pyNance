@@ -1,12 +1,12 @@
 # TP-20261017-004: Reconcile Daily Net Chart and Transaction Modal
 
 **Packet ID:** TP-20261017-004  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-17  
-**Last updated:** 2026-10-17  
+**Last updated:** 2026-10-18  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261017-004-daily-net-modal-reconciliation.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261017-004-daily-net-modal-reconciliation.md`  
 **Priority:** P1  
 **Workstream size:** One dashboard presentation / contract-validation packet  
 **Depends on:** TP-20261017-003, TP-20261016-009  
@@ -37,3 +37,10 @@ Make Daily Net chart and clicked-day transaction modal agree on **economic** Inc
 Tests: `frontend/src/components/modals/__tests__/TransactionModal.spec.js`, `frontend/src/components/charts/__tests__/DailyNetChart.spec.js`, `frontend/src/views/__tests__/Dashboard.spec.ts`, `frontend/cypress/e2e/dashboard.cy.js`. Run `cd frontend && npm run test -- --run src/components/modals/__tests__/TransactionModal.spec.js src/components/charts/__tests__/DailyNetChart.spec.js src/views/__tests__/Dashboard.spec.ts && npm run build`; run backend `pytest tests/test_charts_daily_net.py -q`.
 No new transfer detector, no bank-data mutation, no CSS redesign, no paid provider calls.
 Implementation: read AGENTS + packet README/INDEX/TRACKER, start In Progress, reuse 003 classification, validate, commit only packet-owned changes directly to main without force, then mark Complete/move packet and update index/tracker atomically. Record exact date fixture sums, commands/results, and blocker if backend not runnable.
+
+## Completion report (2026-10-18)
+
+- Backend: `backend/app/sql/account_logic.py` rows now include `signed_account_delta` and `economic_amount` (None for non-economic kinds). `tests/test_charts_daily_net.py::test_row_economic_amounts_reconcile_with_the_daily_net_buckets` asserts row sums equal each chart day bucket (income, expenses, refunds, net, transfer and unclassified counts); 11 passed.
+- Frontend: `utils/flowSummary.js` and `utils/dailyModal.js` (new), `TransactionModal.vue`, `ModalTransactionsDisplay.vue`, `Dashboard.vue::onNetBarClick`, with specs. Oct 13 fixture result in `flowSummary.spec.js`: income $0, expense -$300.09 (Adobe -12.89, -21.49, interest -265.71), net -$300.09, transfer in $200 (1), debt payment $131.64 (1), 1 row needing classification ($100); payroll +$1,000 is income and refund +$25 is a refund.
+- Deviation: the packet's "server summary" for >page_size days does not exist; `onNetBarClick` pages up to 5 x 1,000 rows and otherwise shows a "Partial activity" notice. Classification-edit refresh relies on the dashboard refetching on return (no new invalidation channel). `DailyNetChart.vue`/`NetOverviewSection.vue` were not changed: tooltip labels already come from the 003 contract and the docs now state the economic meaning.
+- Tests: vitest `flowSummary`, `dailyModal`, `TransactionModal`, `ModalTransactionsDisplay`, `DailyNetChart` pass; `Dashboard.spec.ts` still has the same 30 failures as `main` (verified with a stash); `npm run build` succeeds. No Cypress run or screenshots at 390px/1280px.

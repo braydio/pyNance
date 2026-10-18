@@ -132,6 +132,8 @@
       :hide-category-visuals="false"
       :subtitle="dailyModalSubtitle"
       :transactions="dailyModalTransactions"
+      :notice="dailyModalNotice"
+      :reference="dailyModalReference"
       @close="closeModal('daily')"
     />
     <TransactionModal
@@ -166,8 +168,14 @@ import TopAccountSnapshot from '@/components/widgets/TopAccountSnapshot.vue'
 import SkeletonCard from '@/components/ui/SkeletonCard.vue'
 import api from '@/services/api'
 import { uniqueReconnectConnections } from '@/utils/plaidConnectionStatus'
-import { formatDateInput, useDateRange, getChartPresetRange, CHART_RANGE_PRESETS } from '@/composables/useDateRange'
+import {
+  formatDateInput,
+  useDateRange,
+  getChartPresetRange,
+  CHART_RANGE_PRESETS,
+} from '@/composables/useDateRange'
 import { fetchTransactions as fetchTransactionsApi } from '@/api/transactions'
+import { loadDayTransactions } from '@/utils/dailyModal'
 import { fetchCategoryTransactions, fetchMerchantTransactions } from '@/api/charts'
 import { useCategories } from '@/composables/useCategories'
 import { useDashboardModals } from '@/composables/useDashboardModals'
@@ -191,6 +199,8 @@ const { openModal, closeModal, isVisible } = useDashboardModals()
 const showDailyModal = isVisible('daily')
 const dailyModalTransactions = ref([])
 const dailyModalSubtitle = ref('')
+const dailyModalNotice = ref('')
+const dailyModalReference = ref(null)
 const showReviewModal = isVisible('review')
 
 // Category modal state
@@ -485,26 +495,40 @@ function normalizeDateLabel(label) {
 }
 
 async function onNetBarClick(label) {
-  // Fetch *all* transactions for the clicked date so the modal matches the
-  // counts and amounts shown in the DailyNetChart. Use a large page_size to
-  // avoid pagination truncation for high-activity days.
+  // Load the clicked day with transfers included so every entry stays reviewable, paging through the
+  // full result (bounded) so the modal totals can match the Daily Net bucket they came from.
   const isoDate = normalizeDateLabel(label)
+  let rows = []
+  dailyModalNotice.value = ''
 
   try {
-    const result = await fetchTransactionsApi({
-      start_date: isoDate,
-      end_date: isoDate,
-      page: 1,
-      page_size: 1000,
-    })
-    dailyModalTransactions.value = result.transactions || []
+    const day = await loadDayTransactions(fetchTransactionsApi, isoDate)
+    rows = day.rows
+    if (day.partial) {
+      dailyModalNotice.value = `Partial activity: showing ${rows.length} of ${day.total} transactions, so these totals are not the full day. Use the chart for the full-day totals.`
+    }
   } catch (error) {
     console.error('Failed to fetch transactions for date', label, error)
-    dailyModalTransactions.value = []
+    dailyModalNotice.value = 'Unable to load every transaction for this day.'
   }
 
+  dailyModalTransactions.value = rows
+  dailyModalReference.value = chartReferenceFor(isoDate)
   dailyModalSubtitle.value = isoDate
   openModal('daily')
+}
+
+/**
+ * Chart values for one day so the modal can flag a disagreement.
+ *
+ * @param {string} isoDate YYYY-MM-DD
+ * @returns {{income:number, expenses:number, net:number}|null}
+ */
+function chartReferenceFor(isoDate) {
+  const row = (chartData.value || []).find((r) => String(r?.date).slice(0, 10) === isoDate)
+  if (!row) return null
+  const parsed = (v) => Number(v?.parsedValue ?? v) || 0
+  return { income: parsed(row.income), expenses: parsed(row.expenses), net: parsed(row.net) }
 }
 
 /**

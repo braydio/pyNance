@@ -805,6 +805,7 @@ describe('Dashboard.vue', () => {
       end_date: '2024-06-10',
       page: 1,
       page_size: 1000,
+      include_transfers: true,
     })
     expect(wrapper.vm.dailyModalSubtitle).toBe('2024-06-10')
     expect(wrapper.vm.showDailyModal).toBe(true)
