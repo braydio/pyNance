@@ -67,6 +67,35 @@ sys.modules["app.services.safe_to_spend"] = service
 spec.loader.exec_module(service)
 
 
+def _projection(total, bills=(), codes=(), planned=None):
+    """A stand-in for ``service._obligation_projection`` with the given reserved total."""
+
+    def fake(as_of, display_end, protection_end, user_id=None):
+        fake.protection_end = protection_end
+        planned_cents = total if planned is None else planned
+        return {
+            "total_cents": total,
+            "bills": list(bills),
+            "needs_review_bills": [],
+            "totals": {
+                "planned": planned_cents,
+                "confirmed": total - planned_cents,
+                "provisional": 0,
+                "needs_review": 0,
+                "protection_reserved": total,
+                "display_due": 0,
+            },
+            "coverage": {
+                "recurring_projected": True,
+                "codes": list(codes),
+                "alternate_scenarios_ignored": 0,
+                "skipped": [],
+            },
+        }
+
+    return fake
+
+
 def _cash_only(monkeypatch):
     """The stubbed module graph cannot import the classifier; checking accounts are cash."""
     monkeypatch.setattr(service, "_is_cash_account", lambda account: True)
@@ -76,9 +105,7 @@ def test_build_safe_to_spend_payload_today(monkeypatch):
     _cash_only(monkeypatch)
     monkeypatch.setattr(service, "_visible_accounts", lambda user_id=None: [Account(balance=Decimal("500.00"))])
     monkeypatch.setattr(
-        service,
-        "_upcoming_bill_payload",
-        lambda as_of, horizon_end, user_id=None: (15_000, [{"name": "Power", "amount_cents": 15_000}]),
+        service, "_obligation_projection", _projection(15_000, [{"name": "Power", "amount_cents": 15_000}])
     )
     monkeypatch.setattr(
         service, "_spent_between", lambda start, end, user_id=None, pending=False: 0 if pending else 2_500
@@ -101,6 +128,10 @@ def test_build_safe_to_spend_payload_today(monkeypatch):
     assert payload["components"] == {
         "spendable_cash_cents": 50_000,
         "upcoming_outflows_cents": 15_000,
+        "planned_bills_cents": 15_000,
+        "confirmed_recurring_cents": 0,
+        "provisional_recurring_cents": 0,
+        "needs_review_cents": 0,
         "required_buffer_cents": 25_000,
         "spent_today_cents": 2_500,
         "spent_today_included_in_balance": "unknown",
@@ -114,7 +145,7 @@ def test_build_safe_to_spend_payload_today(monkeypatch):
 def test_build_safe_to_spend_payload_until_payday_per_day(monkeypatch):
     _cash_only(monkeypatch)
     monkeypatch.setattr(service, "_visible_accounts", lambda user_id=None: [Account(balance=Decimal("300.00"))])
-    monkeypatch.setattr(service, "_upcoming_bill_payload", lambda as_of, horizon_end, user_id=None: (10_000, []))
+    monkeypatch.setattr(service, "_obligation_projection", _projection(10_000))
     monkeypatch.setattr(service, "_spent_between", lambda start, end, user_id=None, pending=False: 0)
     monkeypatch.setattr(
         service,
@@ -139,7 +170,7 @@ AS_OF = date(2026, 10, 17)
 def _setup(monkeypatch, payday, cash="1000.00", bills=0):
     _cash_only(monkeypatch)
     monkeypatch.setattr(service, "_visible_accounts", lambda user_id=None: [Account(balance=Decimal(cash))])
-    monkeypatch.setattr(service, "_upcoming_bill_payload", lambda as_of, end, user_id=None: (bills, []))
+    monkeypatch.setattr(service, "_obligation_projection", _projection(bills))
     monkeypatch.setattr(service, "_spent_between", lambda start, end, user_id=None, pending=False: 0)
     prediction = {
         "next_payday": payday,
@@ -198,13 +229,11 @@ def test_payday_today_unposted_is_not_cash_and_falls_back(monkeypatch):
 
 
 def test_bills_use_the_protection_end_and_headline_is_not_total_cash(monkeypatch):
-    seen = {}
     _setup(monkeypatch, "2026-10-30", cash="1000.00")
-    monkeypatch.setattr(
-        service, "_upcoming_bill_payload", lambda as_of, end, user_id=None: (seen.setdefault("end", end) and 70_000, [])
-    )
+    fake = _projection(70_000)
+    monkeypatch.setattr(service, "_obligation_projection", fake)
     data = _build("today")
-    assert seen["end"] == date(2026, 10, 29)  # a bill due Oct 21 is reserved even in Today mode
+    assert fake.protection_end == date(2026, 10, 29)  # a bill due Oct 21 is reserved even in Today mode
     assert data["total_protected_room_cents"] == 30_000
     assert data["amount_cents"] == 30_000 // 13 and data["amount_cents"] != data["total_protected_room_cents"]
 
@@ -219,5 +248,5 @@ def test_confidence_is_evidence_completeness_not_tightness(monkeypatch):
     _setup(monkeypatch, "2026-10-30", cash="5000.00")
     data = _build("today")
     assert data["status"] == "comfortable"
-    assert data["confidence"] == "estimated"  # recurring obligations are not projected yet
+    assert data["confidence"] == "estimated"  # availability and balance age are unverified
     assert data["calculation_version"] == "2" and data["default_buffer_cents"] == 25_000

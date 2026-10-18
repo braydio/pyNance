@@ -1,12 +1,12 @@
 # TP-20261017-001: Project Recurring Cash Obligations into Safe-to-Spend
 
 **Packet ID:** TP-20261017-001  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-17  
-**Last updated:** 2026-10-17  
+**Last updated:** 2026-10-18  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261017-001-recurring-safe-to-spend-obligation-projection.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261017-001-recurring-safe-to-spend-obligation-projection.md`  
 **Workstream size:** One backend integration packet  
 **Priority:** P0  
 **Depends on:** TP-20261016-001, TP-20261016-002, TP-20261016-004, TP-20261016-005, TP-20261017-006, TP-20261017-007  
@@ -50,3 +50,11 @@ No new recurrence detector, no fake bank `Transaction` rows, no Plaid Enrich, no
 
 ## Completion / agent handoff
 Read `AGENTS.md`, task-packets README/INDEX/TRACKER; validate only named symbols. Mark In Progress before implementation, run focused tests, publish on main without force, mark Complete/move to completed/update INDEX+TRACKER in one change. Report exact files, test results, component math for $700 fixture, and any unverified runtime import coverage. Next: TP-20261017-002.
+
+## Completion report (2026-10-18)
+
+- Files: `backend/app/services/recurring_obligation_projection.py` (new), `backend/app/services/safe_to_spend.py`, `tests/test_recurring_obligation_projection.py` (new), `tests/test_safe_to_spend_integration.py`, `tests/test_safe_to_spend_service.py`, `docs/backend/app/services/safe_to_spend.md`.
+- $700 fixture (as_of 2026-10-17, payday Oct 30): `upcoming_outflows_cents = planned 0 + confirmed 70,000 + provisional 0 = 70,000` in both `week` and `today` modes; `today` reports `display_window_due_cents = 0`, `protection_window_reserved_cents = 70,000`.
+- Deviation: `PlanningScenario` has no baseline flag, so the baseline is the oldest scenario per account; other scenarios are ignored and counted in `alternate_scenarios_ignored`. `PlannedBill` has no source-stream id, so planned-vs-stream dedupe uses the unique name+amount+/-3 day rule.
+- Legacy tests that patched `_upcoming_bill_payload` now patch `_obligation_projection`; the wrapper still exists.
+- Unverified: not run against the live database or the user's Flask on :5000.

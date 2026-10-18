@@ -345,33 +345,176 @@ def _window_payload(start: date, end: date, **extra) -> dict:
     return {"start": start.isoformat(), "end": end.isoformat(), "days": (end - start).days + 1, **extra}
 
 
-def _upcoming_bill_payload(as_of: date, horizon_end: date, user_id: str | None = None) -> tuple[int, list[dict]]:
-    """Return planned bills due within the decision horizon."""
+COVERAGE_WARNINGS = {
+    "no_transactions": "No posted cash transactions yet, so recurring bills cannot be detected.",
+    "partial_history": "Less than 90 days of cash history; recurring bills may be missing.",
+    "owner_not_configured": "Recurring bills are unavailable: the account owner is not configured.",
+    "owner_mismatch": "Recurring bills are unavailable for this user.",
+    "stale_evidence": "Some recurring candidates have stale evidence and are not reserved.",
+    "ambiguous_sign": "A recurring plan has an unusable amount and was skipped.",
+    "account_unavailable": "A recurring plan points at an account that is not available and was skipped.",
+}
 
-    query = PlannedBill.query.join(PlanningScenario).filter(
-        PlannedBill.due_date >= as_of, PlannedBill.due_date <= horizon_end
+
+def _baseline_planned_bills(account_ids: list[str], as_of: date, horizon_end: date) -> tuple[list, int]:
+    """Planned bills of each account's baseline (oldest) scenario; what-if variants are ignored."""
+
+    from app.services.recurring_obligation_projection import PlannedBillInput
+
+    if not account_ids:
+        return [], 0
+    scenarios = (
+        PlanningScenario.query.filter(PlanningScenario.account_id.in_(account_ids))
+        .order_by(PlanningScenario.created_at.asc(), PlanningScenario.id.asc())
+        .all()
     )
-    if user_id:
-        query = query.filter(
-            PlanningScenario.account_id.in_([account.account_id for account in _visible_accounts(user_id)])
-        )
+    baseline: dict[str, PlanningScenario] = {}
+    for scenario in scenarios:
+        baseline.setdefault(str(scenario.account_id), scenario)
+    ignored = len(scenarios) - len(baseline)
+    bills = PlannedBill.query.filter(
+        PlannedBill.scenario_id.in_([sc.id for sc in baseline.values()]),
+        PlannedBill.due_date >= as_of,
+        PlannedBill.due_date <= horizon_end,
+    ).all()
+    scenario_account = {sc.id: str(sc.account_id) for sc in baseline.values()}
+    return (
+        [
+            PlannedBillInput(
+                bill_id=str(bill.id),
+                name=bill.name,
+                account_id=str(bill.account_id or scenario_account.get(bill.scenario_id)),
+                due_date=bill.due_date,
+                amount_cents=int(bill.amount_cents or 0),
+                extra={"frequency": bill.frequency, "origin": bill.origin},
+            )
+            for bill in bills
+        ],
+        ignored,
+    )
 
-    total = 0
-    bills = []
-    for bill in query.order_by(PlannedBill.due_date.asc(), PlannedBill.name.asc()).all():
-        amount = int(bill.amount_cents or 0)
-        total += amount
-        bills.append(
-            {
-                "id": str(bill.id),
-                "name": bill.name,
-                "amount_cents": amount,
-                "due_date": bill.due_date.isoformat() if bill.due_date else None,
-                "frequency": bill.frequency,
-                "origin": bill.origin,
-            }
+
+def _recurring_stream_inputs(owner_id: str, accounts: list[Account]) -> list:
+    """Owner streams as projection inputs; role and account decide whether they debit cash."""
+
+    from app.models import RecurringStreamEvidence
+    from app.services import recurring_repository as repo
+    from app.services.recurring_obligation_projection import StreamInput
+
+    cash_ids = {a.account_id for a in accounts if _is_cash_account(a)}
+    visible_ids = {a.account_id for a in accounts}
+    streams = repo.list_streams(owner_id, statuses=["confirmed", "proposed"])
+    evidence: dict[str, list] = {}
+    if streams:
+        for row in RecurringStreamEvidence.query.filter(
+            RecurringStreamEvidence.stream_id.in_([st.id for st in streams]),
+            RecurringStreamEvidence.decision.in_(["detected", "observed"]),
+        ):
+            evidence.setdefault(row.stream_id, []).append(row)
+    out = []
+    for stream in streams:
+        role = stream.event_role or "ordinary_expense"
+        debit_account = stream.funding_account_id if role == "liability_payment" else stream.account_id
+        reason = None
+        if role in {"income", "transfer"}:
+            reason = "own_account_transfer" if role == "transfer" else "income"
+        elif debit_account not in visible_ids:
+            reason = "account_unavailable"
+        elif debit_account not in cash_ids:
+            reason = "card_purchase"
+        delta = Decimal(str(stream.amount_cash_delta))
+        rows = evidence.get(stream.id, [])
+        out.append(
+            StreamInput(
+                stream_id=stream.id,
+                account_id=str(debit_account or stream.account_id),
+                name=stream.display_name,
+                merchant_key=stream.merchant_key or "",
+                amount_cents=_to_cents(-delta) if delta < 0 else 0,
+                amount_mode=stream.amount_mode,
+                cadence=stream.cadence,
+                anchor_date=stream.anchor_date,
+                status=stream.status,
+                source=stream.source,
+                confidence=None if stream.confidence is None else float(stream.confidence),
+                evidence_cycles=len({r.observed_at for r in rows}),
+                evidence_amounts_cents=tuple(
+                    _to_cents(abs(r.canonical_amount)) for r in rows if r.canonical_amount is not None
+                ),
+                last_observed=stream.last_observed,
+                eligible=reason is None,
+                ineligible_reason=reason,
+            )
         )
-    return total, bills
+    return out
+
+
+def _obligation_projection(as_of: date, display_end: date, protection_end: date, user_id: str | None = None) -> dict:
+    """Merge planned bills and recurring streams due in ``[as_of, protection_end]`` (read-only)."""
+
+    from app.services.recurring_obligation_projection import (
+        PostedOutflow,
+        history_coverage,
+        project_cash_obligations,
+    )
+
+    accounts = _visible_accounts(user_id)
+    cash_ids = [a.account_id for a in accounts if _is_cash_account(a)]
+    owner, refusal = _payday_owner(user_id)
+    codes: list[str] = []
+    streams: list = []
+    if refusal:
+        codes.append(refusal)
+    else:
+        streams = _recurring_stream_inputs(owner, accounts)
+    planned, ignored = _baseline_planned_bills(cash_ids, as_of, protection_end)
+    posted = (
+        [
+            PostedOutflow(account_id=str(tx.account_id), day=tx.date, amount_cents=_to_cents(abs(tx.amount)))
+            for tx in Transaction.query.filter(
+                Transaction.account_id.in_(cash_ids),
+                Transaction.date >= as_of - timedelta(days=3),
+                Transaction.date <= as_of,
+                _outflow_filter(),
+                or_(Transaction.pending.is_(False), Transaction.pending.is_(None)),
+                or_(Transaction.is_internal.is_(False), Transaction.is_internal.is_(None)),
+            ).all()
+        ]
+        if cash_ids
+        else []
+    )
+    earliest = (
+        db.session.query(func.min(Transaction.date)).filter(Transaction.account_id.in_(cash_ids)).scalar()
+        if cash_ids
+        else None
+    )
+    codes.extend(history_coverage(earliest, as_of))
+    result = project_cash_obligations(streams, planned, posted, as_of, protection_end, display_end)
+    skipped_reasons = {item["reason"] for item in result["skipped"]}
+    codes.extend(
+        code for code in ("stale_evidence", "ambiguous_sign", "account_unavailable") if code in skipped_reasons
+    )
+    if any(r["reason_codes"][0] == "stale_evidence" for r in result["needs_review"]):
+        codes.append("stale_evidence")
+    return {
+        "total_cents": result["totals"]["protection_reserved"],
+        "bills": result["rows"],
+        "needs_review_bills": result["needs_review"],
+        "totals": result["totals"],
+        "coverage": {
+            "recurring_projected": refusal is None,
+            "codes": sorted(set(codes)),
+            "alternate_scenarios_ignored": ignored,
+            "skipped": result["skipped"],
+        },
+    }
+
+
+def _upcoming_bill_payload(as_of: date, horizon_end: date, user_id: str | None = None) -> tuple[int, list[dict]]:
+    """Compatibility wrapper: ``(reserved_cents, rows)`` for obligations due through ``horizon_end``."""
+
+    projection = _obligation_projection(as_of, as_of, horizon_end, user_id)
+    return projection["total_cents"], projection["bills"]
 
 
 def build_safe_to_spend_payload(inputs: SafeToSpendInputs | None = None) -> dict:
@@ -397,7 +540,9 @@ def build_safe_to_spend_payload(inputs: SafeToSpendInputs | None = None) -> dict
     windows = _windows(mode, as_of, validated_payday)
     protection_end = windows["protection_end"]
     display_end = windows["display_end"]
-    upcoming_outflows_cents, bills = _upcoming_bill_payload(as_of, protection_end, inputs.user_id)
+    projection = _obligation_projection(as_of, display_end, protection_end, inputs.user_id)
+    upcoming_outflows_cents, bills = projection["total_cents"], projection["bills"]
+    obligation_totals = projection["totals"]
     spent_today_cents = _spent_between(as_of, as_of, inputs.user_id)
     pending_outflow_cents = _spent_between(as_of, as_of, inputs.user_id, pending=True)
 
@@ -427,12 +572,17 @@ def build_safe_to_spend_payload(inputs: SafeToSpendInputs | None = None) -> dict
             f"You have about ${per_day_cents / 100:,.0f} per day through {protection_end} after known bills and buffer."
         )
 
+    coverage_codes = projection["coverage"]["codes"]
     obligation_coverage = {
-        "source": "planned_bills",
-        "recurring_projected": False,
-        "complete": False,
+        "source": "planned_bills_and_recurring",
+        "recurring_projected": projection["coverage"]["recurring_projected"],
+        "complete": projection["coverage"]["recurring_projected"] and not coverage_codes,
         "bill_count": len(bills),
         "through": protection_end.isoformat(),
+        "warning_codes": coverage_codes,
+        "alternate_scenarios_ignored": projection["coverage"]["alternate_scenarios_ignored"],
+        "display_window_due_cents": obligation_totals["display_due"],
+        "protection_window_reserved_cents": obligation_totals["protection_reserved"],
     }
     warnings = []
     if not account_payload:
@@ -449,8 +599,7 @@ def build_safe_to_spend_payload(inputs: SafeToSpendInputs | None = None) -> dict
         warnings.append("No validated payday; protecting a 14-day fallback window.")
     elif payday.get("needs_review"):
         warnings.append("Payday is inferred from past deposits, not confirmed.")
-    if not obligation_coverage["complete"]:
-        warnings.append("Recurring obligations are not projected yet; only planned bills are reserved.")
+    warnings.extend(COVERAGE_WARNINGS[code] for code in coverage_codes if code in COVERAGE_WARNINGS)
 
     # ``status`` is tightness; ``confidence`` is evidence completeness and needs every warning cleared.
     confidence = "limited" if not account_payload else ("estimated" if warnings else "ready")
@@ -487,6 +636,10 @@ def build_safe_to_spend_payload(inputs: SafeToSpendInputs | None = None) -> dict
         "components": {
             "spendable_cash_cents": spendable_cash_cents,
             "upcoming_outflows_cents": upcoming_outflows_cents,
+            "planned_bills_cents": obligation_totals["planned"],
+            "confirmed_recurring_cents": obligation_totals["confirmed"],
+            "provisional_recurring_cents": obligation_totals["provisional"],
+            "needs_review_cents": obligation_totals["needs_review"],
             "required_buffer_cents": buffer_cents,
             "spent_today_cents": spent_today_cents,
             # Balances already include posted activity; it is shown for history, never deducted twice.
@@ -497,5 +650,6 @@ def build_safe_to_spend_payload(inputs: SafeToSpendInputs | None = None) -> dict
         "opening_cash_sources": account_payload,
         "cash_coverage": cash_coverage,
         "upcoming_bills": bills,
+        "needs_review_bills": projection["needs_review_bills"],
         "message": message,
     }

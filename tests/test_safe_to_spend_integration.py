@@ -207,3 +207,167 @@ def test_confirmed_income_stream_is_used_when_present(database, monkeypatch):
     prediction = service._payday_prediction(date(2026, 10, 17), "user-a")
     assert prediction["source"] == "confirmed_stream" and prediction["next_payday"] == "2026-10-30"
     assert prediction["needs_review"] is False
+
+
+def _stream(models, **overrides):
+    values = dict(
+        user_id="user-a",
+        account_id="a",
+        display_name="Rent",
+        merchant_key="rent",
+        amount_cash_delta=Decimal("-700"),
+        cadence="monthly",
+        anchor_date=date(2026, 7, 21),
+        status="confirmed",
+        source="manual",
+        event_role="ordinary_expense",
+    )
+    values.update(overrides)
+    return models.RecurringStream(**values)
+
+
+def _payday_stream(models):
+    return models.RecurringStream(
+        user_id="user-a",
+        account_id="a",
+        display_name="Acme Payroll",
+        amount_cash_delta=Decimal("1500"),
+        cadence="biweekly",
+        anchor_date=date(2026, 10, 30),
+        status="confirmed",
+        source="manual",
+        event_role="income",
+    )
+
+
+def _safe(client, mode="week"):
+    response = client.get(f"/api/dashboard/safe-to-spend?as_of=2026-10-17&mode={mode}")
+    assert response.status_code == 200
+    return response.get_json()["data"]
+
+
+def test_confirmed_recurring_debit_reserves_700_once_with_no_planned_bill(database, monkeypatch):
+    db, models, _, client = database
+    monkeypatch.setenv("PYNANCE_OWNER_USER_ID", "user-a")
+    db.session.add_all([_stream(models), _payday_stream(models)])
+    db.session.commit()
+    for mode in ("week", "today"):
+        data = _safe(client, mode)
+        components = data["components"]
+        assert components["upcoming_outflows_cents"] == 70_000
+        assert components["confirmed_recurring_cents"] == 70_000 and components["planned_bills_cents"] == 0
+        assert data["upcoming_bills"][0]["due_date"] == "2026-10-21"
+        assert data["upcoming_bills"][0]["status"] == "confirmed"
+        assert {"id", "name", "account_id", "amount_cents", "source", "estimated", "reason_codes"} <= set(
+            data["upcoming_bills"][0]
+        )
+    # Today mode reserves the bill but reports nothing due today.
+    assert _safe(client, "today")["obligation_coverage"]["display_window_due_cents"] == 0
+    assert _safe(client, "today")["obligation_coverage"]["protection_window_reserved_cents"] == 70_000
+
+
+def test_planned_bill_supersedes_stream_and_alternate_scenario_is_ignored(database, monkeypatch):
+    db, models, _, client = database
+    monkeypatch.setenv("PYNANCE_OWNER_USER_ID", "user-a")
+    baseline = models.PlanningScenario(name="Budget", account_id="a")
+    db.session.add_all([baseline, _stream(models), _payday_stream(models)])
+    db.session.flush()
+    whatif = models.PlanningScenario(name="What if", account_id="a")
+    db.session.add(whatif)
+    db.session.flush()
+    db.session.add_all(
+        [
+            models.PlannedBill(scenario_id=baseline.id, name="Rent", amount_cents=70_000, due_date=date(2026, 10, 21)),
+            models.PlannedBill(scenario_id=whatif.id, name="Rent", amount_cents=90_000, due_date=date(2026, 10, 21)),
+        ]
+    )
+    db.session.commit()
+    data = _safe(client)
+    assert data["components"]["upcoming_outflows_cents"] == 70_000  # never $1,400
+    assert data["components"]["planned_bills_cents"] == 70_000
+    assert data["obligation_coverage"]["alternate_scenarios_ignored"] == 1
+
+
+def test_ignored_card_transfer_foreign_and_two_cycle_streams_do_not_reserve(database, monkeypatch):
+    db, models, _, client = database
+    monkeypatch.setenv("PYNANCE_OWNER_USER_ID", "user-a")
+    db.session.add_all(
+        [
+            models.Account(account_id="card", user_id="user-a", name="Card", type="credit", balance=-50),
+            models.Account(account_id="sav", user_id="user-a", name="Savings", type="depository", balance=0),
+            _payday_stream(models),
+            _stream(models, display_name="Ignored", status="ignored"),
+            _stream(models, display_name="Card sub", account_id="card", amount_cash_delta=Decimal("-15")),
+            _stream(
+                models,
+                display_name="To savings",
+                event_role="transfer",
+                funding_account_id="a",
+                destination_account_id="sav",
+                amount_cash_delta=Decimal("-200"),
+            ),
+            _stream(models, display_name="Foreign", user_id="user-b", account_id="b"),
+        ]
+    )
+    cand = _stream(
+        models,
+        display_name="Gym",
+        merchant_key="gym",
+        status="proposed",
+        source="detected",
+        confidence=Decimal("0.900"),
+        last_observed=date(2026, 9, 21),
+        amount_cash_delta=Decimal("-40"),
+    )
+    db.session.add(cand)
+    db.session.flush()
+    for day in (date(2026, 8, 21), date(2026, 9, 21)):
+        db.session.add(
+            models.RecurringStreamEvidence(
+                stream_id=cand.id, observed_at=day, canonical_amount=Decimal("-40"), decision="detected"
+            )
+        )
+    db.session.commit()
+    data = _safe(client)
+    assert data["components"]["upcoming_outflows_cents"] == 0
+    assert data["components"]["needs_review_cents"] == 4_000  # two cycles: visible, never silently debited
+    assert data["needs_review_bills"][0]["name"] == "Gym"
+
+
+def test_three_cycle_high_confidence_candidate_is_a_provisional_reserve(database, monkeypatch):
+    db, models, _, client = database
+    monkeypatch.setenv("PYNANCE_OWNER_USER_ID", "user-a")
+    cand = _stream(
+        models,
+        status="proposed",
+        source="detected",
+        confidence=Decimal("0.920"),
+        last_observed=date(2026, 9, 21),
+    )
+    db.session.add_all([cand, _payday_stream(models)])
+    db.session.flush()
+    for day in (date(2026, 7, 21), date(2026, 8, 21), date(2026, 9, 21)):
+        db.session.add(
+            models.RecurringStreamEvidence(
+                stream_id=cand.id, observed_at=day, canonical_amount=Decimal("-700"), decision="detected"
+            )
+        )
+    db.session.commit()
+    data = _safe(client)
+    assert data["components"]["provisional_recurring_cents"] == 70_000
+    assert data["upcoming_bills"][0]["status"] == "provisional"
+    db.session.refresh(cand)
+    assert cand.status == "proposed"  # reserving never confirms the candidate
+    # Rejecting it (ignored) takes effect on the very next request.
+    cand.status = "ignored"
+    db.session.commit()
+    assert _safe(client)["components"]["upcoming_outflows_cents"] == 0
+
+
+def test_coverage_warns_when_history_is_missing(database, monkeypatch):
+    _, _, _, client = database
+    monkeypatch.setenv("PYNANCE_OWNER_USER_ID", "user-a")
+    data = _safe(client)
+    assert data["obligation_coverage"]["complete"] is False
+    assert "no_transactions" in data["obligation_coverage"]["warning_codes"]
+    assert data["confidence"] != "ready"
