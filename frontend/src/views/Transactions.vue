@@ -419,7 +419,7 @@ export default {
 
     const recurringFormRef = ref(null)
     const tabs = ['Activity', 'Recurring', { label: 'Transfer Review', slot: 'Scanner' }]
-    const activeTab = ref('Activity')
+    const activeTab = ref(coerceQueryValue(route.query?.tab) === 'Recurring' ? 'Recurring' : 'Activity')
 
     /**
      * Determine whether a top-level transaction filter is currently active.

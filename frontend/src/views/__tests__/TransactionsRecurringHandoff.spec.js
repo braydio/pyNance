@@ -9,7 +9,8 @@ const useTransactionsMock = vi.fn()
 vi.mock('@/composables/useTransactions.js', () => ({
   useTransactions: (...args) => useTransactionsMock(...args),
 }))
-vi.mock('vue-router', () => ({ useRoute: () => ({ query: {} }) }))
+const routeState = vi.hoisted(() => ({ query: {} }))
+vi.mock('vue-router', () => ({ useRoute: () => routeState }))
 vi.mock('@/services/api', () => ({
   default: {
     getTransactionInsights: vi.fn().mockResolvedValue({ status: 'success', data: null }),
@@ -111,5 +112,13 @@ describe('Transactions -> Recurring hand-off', () => {
       'Recurring',
       { label: 'Transfer Review', slot: 'Scanner' },
     ])
+  })
+
+  it('opens the Recurring tab when the Safe-to-Spend review link sets ?tab=Recurring', () => {
+    routeState.query = { tab: 'Recurring' }
+    expect(mountView().get('[data-testid="active-tab"]').text()).toBe('Recurring')
+    routeState.query = { tab: 'Nope' }
+    expect(mountView().get('[data-testid="active-tab"]').text()).toBe('Activity')
+    routeState.query = {}
   })
 })

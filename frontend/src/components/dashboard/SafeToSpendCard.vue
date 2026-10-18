@@ -40,7 +40,11 @@
         <span class="safe-spend-card__amount-copy">Daily allowance</span>
       </div>
       <p class="safe-spend-card__message">{{ payload.message }}</p>
-      <p v-if="protectedTotal !== null" class="safe-spend-card__secondary" data-testid="protected-total">
+      <p
+        v-if="protectedTotal !== null"
+        class="safe-spend-card__secondary"
+        data-testid="protected-total"
+      >
         Total protected spending room: {{ formatCents(protectedTotal) }}
       </p>
       <ul v-if="windowLines.length" class="safe-spend-card__windows" data-testid="windows">
@@ -69,6 +73,76 @@
         </div>
       </dl>
 
+      <section class="safe-spend-card__reserved" data-testid="reserved">
+        <button
+          class="safe-spend-card__reserved-toggle"
+          type="button"
+          aria-controls="safe-spend-reserved-panel"
+          :aria-expanded="reservedOpen"
+          @click="reservedOpen = !reservedOpen"
+        >
+          <span>What's reserved?</span>
+          <span aria-hidden="true">{{ reservedOpen ? '−' : '+' }}</span>
+        </button>
+        <p class="safe-spend-card__reserved-summary" data-testid="reserved-summary">
+          {{ reservedSummary }}
+        </p>
+        <div v-show="reservedOpen" id="safe-spend-reserved-panel" data-testid="reserved-panel">
+          <div v-for="group in reserveGroups" :key="group.status" class="safe-spend-card__group">
+            <h3 class="safe-spend-card__group-title">
+              <span>{{ group.label }}</span>
+              <span>-{{ formatCents(group.total) }}</span>
+            </h3>
+            <ul class="safe-spend-card__bills">
+              <li v-for="bill in group.rows" :key="bill.id + bill.due_date" data-testid="bill-row">
+                <span class="safe-spend-card__bill-name">
+                  {{ bill.name }}
+                  <small>
+                    {{ bill.due_date
+                    }}<template v-if="accountName(bill.account_id)">
+                      · {{ accountName(bill.account_id) }}</template
+                    ><template v-if="bill.estimated"> · estimated</template>
+                  </small>
+                </span>
+                <span class="safe-spend-card__bill-amount"
+                  >-{{ formatCents(bill.amount_cents) }}</span
+                >
+              </li>
+            </ul>
+          </div>
+          <p
+            v-if="!reserveGroups.length"
+            class="safe-spend-card__secondary"
+            data-testid="no-reserved"
+          >
+            {{ noReservedCopy }}
+          </p>
+          <p v-if="beyondProtectionCopy" class="safe-spend-card__secondary">
+            {{ beyondProtectionCopy }}
+          </p>
+        </div>
+        <div v-if="needsReview.length" class="safe-spend-card__review" data-testid="needs-review">
+          <p class="safe-spend-card__secondary">
+            Needs review (not reserved): {{ needsReview.length }}
+            {{ needsReview.length === 1 ? 'bill' : 'bills' }}, {{ formatCents(needsReviewCents) }}
+          </p>
+          <ul v-show="reservedOpen" class="safe-spend-card__bills">
+            <li v-for="bill in needsReview" :key="bill.id + bill.due_date" data-testid="review-row">
+              <span class="safe-spend-card__bill-name">
+                {{ bill.name }}
+                <small>{{ bill.due_date }} · {{ reviewReason(bill) }}</small>
+              </span>
+              <span class="safe-spend-card__bill-amount">{{ formatCents(bill.amount_cents) }}</span>
+            </li>
+          </ul>
+          <router-link
+            class="safe-spend-card__review-link"
+            :to="{ path: '/transactions', query: { tab: 'Recurring' } }"
+            >Review recurring bills</router-link
+          >
+        </div>
+      </section>
+
       <div class="safe-spend-card__footer">
         <span>{{ horizonLabel }}</span>
         <span v-if="payload.confidence" class="safe-spend-card__confidence">{{
@@ -84,7 +158,7 @@
 /**
  * Glanceable dashboard widget for day-of spending decisions.
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const modeOptions = [
   { value: 'today', label: 'Today' },
@@ -134,6 +208,67 @@ const windowLines = computed(() => {
   }
   return lines
 })
+const reservedOpen = ref(false)
+const GROUPS = [
+  { status: 'planned', label: 'Planned', component: 'planned_bills_cents' },
+  { status: 'confirmed', label: 'Confirmed recurring', component: 'confirmed_recurring_cents' },
+  {
+    status: 'provisional',
+    label: 'Provisional recurring',
+    component: 'provisional_recurring_cents',
+  },
+]
+// Groups use the server's component totals and rows; nothing is re-added on the client.
+const reserveGroups = computed(() => {
+  const bills = props.payload?.upcoming_bills || []
+  return GROUPS.map((group) => ({
+    ...group,
+    total: props.payload?.components?.[group.component] ?? 0,
+    rows: bills
+      .filter((bill) => (bill.status || 'planned') === group.status)
+      .slice()
+      .sort((a, b) => String(a.due_date).localeCompare(String(b.due_date))),
+  })).filter((group) => group.rows.length)
+})
+const needsReview = computed(() => props.payload?.needs_review_bills || [])
+const needsReviewCents = computed(() => props.payload?.components?.needs_review_cents ?? 0)
+const coverage = computed(() => props.payload?.obligation_coverage || {})
+const reservedSummary = computed(() => {
+  const reserved = props.payload?.components?.upcoming_outflows_cents ?? 0
+  const dueNow = coverage.value.display_window_due_cents
+  const end = props.payload?.protection_window?.end || props.payload?.horizon_end
+  if (!reserved) return noReservedCopy.value
+  if (dueNow == null) return `${formatCents(reserved)} reserved through ${end}.`
+  const dueLabel = `${formatCents(dueNow)} due ${props.payload?.mode === 'today' ? 'today' : 'in this view'}`
+  const later = Math.max(reserved - dueNow, 0)
+  return later
+    ? `${dueLabel}; ${formatCents(later)} more is protected for bills due before ${end}.`
+    : `${dueLabel}; ${formatCents(reserved)} reserved through ${end}.`
+})
+const noReservedCopy = computed(() => {
+  const end = props.payload?.protection_window?.end || props.payload?.horizon_end
+  if (coverage.value.complete === false) {
+    return `No bills are reserved through ${end}, but bill coverage is incomplete, so this may not be every bill.`
+  }
+  return `No known bills are reserved through ${end}.`
+})
+const beyondProtectionCopy = computed(() => {
+  const end = props.payload?.protection_window?.end || props.payload?.horizon_end
+  return end ? `Bills due after ${end} are not reserved yet.` : ''
+})
+const REVIEW_REASONS = {
+  needs_review_insufficient_cycles: 'seen fewer than 3 times',
+  needs_review_low_confidence: 'low confidence',
+  stale_evidence: 'stale history',
+}
+function reviewReason(bill) {
+  const code = (bill.reason_codes || []).find((c) => REVIEW_REASONS[c])
+  return code ? REVIEW_REASONS[code] : 'needs review'
+}
+function accountName(accountId) {
+  const match = (props.payload?.accounts || []).find((a) => a.account_id === accountId)
+  return match?.name || ''
+}
 const confidenceLabel = computed(() => `Confidence: ${props.payload?.confidence || 'unknown'}`)
 
 /**
@@ -282,6 +417,89 @@ function formatCents(cents) {
 
 .safe-spend-card__warnings {
   color: var(--color-accent-yellow);
+}
+
+.safe-spend-card__reserved {
+  border-top: 1px solid var(--divider);
+  display: grid;
+  gap: 0.5rem;
+  padding-top: 0.85rem;
+}
+
+.safe-spend-card__reserved-toggle {
+  align-items: center;
+  background: none;
+  border: 0;
+  color: var(--color-text-light);
+  cursor: pointer;
+  display: flex;
+  font-size: 0.85rem;
+  font-weight: 800;
+  justify-content: space-between;
+  padding: 0.25rem 0;
+  text-align: left;
+  width: 100%;
+}
+
+.safe-spend-card__reserved-toggle:focus-visible,
+.safe-spend-card__review-link:focus-visible {
+  outline: 2px solid var(--color-accent-cyan);
+  outline-offset: 2px;
+}
+
+.safe-spend-card__reserved-summary {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.safe-spend-card__group-title {
+  color: var(--color-text-light);
+  display: flex;
+  font-size: 0.8rem;
+  font-weight: 800;
+  gap: 0.75rem;
+  justify-content: space-between;
+  margin: 0.35rem 0;
+}
+
+.safe-spend-card__bills {
+  display: grid;
+  gap: 0.35rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.safe-spend-card__bills li {
+  align-items: flex-start;
+  display: flex;
+  font-size: 0.8rem;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.safe-spend-card__bill-name {
+  color: var(--color-text-light);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.safe-spend-card__bill-name small {
+  color: var(--color-text-muted);
+  display: block;
+}
+
+.safe-spend-card__bill-amount {
+  flex-shrink: 0;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.safe-spend-card__review-link {
+  color: var(--color-accent-cyan);
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
 .safe-spend-card__confidence {

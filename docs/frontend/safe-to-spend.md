@@ -1,6 +1,6 @@
 # Safe to Spend Dashboard Widget
 
-_Last updated: 2026-10-17_
+_Last updated: 2026-10-18_
 
 ## Purpose
 
@@ -94,3 +94,12 @@ Spending uses positive Plaid amounts and negative non-Plaid amounts; income cand
 The legacy Plaid refresh delegates to the shared upsert, which writes account ownership on insert and heals null transaction ownership during refresh. Conflicting non-null ownership is rejected.
 
 Dashboard request failures display the JSON server message, then the request error message, then the generic fallback. Render startup applies the existing migration chain before launching `wsgi:app` from the backend directory; the planning tables must exist before serving the widget.
+
+## Reserved-bill disclosure (TP-20261017-002)
+
+`SafeToSpendCard.vue` shows a native-button "What's reserved?" disclosure (`aria-expanded`) under the component math. It never recomputes totals: group totals come from `components.planned_bills_cents`, `confirmed_recurring_cents` and `provisional_recurring_cents`, and rows come from `upcoming_bills[]` (sorted by `due_date`, account shown by name from `accounts[]`, never by id; `estimated` rows say "estimated"; provisional rows are never called confirmed).
+
+- The summary line separates `obligation_coverage.display_window_due_cents` ("due today") from the remainder protected before the protection end, so a bill due Oct 21 shows as future-but-protected in Today mode.
+- `needs_review_bills[]` / `components.needs_review_cents` are shown as "Needs review (not reserved)" with the reason (fewer than 3 sightings, low confidence, stale history) and a `/transactions?tab=Recurring` link; `Transactions.vue` opens the Recurring tab from `?tab=Recurring`.
+- With no reserved rows the card says "No known bills are reserved through <date>" only when `obligation_coverage.complete` is true; otherwise it says coverage is incomplete (server `warnings` give the precise reason).
+- Refresh: changing the horizon refetches; the dashboard refetches on mount, so Confirm/Ignore/Edit made in the Recurring tab take effect the next time the dashboard loads. No polling or extra store.

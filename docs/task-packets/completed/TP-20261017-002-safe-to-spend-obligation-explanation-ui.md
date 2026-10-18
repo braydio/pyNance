@@ -1,12 +1,12 @@
 # TP-20261017-002: Explain Recurring Reserves and Missing-Coverage Reasons in Safe-to-Spend
 
 **Packet ID:** TP-20261017-002  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-17  
-**Last updated:** 2026-10-17  
+**Last updated:** 2026-10-18  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261017-002-safe-to-spend-obligation-explanation-ui.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261017-002-safe-to-spend-obligation-explanation-ui.md`  
 **Workstream size:** One UI/verification packet  
 **Priority:** P1  
 **Depends on:** TP-20261017-001, TP-20261017-007, TP-20261016-005  
@@ -44,3 +44,10 @@ No new detector, no backend financial algorithms, no whole-dashboard restyle, no
 
 ## Completion / agent handoff
 Read `AGENTS.md`, task-packets README/INDEX/TRACKER and only these named surfaces. Mark In Progress; implement and validate; commit/push main without force; mark Complete, move to completed, update index+tracker atomically; report test outputs, screenshots if UI was exercised, and any coverage blockers.
+
+## Completion report (2026-10-18)
+
+- Files: `frontend/src/components/dashboard/SafeToSpendCard.vue`, `frontend/src/components/dashboard/__tests__/SafeToSpendCard.spec.ts`, `frontend/src/views/Transactions.vue` (`?tab=Recurring`), `frontend/src/views/__tests__/TransactionsRecurringHandoff.spec.js`, `docs/frontend/safe-to-spend.md`.
+- Tests: `npx vitest --run` on the card, handoff, Transactions and dashboard section specs pass except `DashboardSections.spec.ts` "marks exactly one period control active" (known failing on `main`); `npm run build` succeeds; backend contract covered by `tests/test_safe_to_spend_integration.py` (13 passed).
+- Refresh: the dashboard has no keep-alive and refetches on mount, so recurring decisions made in the Recurring tab apply on return; no polling or new store added (per packet).
+- Not done: no screenshots at 390px/1280px were captured (no browser session); layout relies on wrapping rules (`overflow-wrap`, `nowrap` amounts).
