@@ -41,8 +41,10 @@ vi.mock('@/composables/useAccountGroups', () => ({
   useAccountGroups: () => ({ groups: ref([]), activeGroupId: ref(null) }),
 }))
 
-vi.mock('@/composables/useDateRange', () => {
+vi.mock('@/composables/useDateRange', async (importOriginal) => {
   const { ref, watch } = require('vue')
+  // Keep the real pure helpers (presets, getChartPresetRange); only the debounced composable is faked.
+  const { useDateRange: _real, ...actual } = await importOriginal<typeof import('@/composables/useDateRange')>()
 
   function formatDateInput(date) {
     const year = date.getFullYear()
@@ -110,6 +112,7 @@ vi.mock('@/composables/useDateRange', () => {
       }
     },
     formatDateInput,
+    ...actual,
   }
 })
 
@@ -304,7 +307,6 @@ const NetOverviewSectionStub = defineComponent({
     showAvgIncome: { type: Boolean, default: false },
     showAvgExpenses: { type: Boolean, default: false },
     showComparisonOverlay: { type: Boolean, default: false },
-    comparisonMode: { type: String, default: 'prior_month_to_date' },
     periodTransactionCount: { type: Number, default: 0 },
     periodTransactionCountLoading: { type: Boolean, default: false },
     periodTransactionCountError: { type: Boolean, default: false },
@@ -318,7 +320,6 @@ const NetOverviewSectionStub = defineComponent({
     'update:show-avg-income',
     'update:show-avg-expenses',
     'update:show-comparison-overlay',
-    'update:comparison-mode',
     'update:net-timeframe',
     'net-summary-change',
     'net-data-change',
@@ -342,7 +343,6 @@ const NetOverviewSectionStub = defineComponent({
         :show-avg-income="props.showAvgIncome"
         :show-avg-expenses="props.showAvgExpenses"
         :show-comparison-overlay="props.showComparisonOverlay"
-        :comparison-mode="props.comparisonMode"
         :timeframe="props.netTimeframe"
       />
     </div>
@@ -393,7 +393,6 @@ async function resolveAsyncSections(wrapper) {
     netOverviewSectionProps ||= {
       chartData: wrapper.vm.chartData,
       netSummary: wrapper.vm.netSummary,
-      comparisonMode: wrapper.vm.comparisonMode,
       periodTransactionCount: wrapper.vm.periodTransactionCount,
       periodTransactionCountLoading: wrapper.vm.periodTransactionCountLoading,
       periodTransactionCountError: wrapper.vm.periodTransactionCountError,
@@ -811,6 +810,26 @@ describe('Dashboard.vue', () => {
     expect(wrapper.vm.showDailyModal).toBe(true)
   })
 
+  it('reconciles the day modal against the daily rows even when the chart drew coarser buckets', async () => {
+    const wrapper = createWrapper()
+    await resolveAsyncSections(wrapper)
+    const before = { ...wrapper.vm.debouncedRange }
+
+    wrapper.vm.chartData = [
+      {
+        date: '2024-06-10',
+        income: { parsedValue: 1000 },
+        expenses: { parsedValue: -300 },
+        refunds: 25,
+        net: { parsedValue: 725 },
+      },
+    ]
+    await wrapper.vm.onNetBarClick('2024-06-10')
+
+    expect(wrapper.vm.dailyModalReference).toEqual({ income: 1000, expenses: -300, net: 725 })
+    expect(wrapper.vm.debouncedRange).toEqual(before)
+  })
+
   it('loads category drill-down transactions by category IDs and active date range', async () => {
     const categoryTransactions = [{ transaction_id: 'tx-food', amount: -24.5 }]
     fetchCategoryTransactions.mockResolvedValueOnce(categoryTransactions)
@@ -914,8 +933,7 @@ describe('Dashboard.vue', () => {
     expect(netOverviewSectionProps).not.toHaveProperty('userName')
     expect(netOverviewSectionProps).toMatchObject({
       chartData: [],
-      netSummary: { totalIncome: 0, totalExpenses: 0, totalNet: 0 },
-      comparisonMode: 'prior_month_to_date',
+      netSummary: { totalIncome: 0, totalExpenses: 0, totalRefunds: 0, totalNet: 0 },
       periodTransactionCount: 0,
       periodTransactionCountError: false,
     })

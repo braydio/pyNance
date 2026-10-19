@@ -7,9 +7,15 @@ import DailyNetChart from '@/components/charts/DailyNetChart.vue'
 import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.vue'
 import NetYearComparisonChart from '@/components/charts/NetYearComparisonChart.vue'
 import DateRangeSelector from '@/components/DateRangeSelector.vue'
+import ChartRangePresets from '@/components/charts/ChartRangePresets.vue'
 import router from '@/router'
 
 const refreshOptions = vi.hoisted(() => vi.fn())
+const routeState = vi.hoisted(() => ({ query: {} }))
+vi.mock('vue-router', async (importOriginal) => ({
+  ...(await importOriginal()),
+  useRoute: () => routeState,
+}))
 vi.mock('@/composables/useCategories', () => ({
   useCategories: () => ({
     groupedOptions: ref([{ id: 'g', label: 'Food', children: [{ id: '1', label: 'Groceries' }] }]),
@@ -31,7 +37,10 @@ function mountPage(variant) {
 }
 
 describe('ChartRoutePage', () => {
-  beforeEach(() => refreshOptions.mockClear())
+  beforeEach(() => {
+    refreshOptions.mockClear()
+    routeState.query = {}
+  })
 
   it('passes real month-to-date local dates to the cashflow chart', () => {
     const wrapper = mountPage('cashflow')
@@ -43,6 +52,26 @@ describe('ChartRoutePage', () => {
     expect(startDate <= endDate).toBe(true)
     expect(wrapper.text()).toContain('Cash Flow')
     expect(wrapper.get('[data-testid="chart-route-period"]').text()).toContain(startDate)
+  })
+
+  it('passes the selected preset to the cashflow chart so buckets follow it', async () => {
+    const wrapper = mountPage('cashflow')
+    expect(wrapper.getComponent(DailyNetChart).props('timeframe')).toBe('mtd')
+    wrapper.getComponent(ChartRangePresets).vm.$emit('update:modelValue', 'ytd')
+    await flushPromises()
+    const chart = wrapper.getComponent(DailyNetChart)
+    expect(chart.props('timeframe')).toBe('ytd')
+    expect(chart.props('startDate').endsWith('-01-01')).toBe(true)
+  })
+
+  it('treats start_date/end_date deep links as a custom range', () => {
+    routeState.query = { start_date: '2026-01-05', end_date: '2026-09-30' }
+    const chart = mountPage('cashflow').getComponent(DailyNetChart)
+    expect(chart.props()).toMatchObject({
+      startDate: '2026-01-05',
+      endDate: '2026-09-30',
+      timeframe: 'custom',
+    })
   })
 
   it('date inputs change the chart range', async () => {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { getChartPresetRange, CHART_RANGE_PRESETS } from './useDateRange'
+import { resolveNetGranularity, buildNetBuckets } from '@/utils/dailyNetBuckets'
 
 const at = (yyyy, mm, dd) => new Date(yyyy, mm - 1, dd)
 
@@ -23,5 +24,28 @@ describe('chart range presets (inclusive local calendar)', () => {
     expect(getChartPresetRange('3m', at(2026, 5, 31))).toEqual({ start: '2026-03-01', end: '2026-05-31' })
     expect(getChartPresetRange('1y', at(2024, 2, 29))).toEqual({ start: '2023-03-01', end: '2024-02-29' })
     expect(getChartPresetRange('ytd', at(2026, 1, 1))).toEqual({ start: '2026-01-01', end: '2026-01-01' })
+  })
+})
+
+describe('preset -> Daily Net bar granularity contract', () => {
+  const today = at(2026, 10, 19)
+  const bucketsFor = (preset) => {
+    const { start, end } = getChartPresetRange(preset, today)
+    const granularity = resolveNetGranularity(preset, start, end)
+    return { granularity, count: buildNetBuckets([], start, end, granularity).length }
+  }
+
+  it('maps every offered preset to its documented bucket and count', () => {
+    expect(bucketsFor('7d')).toEqual({ granularity: 'daily', count: 7 })
+    expect(bucketsFor('rolling_30')).toEqual({ granularity: 'daily', count: 30 })
+    expect(bucketsFor('mtd')).toEqual({ granularity: 'daily', count: 19 })
+    expect(bucketsFor('3m').granularity).toBe('weekly')
+    expect(bucketsFor('6m').granularity).toBe('weekly')
+    expect(bucketsFor('ytd')).toEqual({ granularity: 'monthly', count: 10 })
+    expect(bucketsFor('1y').granularity).toBe('monthly')
+  })
+
+  it('resolves a granularity for every CHART_RANGE_PRESETS value', () => {
+    CHART_RANGE_PRESETS.forEach(({ value }) => expect(bucketsFor(value).count).toBeGreaterThan(0))
   })
 })

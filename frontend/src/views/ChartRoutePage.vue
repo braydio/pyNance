@@ -32,7 +32,14 @@
         v-if="variant === 'cashflow'"
         :start-date="dateRange.start"
         :end-date="dateRange.end"
-      />
+        :timeframe="selectedPreset"
+      >
+        <template #title="{ granularityTitle }">
+          <p class="text-sm text-muted" data-testid="chart-route-granularity">
+            Economic Net · {{ granularityTitle }}
+          </p>
+        </template>
+      </DailyNetChart>
 
       <template v-else-if="variant === 'category'">
         <GroupedCategoryDropdown
@@ -86,7 +93,7 @@ const props = defineProps({
 const HEADINGS = {
   cashflow: {
     title: 'Cash Flow',
-    subtitle: 'Daily net income for the selected dates',
+    subtitle: 'Economic net for the selected dates, bucketed to fit the period',
     icon: BarChart3,
   },
   category: {

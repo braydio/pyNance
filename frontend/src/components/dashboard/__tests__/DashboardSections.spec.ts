@@ -16,6 +16,7 @@ const DateRangeSelectorStub = {
 
 const ChartDetailsSidebarStub = {
   name: 'ChartDetailsSidebar',
+  props: ['granularity'],
   template: '<button class="chart-details-sidebar__toggle accent-toggle-btn">Overlays</button>',
 }
 
@@ -28,7 +29,7 @@ const DailyNetChartStub = {
   },
   emits: ['summary-change', 'data-change', 'bar-click'],
   template:
-    '<div class="daily-net-chart" @click="$emit(\'bar-click\', startDate)"><div class="daily-net-chart__title-shell"><slot name="title" /></div><div class="daily-net-chart__controls-shell"><slot name="controls" /></div></div>',
+    '<div class="daily-net-chart" @click="$emit(\'bar-click\', startDate)"><div class="daily-net-chart__title-shell"><slot name="title" granularity-title="Monthly" /></div><div class="daily-net-chart__controls-shell"><slot name="controls" granularity="monthly" /></div></div>',
 }
 
 const SafeToSpendCardStub = {
@@ -282,7 +283,7 @@ describe('Dashboard section components', () => {
       .findAll('.daily-net-timeframe-btn')
       .filter((button) => button.attributes('aria-pressed') === 'true')
     expect(pressed).toHaveLength(1)
-    expect(pressed[0].text()).toBe('Rolling 30')
+    expect(pressed[0].text()).toBe('30D')
     expect(preset.find('[data-testid="daily-net-timeframe-custom"]').exists()).toBe(false)
 
     const custom = shallowMount(NetOverviewSection, {
@@ -295,6 +296,35 @@ describe('Dashboard section components', () => {
         .some((b) => b.attributes('aria-pressed') === 'true'),
     ).toBe(false)
     expect(custom.get('[data-testid="daily-net-timeframe-custom"]').text()).toBe('Custom')
+  })
+
+  it('titles the chart with the bucket granularity and passes it to the overlay controls', () => {
+    const wrapper = shallowMount(NetOverviewSection, {
+      props: { ...baseSectionProps, netTimeframe: 'ytd' },
+      global: { stubs: sectionStubs },
+    })
+    expect(wrapper.get('.daily-net-chart-title').text()).toContain('Economic Net')
+    expect(wrapper.get('[data-testid="net-granularity"]').text()).toBe('· Monthly')
+    expect(wrapper.findComponent(ChartDetailsSidebarStub).props('granularity')).toBe('monthly')
+    expect(wrapper.html()).not.toContain('comparison-mode')
+  })
+
+  it('discloses refund adjustments only when the period has refunds', () => {
+    const none = shallowMount(NetOverviewSection, {
+      props: { ...baseSectionProps, netSummary: { totalIncome: 1000, totalExpenses: -300, totalRefunds: 0, totalNet: 700 } },
+      global: { stubs: sectionStubs },
+    })
+    expect(none.get('[data-testid="net-chart-totals"]').text()).toBe('Income $1,000.00 · Expenses ($300.00)')
+
+    const refunded = shallowMount(NetOverviewSection, {
+      props: { ...baseSectionProps, netSummary: { totalIncome: 1000, totalExpenses: -300, totalRefunds: 25, totalNet: 725 } },
+      global: { stubs: sectionStubs },
+    })
+    const text = refunded.get('[data-testid="net-chart-totals"]').text()
+    expect(text).toContain('Economic income $1,000.00')
+    expect(text).toContain('Refunds $25.00')
+    expect(text).toContain('Net $725.00, excluding transfers')
+    expect(refunded.get('[data-testid="cash-direction-totals"]').text()).toBe(text)
   })
 
   it('forwards unusual-day selection from the financial summary', async () => {

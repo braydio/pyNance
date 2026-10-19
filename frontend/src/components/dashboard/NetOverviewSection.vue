@@ -96,10 +96,7 @@
           {{ netSummary.totalNet < 0 ? '▼' : '▲' }} {{ formatAmount(netSummary.totalNet) }}
           <span class="net-overview-net__label">net in selected period</span>
         </p>
-        <p class="text-sm text-muted">
-          Income {{ formatAmount(netSummary.totalIncome) }} · Expenses
-          {{ formatAmount(netSummary.totalExpenses) }}
-        </p>
+        <p class="text-sm text-muted" data-testid="cash-direction-totals">{{ totalsText }}</p>
       </div>
     </div>
 
@@ -132,35 +129,33 @@
         :show-avg-income="showAvgIncome"
         :show-avg-expenses="showAvgExpenses"
         :show-comparison-overlay="showComparisonOverlay"
-        :comparison-mode="comparisonMode"
         :timeframe="netTimeframe"
         @summary-change="emit('net-summary-change', $event)"
         @data-change="emit('net-data-change', $event)"
         @bar-click="emit('net-bar-click', $event)"
       >
-        <template #title>
+        <template #title="{ granularityTitle }">
           <div class="daily-net-chart-title-block">
             <h2 class="daily-net-chart-title">
-              <span class="title-text">Net Income</span>
-              <span class="title-subtitle">(Daily)</span>
+              <span class="title-text">Economic Net</span>
+              <span class="title-subtitle" data-testid="net-granularity">· {{ granularityTitle }}</span>
             </h2>
-            <p class="daily-net-chart-totals">
-              Income {{ formatAmount(netSummary.totalIncome) }} · Expenses
-              {{ formatAmount(netSummary.totalExpenses) }}
+            <p class="daily-net-chart-totals" data-testid="net-chart-totals">
+              {{ totalsText }}
             </p>
           </div>
         </template>
-        <template #controls>
+        <template #controls="{ granularity }">
           <div class="daily-net-chart-controls">
             <div class="daily-net-chart-toolbar angular-chart-container">
               <ChartDetailsSidebar
                 class="chart-details-sidebar--inline"
+                :granularity="granularity"
                 v-model:show7-day="show7DayModel"
                 v-model:show30-day="show30DayModel"
                 v-model:show-avg-income="showAvgIncomeModel"
                 v-model:show-avg-expenses="showAvgExpensesModel"
                 v-model:show-comparison-overlay="showComparisonOverlayModel"
-                v-model:comparison-mode="comparisonModeModel"
               />
               <div class="daily-net-timeframe-toggle" data-testid="daily-net-timeframe-toggle">
                 <button
@@ -242,7 +237,6 @@ const props = defineProps({
   showAvgIncome: { type: Boolean, default: false },
   showAvgExpenses: { type: Boolean, default: false },
   showComparisonOverlay: { type: Boolean, default: false },
-  comparisonMode: { type: String, default: 'prior_month_to_date' },
   safeToSpend: { type: Object, default: null },
   safeToSpendLoading: { type: Boolean, default: false },
   safeToSpendError: { type: String, default: '' },
@@ -262,7 +256,6 @@ const emit = defineEmits([
   'update:show-avg-income',
   'update:show-avg-expenses',
   'update:show-comparison-overlay',
-  'update:comparison-mode',
   'update:net-timeframe',
   'update:safe-to-spend-mode',
   'net-summary-change',
@@ -274,6 +267,18 @@ const emit = defineEmits([
 ])
 
 const showTagFilter = ref(false)
+
+/** Refunds are an economic adjustment: disclose them only when the period has any. */
+const totalsText = computed(() => {
+  const { totalIncome = 0, totalExpenses = 0, totalRefunds = 0, totalNet = 0 } = props.netSummary || {}
+  if (!totalRefunds) {
+    return `Income ${formatAmount(totalIncome)} · Expenses ${formatAmount(totalExpenses)}`
+  }
+  return (
+    `Economic income ${formatAmount(totalIncome)} · Expenses ${formatAmount(totalExpenses)} · ` +
+    `Refunds ${formatAmount(totalRefunds)} · Net ${formatAmount(totalNet)}, excluding transfers`
+  )
+})
 
 const transactionCountLabel = computed(() => {
   if (props.periodTransactionCountLoading) return 'Loading transactions…'
@@ -309,10 +314,6 @@ const showAvgExpensesModel = computed({
 const showComparisonOverlayModel = computed({
   get: () => props.showComparisonOverlay,
   set: (value) => emit('update:show-comparison-overlay', value),
-})
-const comparisonModeModel = computed({
-  get: () => props.comparisonMode,
-  set: (value) => emit('update:comparison-mode', value),
 })
 
 /**

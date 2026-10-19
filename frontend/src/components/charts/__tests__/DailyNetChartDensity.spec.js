@@ -45,7 +45,7 @@ async function flushRender() {
   await nextTick()
 }
 
-describe('DailyNetChart density config', () => {
+describe('DailyNetChart bar density by bucket count', () => {
   beforeEach(() => {
     chartCtor.mockClear()
     fetchDailyNet.mockReset()
@@ -53,7 +53,7 @@ describe('DailyNetChart density config', () => {
       status: 'success',
       data: [
         {
-          date: '2024-01-01',
+          date: '2024-02-01',
           income: { parsedValue: 120 },
           expenses: { parsedValue: -40 },
           net: { parsedValue: 80 },
@@ -68,45 +68,37 @@ describe('DailyNetChart density config', () => {
     })
   })
 
-  it('uses compact bars, fewer ticks, and month labels for dense ranges', async () => {
-    mount(DailyNetChart, {
-      props: {
-        startDate: '2024-01-01',
-        endDate: '2024-05-31',
-      },
-    })
-
+  async function render(props) {
+    mount(DailyNetChart, { props })
     await flushRender()
+    return chartCtor.mock.calls.at(-1)[0]
+  }
 
-    const config = chartCtor.mock.calls.at(-1)[0]
-    const expenseDataset = config.data.datasets.find((d) => d.label === 'Expenses')
+  it('draws a year-to-date range as monthly bars rather than one bar per day', async () => {
+    const config = await render({ startDate: '2024-01-01', endDate: '2024-05-31', timeframe: 'ytd' })
+    const expenses = config.data.datasets.find((d) => d.label === 'Expenses')
 
-    expect(config.data.labels).toHaveLength(152)
-    expect(expenseDataset.barThickness).toBe(5)
-    expect(expenseDataset.maxBarThickness).toBe(8)
-    expect(expenseDataset.categoryPercentage).toBe(0.92)
-    expect(expenseDataset.barPercentage).toBe(0.8)
-    expect(config.options.scales.x.ticks.maxTicksLimit).toBe(6)
+    expect(config.data.labels).toHaveLength(5)
+    expect(expenses.maxBarThickness).toBe(64)
+    expect(expenses.barThickness).toBeUndefined()
     expect(config.options.scales.x.ticks.callback(null, 0)).toBe('Jan')
+    expect(config.options.scales.x.ticks.callback(null, 4)).toBe('May')
   })
 
-  it('uses standard day labels and medium sizing for medium ranges', async () => {
-    mount(DailyNetChart, {
-      props: {
-        startDate: '2024-01-01',
-        endDate: '2024-03-01',
-      },
-    })
+  it('keeps daily ranges at one bar per day with narrower bars and day labels', async () => {
+    const config = await render({ startDate: '2024-02-01', endDate: '2024-03-01', timeframe: 'custom' })
+    const income = config.data.datasets.find((d) => d.label === 'Income')
 
-    await flushRender()
+    expect(config.data.labels).toHaveLength(30)
+    expect(income.maxBarThickness).toBe(26)
+    expect(config.options.scales.x.ticks.maxTicksLimit).toBe(10)
+    expect(config.options.scales.x.ticks.callback(null, 0)).toBe('Feb 1')
+  })
 
-    const config = chartCtor.mock.calls.at(-1)[0]
-    const incomeDataset = config.data.datasets.find((d) => d.label === 'Income')
-
-    expect(config.data.labels).toHaveLength(61)
-    expect(incomeDataset.barThickness).toBe(10)
-    expect(incomeDataset.maxBarThickness).toBe(14)
-    expect(config.options.scales.x.ticks.maxTicksLimit).toBe(8)
-    expect(config.options.scales.x.ticks.callback(null, 0)).toBe('Jan 1')
+  it('formats the value axis as compact currency', async () => {
+    const config = await render({ startDate: '2024-02-01', endDate: '2024-02-10', timeframe: 'custom' })
+    const { callback } = config.options.scales.y.ticks
+    expect(callback(1200)).toBe('$1.2k')
+    expect(callback(-2400)).toBe('-$2.4k')
   })
 })

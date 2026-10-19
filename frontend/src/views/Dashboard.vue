@@ -25,7 +25,6 @@
           :show-avg-income="showAvgIncome"
           :show-avg-expenses="showAvgExpenses"
           :show-comparison-overlay="showComparisonOverlay"
-          :comparison-mode="comparisonMode"
           :safe-to-spend="safeToSpend"
           :safe-to-spend-loading="safeToSpendLoading"
           :safe-to-spend-error="safeToSpendError"
@@ -43,7 +42,6 @@
           @update:show-avg-income="showAvgIncome = $event"
           @update:show-avg-expenses="showAvgExpenses = $event"
           @update:show-comparison-overlay="showComparisonOverlay = $event"
-          @update:comparison-mode="comparisonMode = $event"
           @update:net-timeframe="setDashboardPeriodPreset"
           @update:safe-to-spend-mode="setSafeToSpendMode"
           @net-summary-change="netSummary = $event"
@@ -223,6 +221,7 @@ const reconnectCount = ref(0)
 const netSummary = ref({
   totalIncome: 0,
   totalExpenses: 0,
+  totalRefunds: 0,
   totalNet: 0,
 })
 const chartData = ref([])
@@ -232,7 +231,6 @@ const show30Day = ref(false)
 const showAvgIncome = ref(false)
 const showAvgExpenses = ref(false)
 const showComparisonOverlay = ref(false)
-const comparisonMode = ref('prior_month_to_date')
 /** Last quick preset applied (mtd | rolling_30); the active period is `selectedPreset`. */
 const netTimeframe = ref('mtd')
 /** Which period control produced the visible dates: mtd | rolling_30 | custom. */

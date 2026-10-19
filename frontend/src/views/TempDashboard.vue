@@ -19,7 +19,6 @@
         :show-avg-income="showAvgIncome"
         :show-avg-expenses="showAvgExpenses"
         :show-comparison-overlay="showComparisonOverlay"
-        :comparison-mode="comparisonMode"
         @update:start-date="dateRange.start = $event"
         @update:end-date="dateRange.end = $event"
         @update:zoomed-out="zoomedOut = $event"
@@ -28,7 +27,6 @@
         @update:show-avg-income="showAvgIncome = $event"
         @update:show-avg-expenses="showAvgExpenses = $event"
         @update:show-comparison-overlay="showComparisonOverlay = $event"
-        @update:comparison-mode="comparisonMode = $event"
         @net-summary-change="netSummary = $event"
         @net-data-change="chartData = $event"
         @net-bar-click="onNetBarClick"
@@ -294,6 +292,7 @@ const netWorthMessage = computed(() => {
 const netSummary = ref({
   totalIncome: 0,
   totalExpenses: 0,
+  totalRefunds: 0,
   totalNet: 0,
 })
 const chartData = ref([])

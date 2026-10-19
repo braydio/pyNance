@@ -47,29 +47,34 @@
       </p>
       <fieldset class="chart-details-sidebar__fieldset">
         <legend class="sr-only">Chart overlay toggles</legend>
-        <label class="chart-details-sidebar__chip">
+        <label class="chart-details-sidebar__chip" :class="{ 'is-disabled': !isDaily }">
           <input
             type="checkbox"
             :checked="show7Day"
+            :disabled="!isDaily"
             @change="onOptionChange('update:show7Day', $event.target.checked)"
           />
           7 Day Trended
         </label>
-        <label class="chart-details-sidebar__chip">
+        <label class="chart-details-sidebar__chip" :class="{ 'is-disabled': !isDaily }">
           <input
             type="checkbox"
             :checked="show30Day"
+            :disabled="!isDaily"
             @change="onOptionChange('update:show30Day', $event.target.checked)"
           />
           30 Day Trended
         </label>
+        <p v-if="!isDaily" class="chart-details-sidebar__hint" data-testid="daily-overlay-reason">
+          Trend lines use daily net, so they are available with daily bars only.
+        </p>
         <label class="chart-details-sidebar__chip">
           <input
             type="checkbox"
             :checked="showAvgIncome"
             @change="onOptionChange('update:showAvgIncome', $event.target.checked)"
           />
-          Avg Income
+          {{ avgSuffix('Avg Income') }}
         </label>
         <label class="chart-details-sidebar__chip">
           <input
@@ -77,7 +82,7 @@
             :checked="showAvgExpenses"
             @change="onOptionChange('update:showAvgExpenses', $event.target.checked)"
           />
-          Avg Expenses
+          {{ avgSuffix('Avg Expenses') }}
         </label>
         <label class="chart-details-sidebar__comparison-toggle chart-details-sidebar__chip">
           <input
@@ -99,7 +104,7 @@
  * Loads in a collapsed state and automatically collapses again whenever the user
  * selects an option or clicks outside the sidebar.
  */
-import { ref, toRefs, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, toRefs, onMounted, onBeforeUnmount } from 'vue'
 
 const props = defineProps({
   show7Day: { type: Boolean, default: false },
@@ -107,6 +112,12 @@ const props = defineProps({
   showAvgIncome: { type: Boolean, default: false },
   showAvgExpenses: { type: Boolean, default: false },
   showComparisonOverlay: { type: Boolean, default: false },
+  /** Bar granularity currently drawn; 7/30-day trends are daily-only. */
+  granularity: {
+    type: String,
+    default: 'daily',
+    validator: (value) => ['daily', 'weekly', 'monthly', 'quarterly'].includes(value),
+  },
 })
 
 const emit = defineEmits([
@@ -118,6 +129,10 @@ const emit = defineEmits([
 ])
 
 const { show7Day, show30Day, showAvgIncome, showAvgExpenses, showComparisonOverlay } = toRefs(props)
+
+const isDaily = computed(() => props.granularity === 'daily')
+const UNITS = { daily: 'day', weekly: 'week', monthly: 'month', quarterly: 'quarter' }
+const avgSuffix = (name) => `${name} per ${UNITS[props.granularity] ?? 'day'}`
 
 const isOpen = ref(false)
 const sidebarRef = ref(null)
@@ -300,6 +315,18 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+}
+
+.chart-details-sidebar__hint {
+  margin: 0;
+  max-width: 16rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.chart-details-sidebar__chip.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .chart-details-sidebar__chip {

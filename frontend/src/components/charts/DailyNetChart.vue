@@ -1,5 +1,19 @@
 <template>
   <div class="daily-net-chart">
+    <div v-if="$slots.title || $slots.controls" class="daily-net-chart__header">
+      <div v-if="$slots.title" class="daily-net-chart__title-shell">
+        <slot
+          name="title"
+          :granularity="granularity"
+          :granularity-title="granularityTitle"
+          :is-drilled="isDrilled"
+        />
+      </div>
+      <div v-if="$slots.controls" class="daily-net-chart__controls-shell">
+        <slot name="controls" :granularity="granularity" :granularity-title="granularityTitle" />
+      </div>
+    </div>
+
     <div v-if="hasError" class="daily-net-chart__state daily-net-chart__state--error">
       <p>Unable to load daily net data right now. Please try again.</p>
       <button class="daily-net-chart__retry" type="button" @click="retryFetch">Retry</button>
@@ -7,92 +21,161 @@
 
     <div v-else-if="isLoading" class="daily-net-chart__state">Loading daily net chart…</div>
 
-    <div v-else-if="isEmpty" class="daily-net-chart__state">
-      No transactions found for the selected date range.
+    <div v-else-if="isEmpty" class="daily-net-chart__state" data-testid="daily-net-empty">
+      No activity in this period
     </div>
 
     <template v-else>
-      <div class="daily-net-chart__meta angular-chart-container">
-        <div v-if="$slots.title" class="daily-net-chart__title-shell">
-          <slot name="title" />
-        </div>
+      <ul class="daily-net-chart__legend" aria-label="Chart legend" data-testid="daily-net-legend">
+        <li
+          v-for="item in baseLegend"
+          :key="item.label"
+          class="daily-net-chart__legend-item daily-net-chart__legend-item--base"
+        >
+          <span
+            class="daily-net-chart__swatch"
+            :class="`daily-net-chart__swatch--${item.kind}`"
+            :style="{ '--legend-color': item.color }"
+            aria-hidden="true"
+          />
+          <span class="daily-net-chart__legend-label">{{ item.label }}</span>
+        </li>
+      </ul>
+      <ul
+        v-if="legendItems.length"
+        class="daily-net-chart__legend daily-net-chart__legend--overlays"
+        aria-label="Active chart overlays"
+      >
+        <li
+          v-for="item in legendItems"
+          :key="item.label"
+          class="daily-net-chart__legend-item angular-chart-chip"
+          :style="{ '--legend-color': item.color }"
+        >
+          <span class="daily-net-chart__swatch daily-net-chart__swatch--dashed" aria-hidden="true" />
+          <span class="daily-net-chart__legend-label">{{ item.label }}</span>
+        </li>
+      </ul>
+      <p v-if="comparisonError" class="daily-net-chart__notice" role="status">
+        Comparison data is unavailable for the matching prior interval.
+      </p>
 
-        <div class="daily-net-chart__legend-shell">
-          <div
-            v-if="legendItems.length"
-            class="daily-net-chart__legend"
-            aria-label="Active chart overlays"
-          >
-            <span
-              v-for="item in legendItems"
-              :key="item.label"
-              class="daily-net-chart__legend-item angular-chart-chip"
-              :style="{ '--legend-color': item.color }"
-            >
-              <span class="daily-net-chart__legend-swatch" />
-              <span class="daily-net-chart__legend-label">{{ item.label }}</span>
+      <section
+        v-if="activeDetails"
+        class="daily-net-chart__details angular-chart-zone"
+        aria-live="polite"
+        aria-label="Active period details"
+      >
+        <div class="daily-net-chart__details-header">
+          <p class="daily-net-chart__details-date">
+            {{ activeDetails.date }}
+            <span v-if="activeDetails.isPartial" class="daily-net-chart__details-partial">
+              partial period
             </span>
-          </div>
-          <div v-else class="daily-net-chart__legend-placeholder" aria-hidden="true"></div>
+          </p>
+          <p
+            class="daily-net-chart__details-net"
+            :class="activeDetails.net < 0 ? 'is-negative' : 'is-positive'"
+          >
+            Economic Net: {{ formatAmount(activeDetails.net) }}
+          </p>
         </div>
+        <dl class="daily-net-chart__details-metrics">
+          <div>
+            <dt>Income</dt>
+            <dd>{{ formatAmount(activeDetails.income) }}</dd>
+          </div>
+          <div>
+            <dt>Expenses</dt>
+            <dd>{{ formatAmount(activeDetails.expenses) }}</dd>
+          </div>
+          <div>
+            <dt>Refunds</dt>
+            <dd>{{ formatAmount(activeDetails.refunds) }}</dd>
+          </div>
+          <div>
+            <dt>Transactions</dt>
+            <dd>{{ activeDetails.transactions }}</dd>
+          </div>
+        </dl>
 
-        <section
-          v-if="activeDetails"
-          class="daily-net-chart__details angular-chart-zone"
-          aria-live="polite"
-          aria-label="Active day details"
+        <div v-if="activeDetails.comparison" class="daily-net-chart__details-comparison">
+          <p>
+            {{ activeDetails.comparison.label }}:
+            {{ formatAmount(activeDetails.comparison.value) }}
+          </p>
+          <p>
+            vs prior:
+            {{ activeDetails.comparison.deltaPrefix
+            }}{{ formatAmount(activeDetails.comparison.delta)
+            }}{{ activeDetails.comparison.percentage }}
+          </p>
+        </div>
+        <button
+          v-if="activeDetails.canDrill"
+          class="daily-net-chart__drill-btn"
+          type="button"
+          @click="activateBucket(activeBucket)"
         >
-          <span class="daily-net-chart__details-top-accent" aria-hidden="true"></span>
-          <div class="daily-net-chart__details-header">
-            <p class="daily-net-chart__details-date">{{ activeDetails.date }}</p>
-            <p class="daily-net-chart__details-net">Net: {{ formatAmount(activeDetails.net) }}</p>
-          </div>
-          <dl class="daily-net-chart__details-metrics">
-            <div>
-              <dt>Income</dt>
-              <dd>{{ formatAmount(activeDetails.income) }}</dd>
-            </div>
-            <div>
-              <dt>Expenses</dt>
-              <dd>{{ formatAmount(activeDetails.expenses) }}</dd>
-            </div>
-            <div>
-              <dt>Transactions</dt>
-              <dd>{{ activeDetails.transactions }}</dd>
-            </div>
-          </dl>
+          View daily breakdown
+        </button>
+      </section>
 
-          <div v-if="activeDetails.comparison" class="daily-net-chart__details-comparison">
-            <p>
-              {{ activeDetails.comparison.label }}:
-              {{ formatAmount(activeDetails.comparison.value) }}
-            </p>
-            <p>
-              vs prior:
-              {{ activeDetails.comparison.deltaPrefix
-              }}{{ formatAmount(activeDetails.comparison.delta)
-              }}{{ activeDetails.comparison.percentage }}
-            </p>
-          </div>
-        </section>
+      <nav v-if="isDrilled" class="daily-net-chart__breadcrumb" aria-label="Chart drilldown">
+        <button type="button" class="daily-net-chart__back" @click="exitDrill">
+          ← Back to {{ baseGranularityTitle }}
+        </button>
+        <span class="daily-net-chart__crumb">
+          {{ baseGranularityTitle }} › {{ drillLabel }} (Daily)
+        </span>
+      </nav>
 
-        <div v-if="$slots.controls" class="daily-net-chart__controls-shell">
-          <slot name="controls" />
-        </div>
+      <div
+        class="daily-net-chart__canvas-wrap"
+        tabindex="0"
+        role="group"
+        :aria-label="canvasLabel"
+        @keydown="onKeydown"
+      >
+        <canvas ref="chartCanvas" style="width: 100%; height: 100%" aria-hidden="true"></canvas>
       </div>
 
-      <div class="daily-net-chart__canvas-wrap">
-        <canvas ref="chartCanvas" style="width: 100%; height: 100%"></canvas>
-        <div
-          v-show="hoverIndicator.visible"
-          class="daily-net-chart__hover-indicator angular-chart-chip"
-          :style="{ left: `${hoverIndicator.x}px`, top: `${hoverIndicator.y}px` }"
-          aria-hidden="true"
-        >
-          <span class="daily-net-chart__hover-dot" />
-          <span class="daily-net-chart__hover-label">{{ hoverIndicator.label }}</span>
+      <details class="daily-net-chart__table-disclosure">
+        <summary>{{ granularityTitle }} economic net table</summary>
+        <div class="daily-net-chart__table-scroll">
+          <table class="daily-net-chart__table">
+            <caption class="sr-only">
+              Economic net by {{ granularityTitle.toLowerCase() }} period
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Period</th>
+                <th scope="col">Income</th>
+                <th scope="col">Expenses</th>
+                <th scope="col">Refunds</th>
+                <th scope="col">Net</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="bucket in buckets"
+                :key="bucket.key"
+                :class="{ 'is-active': bucket.key === activeBucket?.key }"
+              >
+                <th scope="row">
+                  <button type="button" class="daily-net-chart__row-btn" @click="activateBucket(bucket)">
+                    {{ bucketLabel(bucket, 'long') }}
+                  </button>
+                </th>
+                <td>{{ formatAmount(bucket.income) }}</td>
+                <td>{{ formatAmount(bucket.expenses) }}</td>
+                <td>{{ formatAmount(bucket.refunds) }}</td>
+                <td>{{ formatAmount(bucket.net) }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-      </div>
+      </details>
     </template>
   </div>
 </template>
@@ -101,46 +184,36 @@
 /**
  * DailyNetChart.vue
  *
- * Renders the dashboard daily net chart with stacked income/expense bars,
- * a net indicator dash, and a persistent details panel for the active day.
+ * Economic net chart. The selected date range is always the global dashboard period;
+ * only the bar granularity changes (daily, Monday weeks, months, quarters). The
+ * backend `daily_net` rows are the source of truth and are rolled up client-side by
+ * `@/utils/dailyNetBuckets`. Clicking a coarse bucket drills into its days inside the
+ * chart; clicking a day emits `bar-click` with the ISO date for the owner-scoped modal.
  */
 import { fetchDailyNet } from '@/api/charts'
-import { ref, onMounted, onUnmounted, nextTick, watch, toRefs } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch, toRefs } from 'vue'
 import { Chart } from 'chart.js'
 import { formatAmount } from '@/utils/format'
+import { CHART_RANGE_PRESETS } from '@/composables/useDateRange'
+import {
+  resolveNetGranularity,
+  buildNetBuckets,
+  formatNetBucketLabel,
+  netGranularityTitle,
+  formatCompactCurrency,
+  resolveComparisonInterval,
+  buildComparisonNets,
+  sumNetBuckets,
+  isoToDay,
+  dayToIso,
+} from '@/utils/dailyNetBuckets'
 
 import { Legend, LineElement, BarElement, CategoryScale, LinearScale, PointElement } from 'chart.js'
 
 Chart.register(Legend, LineElement, BarElement, CategoryScale, LinearScale, PointElement)
 
-function toParsedValue(value) {
-  if (value && typeof value === 'object' && typeof value.parsedValue === 'number')
-    return value.parsedValue
-  return typeof value === 'number' ? value : 0
-}
-
-function normalizeZero(value) {
-  return Object.is(value, -0) ? 0 : value
-}
-
-/**
- * Resolve the pixel position for the net indicator at a given label index.
- *
- * @param {import('chart.js').Chart} chart - The chart instance.
- * @param {number} dataIndex - Active label index.
- * @returns {{x: number, y: number} | null} Pixel coordinates for the net dash.
- */
-function getNetDashPosition(chart, dataIndex) {
-  if (!chart?.getDatasetMeta) return null
-  const firstMeta = chart.getDatasetMeta(0)
-  const bar = firstMeta?.data?.[dataIndex]
-  const yScale = chart.scales?.y
-  const netValue = toParsedValue(
-    chart?.$netValues?.[dataIndex] ?? chart?.$dailyNetRows?.[dataIndex]?.net,
-  )
-  if (!bar || !yScale) return null
-  return { x: bar.x, y: yScale.getPixelForValue(netValue) }
-}
+const GRANULARITY_ORDER = ['daily', 'weekly', 'monthly', 'quarterly']
+const WARMUP_DAYS = 30
 
 const props = defineProps({
   startDate: { type: String, required: true },
@@ -154,7 +227,8 @@ const props = defineProps({
   timeframe: {
     type: String,
     default: 'mtd',
-    validator: (value) => ['mtd', 'rolling_30', 'custom'].includes(value),
+    validator: (value) =>
+      value === 'custom' || CHART_RANGE_PRESETS.some((preset) => preset.value === value),
   },
 })
 
@@ -167,282 +241,241 @@ const chartInstance = ref(null)
 const chartCanvas = ref(null)
 const chartData = ref([])
 const comparisonData = ref([])
-const requestRange = ref({ startDate: null, endDate: null, displayStart: null, displayEnd: null })
+const comparisonReady = ref(false)
+const comparisonError = ref(false)
 const isLoading = ref(false)
 const hasError = ref(false)
 const isEmpty = ref(false)
 const legendItems = ref([])
-const activeIndex = ref(null)
-const activeDetails = ref(null)
-const hoverIndicator = ref({ x: 0, y: 0, visible: false, label: '' })
-
-const MS_PER_DAY = 86400000
-const DEFAULT_ZOOM_MONTHS = 6
+const activeKey = ref(null)
+const drill = ref(null)
 
 const getStyle = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 
-function formatAxisCurrency(value) {
-  const numericValue = Number(value) || 0
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-    minimumFractionDigits: 0,
-  }).format(numericValue)
+function toParsedValue(value) {
+  if (value && typeof value === 'object' && typeof value.parsedValue === 'number')
+    return value.parsedValue
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0
 }
 
-/**
- * Create comparison details for the active point using the existing tooltip math.
- *
- * @param {number} netValue - Current period net value.
- * @param {string} comparisonLabel - Prior-series label.
- * @param {number|null} comparisonValue - Prior-series value at the same aligned index.
- * @returns {{label: string, value: number, delta: number, deltaPrefix: string, percentage: string}|null}
- * Comparison details used by the persistent details panel.
- */
-function buildComparisonDetails(netValue, comparisonLabel, comparisonValue) {
-  if (!comparisonLabel || comparisonValue == null) return null
+function normalizeZero(value) {
+  return Object.is(value, -0) ? 0 : value
+}
 
+/** Step the base granularity coarser by one level when the range selector is zoomed out. */
+function coarsen(granularity) {
+  const next = GRANULARITY_ORDER.indexOf(granularity) + 1
+  return GRANULARITY_ORDER[Math.min(next, GRANULARITY_ORDER.length - 1)]
+}
+
+const baseGranularity = computed(() => {
+  const base = resolveNetGranularity(timeframe.value, props.startDate, props.endDate)
+  return props.zoomedOut ? coarsen(base) : base
+})
+const isDrilled = computed(() => drill.value != null)
+const granularity = computed(() => (isDrilled.value ? 'daily' : baseGranularity.value))
+const granularityTitle = computed(() => netGranularityTitle(granularity.value))
+const baseGranularityTitle = computed(() => netGranularityTitle(baseGranularity.value))
+
+const displayRange = computed(() =>
+  isDrilled.value
+    ? { start: drill.value.startDate, end: drill.value.endDate }
+    : { start: props.startDate, end: props.endDate },
+)
+
+const needsWarmup = computed(() => show7Day.value || show30Day.value)
+const requestRange = computed(() => {
+  const start = isoToDay(props.startDate)
+  return {
+    startDate: needsWarmup.value && start != null ? dayToIso(start - WARMUP_DAYS) : props.startDate,
+    endDate: props.endDate,
+  }
+})
+
+const multiYear = computed(() => displayRange.value.start.slice(0, 4) !== displayRange.value.end.slice(0, 4))
+
+const buckets = computed(() =>
+  buildNetBuckets(chartData.value, displayRange.value.start, displayRange.value.end, granularity.value),
+)
+
+const comparisonInterval = computed(() =>
+  resolveComparisonInterval(timeframe.value, props.startDate, props.endDate),
+)
+const comparisonLabel = computed(() => {
+  if (timeframe.value === 'mtd') return 'This Day Last Month'
+  if (timeframe.value === 'ytd') return 'Same period last year'
+  return 'Previous period'
+})
+const comparisonNets = computed(() => {
+  if (!showComparisonOverlay.value || !comparisonReady.value || !comparisonInterval.value) return null
+  return buildComparisonNets(
+    comparisonData.value,
+    buckets.value,
+    props.startDate,
+    comparisonInterval.value,
+  )
+})
+
+const hasRefunds = computed(() => buckets.value.some((bucket) => bucket.refunds !== 0))
+const baseLegend = computed(() => [
+  { label: 'Income', kind: 'bar', color: 'var(--color-accent-green)' },
+  { label: 'Expenses', kind: 'bar', color: 'var(--color-accent-red)' },
+  ...(hasRefunds.value
+    ? [{ label: 'Refunds', kind: 'bar', color: 'var(--color-accent-cyan)' }]
+    : []),
+  { label: 'Economic net', kind: 'dash', color: 'var(--color-accent-yellow)' },
+])
+
+function bucketLabel(bucket, style = 'tick') {
+  return formatNetBucketLabel(bucket, { style, multiYear: multiYear.value })
+}
+
+function isActiveBucket(bucket) {
+  return (
+    bucket.income !== 0 ||
+    bucket.expenses !== 0 ||
+    bucket.refunds !== 0 ||
+    bucket.net !== 0 ||
+    bucket.transaction_count > 0
+  )
+}
+
+const activeBucket = computed(() => {
+  const list = buckets.value
+  if (!list.length) return null
+  const keyed = list.find((bucket) => bucket.key === activeKey.value)
+  if (keyed) return keyed
+  const latest = list[list.length - 1]
+  if (isActiveBucket(latest)) return latest
+  return list.find(isActiveBucket) ?? latest
+})
+
+const drillLabel = computed(() => (drill.value ? bucketLabel(drill.value, 'long') : ''))
+
+/**
+ * Create comparison details for the active bucket.
+ *
+ * @param {number} netValue - Current bucket economic net.
+ * @param {string} label - Basis label for the comparison series.
+ * @param {number|null} comparisonValue - Net of the matching prior span, or null if unavailable.
+ */
+function buildComparisonDetails(netValue, label, comparisonValue) {
+  if (!label || comparisonValue == null) return null
   const delta = netValue - comparisonValue
   const deltaPrefix = delta >= 0 ? '+' : ''
   const percentage =
     comparisonValue === 0
       ? ''
       : ` (${deltaPrefix}${((delta / Math.abs(comparisonValue)) * 100).toFixed(1)}%)`
-
-  return { label: comparisonLabel, value: comparisonValue, delta, deltaPrefix, percentage }
+  return { label, value: comparisonValue, delta, deltaPrefix, percentage }
 }
 
-function isNonEmptyDailyRow(row) {
-  return (
-    toParsedValue(row?.income) !== 0 ||
-    toParsedValue(row?.expenses) !== 0 ||
-    toParsedValue(row?.net) !== 0 ||
-    (row?.transaction_count ?? 0) > 0
-  )
-}
-
-function resolveInitialActiveIndex(displayData) {
-  if (!displayData.length) return null
-  const latestIndex = displayData.length - 1
-  if (isNonEmptyDailyRow(displayData[latestIndex])) return latestIndex
-  const firstNonEmptyIndex = displayData.findIndex((row) => isNonEmptyDailyRow(row))
-  return firstNonEmptyIndex >= 0 ? firstNonEmptyIndex : latestIndex
-}
-
-function resolveDetailsFromIndex(index, labels, displayData, comparisonSeries, comparisonLabel) {
-  const row = displayData[index]
-  const label = labels[index]
-  if (row == null || !label) return null
-
-  const netValue = toParsedValue(row.net)
-  const comparisonValue = comparisonSeries?.[index] ?? null
-  const comparison = buildComparisonDetails(netValue, comparisonLabel, comparisonValue)
-
+const activeDetails = computed(() => {
+  const bucket = activeBucket.value
+  if (!bucket) return null
+  const index = buckets.value.indexOf(bucket)
   return {
-    date: formatTooltipTitle(label),
-    net: netValue,
-    income: toParsedValue(row.income),
-    expenses: toParsedValue(row.expenses),
-    transactions: row?.transaction_count ?? 0,
-    comparison,
+    key: bucket.key,
+    date: bucketLabel(bucket, 'long'),
+    isPartial: bucket.isPartial && bucket.granularity !== 'daily',
+    net: bucket.net,
+    income: bucket.income,
+    expenses: bucket.expenses,
+    refunds: bucket.refunds,
+    transactions: bucket.transaction_count,
+    canDrill: bucket.granularity !== 'daily',
+    comparison: buildComparisonDetails(
+      bucket.net,
+      comparisonLabel.value,
+      comparisonNets.value?.[index] ?? null,
+    ),
   }
+})
+
+const canvasLabel = computed(
+  () =>
+    `Economic net bar chart, ${granularityTitle.value.toLowerCase()}, ${buckets.value.length} periods. ` +
+    'Use left and right arrow keys to move between periods and Enter to open one.',
+)
+
+function setActiveIndex(index) {
+  const bucket = buckets.value[Math.min(Math.max(Math.trunc(index), 0), buckets.value.length - 1)]
+  if (bucket) activeKey.value = bucket.key
 }
 
-function clampActiveIndex(index, size) {
-  if (!Number.isFinite(index) || size <= 0) return null
-  return Math.min(Math.max(Math.trunc(index), 0), size - 1)
-}
-
-function getChartPayloadAtIndex(index) {
-  const chart = chartInstance.value
-  const labels = chart?.data?.labels ?? []
-  const displayData = chart?.$dailyNetRows ?? []
-  const comparisonSeries = chart?.$comparisonSeries
-  const comparisonLabel = chart?.$comparisonLabel
-  const clampedIndex = clampActiveIndex(index, labels.length)
-
-  if (clampedIndex == null) return null
-
-  const details = resolveDetailsFromIndex(
-    clampedIndex,
-    labels,
-    displayData,
-    comparisonSeries,
-    comparisonLabel,
-  )
-  return details ? { index: clampedIndex, details } : null
-}
-
-function setActivePoint(index) {
-  const payload = getChartPayloadAtIndex(index)
-  if (!payload) return false
-
-  activeIndex.value = payload.index
-  activeDetails.value = payload.details
-  return true
-}
-
-function resolveEventPoint(event) {
-  const native = event?.native ?? event
-  const x = Number.isFinite(native?.offsetX) ? native.offsetX : null
-  const y = Number.isFinite(native?.offsetY) ? native.offsetY : null
-  return { x, y }
-}
-
-function updateHoverIndicator(event, index) {
-  const chart = chartInstance.value
-  if (!chart) return
-
-  const meta = chart.getDatasetMeta(0)
-  const bar = meta?.data?.[index]
-  if (!bar) {
-    hoverIndicator.value.visible = false
+/** Daily bars open the day modal through the parent; coarser bars drill into their days. */
+function activateBucket(bucket) {
+  if (!bucket) return
+  activeKey.value = bucket.key
+  if (bucket.granularity === 'daily') {
+    emit('bar-click', bucket.startDate)
     return
   }
-
-  const labels = chart.data?.labels ?? []
-  const label = typeof labels[index] === 'string' ? labels[index] : ''
-  const { x: eventX, y: eventY } = resolveEventPoint(event)
-  const chartArea = chart.chartArea
-  const barTop = Math.min(bar.y, bar.base)
-  const offsetY = Number.isFinite(eventY) ? Math.min(eventY, barTop) : barTop
-  const rawX = Number.isFinite(eventX) ? eventX : bar.x
-  const rawY = offsetY - 12
-  const minX = (chartArea?.left ?? 0) + 8
-  const maxX = (chartArea?.right ?? rawX) - 8
-  const minY = (chartArea?.top ?? 0) + 8
-  const clampedX = Math.min(Math.max(rawX, minX), maxX)
-  const clampedY = Math.max(rawY, minY)
-
-  hoverIndicator.value = {
-    x: clampedX,
-    y: clampedY,
-    visible: true,
-    label: formatTooltipTitle(label),
-  }
+  drill.value = bucket
+  activeKey.value = null
 }
 
-function formatDateKey(date) {
-  const d = date instanceof Date && !Number.isNaN(date) ? date : new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
-    d.getDate(),
-  ).padStart(2, '0')}`
+function exitDrill() {
+  if (!drill.value) return
+  activeKey.value = drill.value.key
+  drill.value = null
+}
+
+function onKeydown(event) {
+  const list = buckets.value
+  if (!list.length) return
+  const current = Math.max(list.indexOf(activeBucket.value), 0)
+  const moves = {
+    ArrowLeft: current - 1,
+    ArrowRight: current + 1,
+    Home: 0,
+    End: list.length - 1,
+  }
+  if (event.key in moves) {
+    event.preventDefault()
+    setActiveIndex(moves[event.key])
+  } else if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    activateBucket(activeBucket.value)
+  } else if (event.key === 'Escape' && isDrilled.value) {
+    event.preventDefault()
+    exitDrill()
+  }
 }
 
 /**
- * Convert a local calendar date to a whole UTC day number (DST-safe).
- *
- * @param {Date} date - Date whose local Y/M/D should be used.
- * @returns {number} Days since the Unix epoch for that calendar date.
+ * Daily rows for an inclusive range in the API's `{parsedValue}` shape, zero-filled.
  */
-function toUtcDay(date) {
-  return Math.round(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / MS_PER_DAY)
-}
-
-/**
- * Convert a UTC day number back to a local calendar Date at midnight.
- *
- * @param {number} dayNumber - Days since the Unix epoch.
- * @returns {Date} Local Date for that calendar day.
- */
-function fromUtcDay(dayNumber) {
-  const utc = new Date(dayNumber * MS_PER_DAY)
-  return new Date(utc.getUTCFullYear(), utc.getUTCMonth(), utc.getUTCDate())
-}
-
-function parseDateKey(str) {
-  if (!str) return null
-  const d = new Date(`${str}T00:00:00`)
-  return Number.isNaN(d) ? null : d
-}
-
-const formatTooltipTitle = (label) => {
-  const parsed = parseDateKey(label)
-  return parsed
-    ? parsed.toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: 'numeric' })
-    : label
-}
-
-function formatAxisLabel(label) {
-  const parsed = parseDateKey(label)
-  return parsed ? parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : label
-}
-
-function formatAxisMonthLabel(label) {
-  const parsed = parseDateKey(label)
-  return parsed ? parsed.toLocaleDateString(undefined, { month: 'short' }) : label
-}
-
-function getDensityConfig(labelCount) {
-  if (labelCount >= 120) {
-    return {
-      barThickness: 5,
-      maxBarThickness: 8,
-      categoryPercentage: 0.92,
-      barPercentage: 0.8,
-      maxTicksLimit: 6,
-      axisFormatter: formatAxisMonthLabel,
-    }
+function padDailyRows(rows, startDate, endDate) {
+  const first = isoToDay(startDate)
+  const last = isoToDay(endDate)
+  if (first == null || last == null || last < first) return []
+  const byDate = new Map((rows || []).map((row) => [String(row.date).slice(0, 10), row]))
+  const padded = []
+  for (let day = first; day <= last; day += 1) {
+    const iso = dayToIso(day)
+    padded.push(
+      byDate.get(iso) ?? {
+        date: iso,
+        income: { parsedValue: 0 },
+        expenses: { parsedValue: 0 },
+        net: { parsedValue: 0 },
+        refunds: 0,
+        transaction_count: 0,
+      },
+    )
   }
-
-  if (labelCount >= 45) {
-    return {
-      barThickness: 10,
-      maxBarThickness: 14,
-      categoryPercentage: 0.88,
-      barPercentage: 0.82,
-      maxTicksLimit: 8,
-      axisFormatter: formatAxisLabel,
-    }
-  }
-
-  return {
-    barThickness: 18,
-    maxBarThickness: 22,
-    categoryPercentage: 0.85,
-    barPercentage: 0.9,
-    maxTicksLimit: 8,
-    axisFormatter: formatAxisLabel,
-  }
-}
-
-function buildDateRangeLabels(startDate, endDate) {
-  const start = parseDateKey(startDate)
-  const end = parseDateKey(endDate)
-  if (!start || !end) return []
-
-  const labels = []
-  const cur = new Date(Math.min(start, end))
-  const last = new Date(Math.max(start, end))
-
-  while (cur <= last) {
-    labels.push(formatDateKey(cur))
-    cur.setDate(cur.getDate() + 1)
-  }
-
-  return labels
-}
-
-function createEmptyDailyNetEntry(date) {
-  return {
-    date,
-    income: { parsedValue: 0 },
-    expenses: { parsedValue: 0 },
-    net: { parsedValue: 0 },
-    transaction_count: 0,
-  }
-}
-
-function padDailyNetData(data, labels) {
-  const map = new Map((data || []).map((d) => [d.date, d]))
-  return labels.map((l) => map.get(l) ?? createEmptyDailyNetEntry(l))
+  return padded
 }
 
 function movingAverage(values, window) {
   return values.map((_, i) =>
     i < window - 1 ? null : values.slice(i - window + 1, i + 1).reduce((a, b) => a + b, 0) / window,
   )
+}
+
+function mean(values) {
+  return values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0
 }
 
 function buildLineDataset(label, data, color, overrides = {}) {
@@ -461,132 +494,67 @@ function buildLineDataset(label, data, color, overrides = {}) {
   }
 }
 
-function emphasizeColor(hex) {
-  return hex
+function getBarSizing(count) {
+  if (count <= 8) return { maxBarThickness: 64, categoryPercentage: 0.8, barPercentage: 0.8 }
+  if (count <= 16) return { maxBarThickness: 40, categoryPercentage: 0.85, barPercentage: 0.85 }
+  if (count <= 31) return { maxBarThickness: 26, categoryPercentage: 0.88, barPercentage: 0.85 }
+  return { maxBarThickness: 16, categoryPercentage: 0.9, barPercentage: 0.85 }
 }
 
-function getZoomedDisplayRange() {
-  const end = parseDateKey(props.endDate) ?? new Date()
-  const start = parseDateKey(props.startDate) ?? new Date(end)
-  if (!props.startDate) start.setMonth(start.getMonth() - DEFAULT_ZOOM_MONTHS)
-  return { startDate: formatDateKey(start), endDate: formatDateKey(end) }
+function getTickLimit(count) {
+  const compact = typeof window !== 'undefined' && window.innerWidth < 640
+  if (count <= (compact ? 7 : 14)) return count
+  return compact ? 6 : 10
 }
 
-function getActiveLabelRange() {
-  if (!props.zoomedOut) return { startDate: props.startDate, endDate: props.endDate }
-
-  const zoomed = getZoomedDisplayRange()
+/** Pixel position of the net marker for a bar, centred on the bar and as wide as it. */
+function getNetDashPosition(chart, dataIndex) {
+  if (!chart?.getDatasetMeta) return null
+  const bar = chart.getDatasetMeta(0)?.data?.[dataIndex]
+  const yScale = chart.scales?.y
+  const netValue = toParsedValue(chart?.$netValues?.[dataIndex])
+  if (!bar || !yScale) return null
   return {
-    startDate: props.startDate || requestRange.value.displayStart || zoomed.startDate,
-    endDate: props.endDate || requestRange.value.displayEnd || zoomed.endDate,
+    x: bar.x,
+    y: yScale.getPixelForValue(netValue),
+    width: Math.max(bar.width ?? 20, 12),
   }
-}
-
-function getDisplaySeries() {
-  const { startDate, endDate } = getActiveLabelRange()
-  const labels = buildDateRangeLabels(startDate, endDate)
-  return { labels, displayData: padDailyNetData(chartData.value, labels) }
-}
-
-function getExtendedSeries() {
-  const displayRange = getActiveLabelRange()
-  const startDate = requestRange.value.startDate || displayRange.startDate
-  const endDate = requestRange.value.endDate || displayRange.endDate
-  const labels = buildDateRangeLabels(startDate, endDate)
-  return { labels, fullData: padDailyNetData(chartData.value, labels) }
-}
-
-function mapSeriesToDisplay(labels, fullLabels, fullSeries) {
-  const labelIndex = new Map(fullLabels.map((label, index) => [label, index]))
-  return labels.map((label) => {
-    const idx = labelIndex.get(label)
-    return idx == null ? null : (fullSeries[idx] ?? null)
-  })
-}
-
-function buildComparisonContext() {
-  const end = parseDateKey(props.endDate)
-  const start = parseDateKey(props.startDate)
-  if (!end || !start) return null
-
-  if (timeframe.value === 'mtd') {
-    const priorMonthStart = new Date(end.getFullYear(), end.getMonth() - 1, 1)
-    const last = new Date(end.getFullYear(), end.getMonth(), 0)
-    const day = Math.min(end.getDate(), last.getDate())
-    return {
-      mode: 'prior_month_to_date',
-      priorStart: priorMonthStart,
-      priorEnd: new Date(priorMonthStart.getFullYear(), priorMonthStart.getMonth(), day),
-    }
-  }
-
-  // rolling_30 compares against a fixed 30-day window; custom compares against the
-  // immediately preceding window with the same inclusive day count. Day math goes
-  // through UTC day numbers so DST shifts cannot add or drop a day.
-  const days = timeframe.value === 'rolling_30' ? 30 : 1 + (toUtcDay(end) - toUtcDay(start))
-  if (!(days >= 1)) return null
-  const currentStart = start
-  const priorEnd = fromUtcDay(toUtcDay(currentStart) - 1)
-  const priorStart = fromUtcDay(toUtcDay(priorEnd) - (days - 1))
-
-  return {
-    mode: timeframe.value === 'rolling_30' ? 'rolling_30' : 'previous_period',
-    days,
-    priorStart,
-    priorEnd,
-    currentStart,
-  }
-}
-
-function buildComparisonSeries(labels, data, ctx) {
-  if (!ctx) return []
-  if (ctx.mode === 'prior_month_to_date') {
-    const byDay = new Map()
-    data.forEach((d) => {
-      const parsed = parseDateKey(d.date)
-      if (parsed) byDay.set(parsed.getDate(), toParsedValue(d.net))
-    })
-    return labels.map((l) => {
-      const parsed = parseDateKey(l)
-      return parsed ? (byDay.get(parsed.getDate()) ?? null) : null
-    })
-  }
-
-  const byIndex = new Map()
-  data.forEach((d) => {
-    const parsed = parseDateKey(d.date)
-    if (!parsed) return
-    const idx = toUtcDay(parsed) - toUtcDay(ctx.priorStart)
-    if (idx >= 0 && idx < ctx.days) byIndex.set(idx, toParsedValue(d.net))
-  })
-
-  return labels.map((l) => {
-    const parsed = parseDateKey(l)
-    if (!parsed) return null
-    const idx = toUtcDay(parsed) - toUtcDay(ctx.currentStart)
-    return byIndex.get(idx) ?? null
-  })
 }
 
 const netDashPlugin = {
   id: 'netDashPlugin',
+  beforeDatasetsDraw(chart) {
+    const index = chart.$activeIndex
+    const bar = chart?.getDatasetMeta?.(0)?.data?.[index]
+    const area = chart?.chartArea
+    if (!bar || !area || !chart.ctx?.save) return
+    const { ctx } = chart
+    const width = Math.max((bar.width ?? 20) + 10, 18)
+    ctx.save()
+    ctx.fillStyle = 'rgba(128, 128, 128, 0.16)'
+    ctx.fillRect(bar.x - width / 2, area.top, width, area.bottom - area.top)
+    ctx.restore()
+  },
   afterDatasetsDraw(chart) {
     if (!chart?.ctx || !chart?.getDatasetMeta) return
     const firstMeta = chart.getDatasetMeta(0)
     if (!firstMeta?.data?.length) return
-
     firstMeta.data.forEach((_, index) => {
       const position = getNetDashPosition(chart, index)
       if (!position) return
-      const { x, y } = position
       const { ctx } = chart
       if (!ctx?.save) return
+      const half = position.width / 2 + 3
       ctx.save()
-      ctx.strokeStyle = getStyle('--color-accent-yellow')
-      ctx.lineWidth = 2
+      ctx.lineCap = 'round'
+      ctx.strokeStyle = getStyle('--theme-bg-surface') || 'rgba(0,0,0,0.6)'
+      ctx.lineWidth = 5
       ctx.beginPath()
-      ctx.moveTo(x - 10, y)
-      ctx.lineTo(x + 10, y)
+      ctx.moveTo(position.x - half, position.y)
+      ctx.lineTo(position.x + half, position.y)
+      ctx.stroke()
+      ctx.strokeStyle = getStyle('--color-accent-yellow')
+      ctx.lineWidth = 3
       ctx.stroke()
       ctx.restore()
     })
@@ -601,174 +569,138 @@ function handleBarClick(evt) {
     { intersect: true },
     false,
   )
-  if (points.length) {
-    const index = points[0].index
-    emit('bar-click', chartInstance.value.data.labels[index])
-    setActivePoint(index)
+  if (points.length) activateBucket(buckets.value[points[0].index])
+}
+
+function destroyChart() {
+  if (chartInstance.value) {
+    chartInstance.value.stop?.()
+    chartInstance.value.destroy?.()
+    chartInstance.value = null
   }
 }
 
 async function renderChart() {
   await nextTick()
-  if (chartInstance.value) {
-    chartInstance.value.stop()
-    chartInstance.value.destroy()
-  }
+  destroyChart()
 
-  if (hasError.value || isLoading.value) return
+  if (hasError.value || isLoading.value || isEmpty.value) return
 
   const ctx = chartCanvas.value?.getContext('2d')
   if (!ctx) return
 
-  const { labels, displayData } = getDisplaySeries()
-  const { labels: fullLabels, fullData } = getExtendedSeries()
-  if (!labels.length) return
+  const list = buckets.value
+  if (!list.length) return
 
-  const hasTransactions = chartData.value.length > 0
-  isEmpty.value = !hasTransactions
-  if (isEmpty.value) return
-
-  emit(
-    'summary-change',
-    displayData.reduce(
-      (a, r) => ({
-        totalIncome: a.totalIncome + toParsedValue(r.income),
-        totalExpenses: a.totalExpenses + toParsedValue(r.expenses),
-        totalNet: a.totalNet + toParsedValue(r.net),
-      }),
-      { totalIncome: 0, totalExpenses: 0, totalNet: 0 },
-    ),
-  )
-  emit('data-change', displayData)
-
-  const income = displayData.map((d) => normalizeZero(toParsedValue(d.income)))
-  const expenses = displayData.map((d) => normalizeZero(toParsedValue(d.expenses)))
-  const net = displayData.map((d) => toParsedValue(d.net))
-  const fullNet = fullData.map((d) => toParsedValue(d.net))
-  const fullIncome = fullData.map((d) => toParsedValue(d.income))
-  const fullExpenses = fullData.map((d) => toParsedValue(d.expenses))
-  const full7Day = movingAverage(fullNet, 7)
-  const full30Day = movingAverage(fullNet, 30)
-  const display7Day = mapSeriesToDisplay(labels, fullLabels, full7Day)
-  const display30Day = mapSeriesToDisplay(labels, fullLabels, full30Day)
-  const averageIncome = fullIncome.length
-    ? fullIncome.reduce((a, b) => a + b, 0) / fullIncome.length
-    : 0
-  const averageExpenses = fullExpenses.length
-    ? fullExpenses.reduce((a, b) => a + b, 0) / fullExpenses.length
-    : 0
-  const density = getDensityConfig(labels.length)
+  const labels = list.map((bucket) => bucket.startDate)
+  const tickLabels = list.map((bucket) => bucketLabel(bucket))
+  const income = list.map((bucket) => normalizeZero(bucket.income))
+  const expenses = list.map((bucket) => normalizeZero(bucket.expenses))
+  const refunds = list.map((bucket) => normalizeZero(bucket.refunds))
+  const net = list.map((bucket) => bucket.net)
+  const sizing = getBarSizing(list.length)
 
   const incomeColor = getStyle('--color-accent-green') || '#22c55e'
   const expenseColor = getStyle('--color-accent-red') || '#ef4444'
-  const averageIncomeColor = emphasizeColor(incomeColor, 'g')
-  const averageExpensesColor = emphasizeColor(expenseColor, 'r')
+  const refundColor = getStyle('--color-accent-cyan') || '#63cdcf'
   const comparisonColor = getStyle('--color-text-light') || '#f8fafc'
-  const sevenDayColor = getStyle('--color-accent-cyan') || '#63cdcf'
+  const sevenDayColor = getStyle('--color-accent-blue') || '#719cd6'
   const thirtyDayColor = getStyle('--color-accent-purple') || '#9d79d6'
   const fontFamily = getStyle('--font-chart') || 'ui-sans-serif, system-ui, sans-serif'
+  const textColor = getStyle('--color-text-muted')
 
-  const stackId = 'daily-stack'
+  const stackId = 'net-stack'
+  const bar = (label, data, color, order) => ({
+    type: 'bar',
+    label,
+    data,
+    ...sizing,
+    backgroundColor: color,
+    borderColor: color,
+    borderWidth: 1,
+    stack: stackId,
+    order,
+  })
   const datasets = [
-    {
-      type: 'bar',
-      label: 'Expenses',
-      data: expenses,
-      barThickness: density.barThickness,
-      maxBarThickness: density.maxBarThickness,
-      categoryPercentage: density.categoryPercentage,
-      barPercentage: density.barPercentage,
-      backgroundColor: expenseColor,
-      borderColor: expenseColor,
-      borderWidth: 1,
-      stack: stackId,
-      order: 1,
-    },
-    {
-      type: 'bar',
-      label: 'Income',
-      data: income,
-      barThickness: density.barThickness,
-      maxBarThickness: density.maxBarThickness,
-      categoryPercentage: density.categoryPercentage,
-      barPercentage: density.barPercentage,
-      backgroundColor: incomeColor,
-      borderColor: incomeColor,
-      borderWidth: 1,
-      stack: stackId,
-      order: 2,
-    },
+    bar('Expenses', expenses, expenseColor, 1),
+    bar('Income', income, incomeColor, 2),
+    bar('Refunds', refunds, refundColor, 3),
   ]
 
+  const overlayLabels = []
+  const isDaily = granularity.value === 'daily'
+  const unit = { daily: 'day', weekly: 'week', monthly: 'month', quarterly: 'quarter' }[
+    granularity.value
+  ]
+  const partialNote = list.some((bucket) => bucket.isPartial) && !isDaily ? ' (incl. partial)' : ''
+  const avgLabel = (name) => (isDaily ? name : `${name} / ${unit}${partialNote}`)
+
   if (showAvgIncome.value) {
+    const label = avgLabel('Avg Income')
+    const value = mean(income)
     datasets.push(
-      buildLineDataset(
-        'Avg Income',
-        labels.map(() => averageIncome),
-        averageIncomeColor,
-        {
-          borderDash: [6, 6],
-          order: 4,
-        },
-      ),
+      buildLineDataset(label, labels.map(() => value), incomeColor, { borderDash: [6, 6], order: 4 }),
     )
+    overlayLabels.push(label)
   }
 
   if (showAvgExpenses.value) {
+    const label = avgLabel('Avg Expenses')
+    const value = mean(expenses)
     datasets.push(
-      buildLineDataset(
-        'Avg Expenses',
-        labels.map(() => averageExpenses),
-        averageExpensesColor,
-        {
-          borderDash: [4, 8],
-          order: 5,
-        },
-      ),
+      buildLineDataset(label, labels.map(() => value), expenseColor, {
+        borderDash: [4, 8],
+        order: 5,
+      }),
     )
+    overlayLabels.push(label)
   }
 
-  let comparisonSeries = null
-  let comparisonLabel = ''
-
-  if (showComparisonOverlay.value) {
-    const ctx = buildComparisonContext()
-    comparisonSeries = buildComparisonSeries(labels, comparisonData.value, ctx)
-    comparisonLabel = timeframe.value === 'mtd' ? 'This Day Last Month' : 'Previous period'
+  const comparisonSeries = comparisonNets.value
+  if (comparisonSeries) {
     datasets.push(
-      buildLineDataset(comparisonLabel, comparisonSeries, comparisonColor, {
+      buildLineDataset(comparisonLabel.value, comparisonSeries, comparisonColor, {
         borderDash: [8, 8],
         order: 6,
       }),
     )
+    overlayLabels.push(comparisonLabel.value)
   }
 
-  if (show30Day.value) {
-    datasets.push(
-      buildLineDataset('30-Day Avg', display30Day, thirtyDayColor, {
-        borderDash: [8, 4],
-        borderWidth: 3,
-        order: 7,
-      }),
-    )
-  }
-
-  if (show7Day.value) {
-    datasets.push(
-      buildLineDataset('7-Day Avg', display7Day, sevenDayColor, {
-        borderDash: [2, 2],
-        borderWidth: 3,
-        order: 8,
-      }),
-    )
+  // 7/30-day moving averages are daily-net windows: only meaningful against daily bars.
+  if (isDaily && (show7Day.value || show30Day.value)) {
+    const full = padDailyRows(chartData.value, requestRange.value.startDate, requestRange.value.endDate)
+    const fullNet = full.map((row) => toParsedValue(row.net))
+    const indexByDate = new Map(full.map((row, i) => [row.date, i]))
+    const mapToDisplay = (series) =>
+      labels.map((label) => {
+        const idx = indexByDate.get(label)
+        return idx == null ? null : (series[idx] ?? null)
+      })
+    if (show30Day.value) {
+      datasets.push(
+        buildLineDataset('30-Day Avg', mapToDisplay(movingAverage(fullNet, 30)), thirtyDayColor, {
+          borderDash: [8, 4],
+          borderWidth: 3,
+          order: 7,
+        }),
+      )
+      overlayLabels.push('30-Day Avg')
+    }
+    if (show7Day.value) {
+      datasets.push(
+        buildLineDataset('7-Day Avg', mapToDisplay(movingAverage(fullNet, 7)), sevenDayColor, {
+          borderDash: [2, 2],
+          borderWidth: 3,
+          order: 8,
+        }),
+      )
+      overlayLabels.push('7-Day Avg')
+    }
   }
 
   legendItems.value = datasets
-    .filter((dataset) =>
-      ['Avg Income', 'Avg Expenses', 'This Day Last Month', '30-Day Avg', '7-Day Avg'].includes(
-        dataset.label,
-      ),
-    )
+    .filter((dataset) => overlayLabels.includes(dataset.label))
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
     .map((dataset) => ({ label: dataset.label, color: dataset.borderColor || '#fff' }))
 
@@ -781,131 +713,134 @@ async function renderChart() {
       maintainAspectRatio: false,
       animation: false,
       onClick: handleBarClick,
-      onHover: (event, elements) => {
+      onHover: (_event, elements) => {
         const index = elements?.[0]?.index
-        if (index == null) {
-          hoverIndicator.value.visible = false
-          return
-        }
-        setActivePoint(index)
-        updateHoverIndicator(event, index)
+        if (index != null) setActiveIndex(index)
       },
-      onLeave: () => {
-        hoverIndicator.value.visible = false
-      },
-      interaction: {
-        mode: 'index',
-        axis: 'x',
-        intersect: false,
-      },
+      interaction: { mode: 'index', axis: 'x', intersect: false },
       scales: {
         x: {
           grid: { display: false },
+          border: { color: getStyle('--divider') || 'rgba(255,255,255,0.2)' },
           ticks: {
             autoSkip: true,
-            maxTicksLimit: density.maxTicksLimit,
-            color: getStyle('--color-text-muted'),
+            maxTicksLimit: getTickLimit(list.length),
+            maxRotation: 0,
+            color: textColor,
             font: { family: fontFamily, size: 12 },
-            callback: (_, index) => density.axisFormatter(labels[index]),
+            callback: (_, index) => tickLabels[index],
           },
         },
         y: {
           stacked: true,
-          grid: { color: getStyle('--divider') || 'rgba(255,255,255,0.08)' },
+          grid: {
+            color: (context) =>
+              context.tick?.value === 0
+                ? getStyle('--color-text-muted') || 'rgba(255,255,255,0.5)'
+                : getStyle('--divider') || 'rgba(255,255,255,0.08)',
+            lineWidth: (context) => (context.tick?.value === 0 ? 2 : 1),
+          },
           ticks: {
-            color: getStyle('--color-text-muted'),
+            color: textColor,
             font: { family: fontFamily, size: 12 },
-            callback: (value) => formatAxisCurrency(value),
+            callback: (value) => formatCompactCurrency(value),
           },
         },
       },
       plugins: {
         legend: { display: false },
-        tooltip: {
-          enabled: false,
-        },
+        tooltip: { enabled: false },
       },
     },
   })
 
-  chartInstance.value.$dailyNetRows = displayData
+  chartInstance.value.$dailyNetRows = list
+  chartInstance.value.$buckets = list
   chartInstance.value.$comparisonSeries = comparisonSeries
-  chartInstance.value.$comparisonLabel = comparisonLabel
+  chartInstance.value.$comparisonLabel = comparisonSeries ? comparisonLabel.value : ''
   chartInstance.value.$netValues = net
+  chartInstance.value.$activeIndex = list.indexOf(activeBucket.value)
+}
 
-  const nextActiveIndex =
-    activeIndex.value == null
-      ? resolveInitialActiveIndex(displayData)
-      : clampActiveIndex(activeIndex.value, labels.length)
+watch(activeBucket, (bucket) => {
+  const chart = chartInstance.value
+  if (!chart) return
+  chart.$activeIndex = buckets.value.indexOf(bucket)
+  chart.draw?.()
+})
 
-  if (nextActiveIndex != null) {
-    setActivePoint(nextActiveIndex)
+let primarySeq = 0
+let comparisonSeq = 0
+
+/** Emit the daily rows and totals for the selected (global) period, never the drilled one. */
+function emitPeriod() {
+  if (isEmpty.value) {
+    emit('summary-change', { totalIncome: 0, totalExpenses: 0, totalRefunds: 0, totalNet: 0 })
+    emit('data-change', [])
+    return
   }
+  const daily = padDailyRows(chartData.value, props.startDate, props.endDate)
+  emit('summary-change', sumNetBuckets(daily))
+  emit('data-change', daily)
 }
 
 async function fetchData() {
+  const seq = ++primarySeq
   isLoading.value = true
   hasError.value = false
-
-  const display = props.zoomedOut ? getZoomedDisplayRange() : props
-  const start = parseDateKey(display.startDate) ?? new Date()
-  start.setDate(start.getDate() - 30)
-
-  requestRange.value = {
-    startDate: formatDateKey(start),
-    endDate: display.endDate,
-    displayStart: display.startDate,
-    displayEnd: display.endDate,
-  }
+  const { startDate, endDate } = requestRange.value
 
   try {
-    const res = await fetchDailyNet({
-      start_date: requestRange.value.startDate,
-      end_date: requestRange.value.endDate,
-    })
+    const res = await fetchDailyNet({ start_date: startDate, end_date: endDate })
+    if (seq !== primarySeq) return
 
     if (res.status === 'success') {
-      chartData.value = res.data
+      const rows = Array.isArray(res.data) ? res.data : []
+      chartData.value = rows
+      isEmpty.value = !rows.some((row) => {
+        const date = String(row?.date).slice(0, 10)
+        return date >= props.startDate && date <= props.endDate
+      })
+      emitPeriod()
       return
     }
 
     hasError.value = true
     chartData.value = []
   } catch (_error) {
+    if (seq !== primarySeq) return
     hasError.value = true
     chartData.value = []
   } finally {
-    isLoading.value = false
+    if (seq === primarySeq) isLoading.value = false
   }
 }
 
 async function fetchComparisonData() {
-  if (!showComparisonOverlay.value) {
-    comparisonData.value = []
-    return
-  }
+  const seq = ++comparisonSeq
+  comparisonReady.value = false
+  comparisonError.value = false
 
-  const ctx = buildComparisonContext()
-  if (!ctx) {
+  const interval = comparisonInterval.value
+  if (!showComparisonOverlay.value || !interval) {
     comparisonData.value = []
     return
   }
 
   try {
-    const res = await fetchDailyNet({
-      start_date: formatDateKey(ctx.priorStart),
-      end_date: formatDateKey(ctx.priorEnd),
-    })
+    const res = await fetchDailyNet({ start_date: interval.start, end_date: interval.end })
+    if (seq !== comparisonSeq) return
 
     if (res.status === 'success') {
-      comparisonData.value = res.data
+      comparisonData.value = Array.isArray(res.data) ? res.data : []
+      comparisonReady.value = true
       return
     }
-
-    hasError.value = true
+    comparisonError.value = true
     comparisonData.value = []
   } catch (_error) {
-    hasError.value = true
+    if (seq !== comparisonSeq) return
+    comparisonError.value = true
     comparisonData.value = []
   }
 }
@@ -917,18 +852,27 @@ async function retryFetch() {
 
 watch(
   [
-    chartData,
-    comparisonData,
+    buckets,
+    comparisonNets,
+    isLoading,
+    hasError,
+    isEmpty,
     show7Day,
     show30Day,
     showAvgIncome,
     showAvgExpenses,
     showComparisonOverlay,
-    timeframe,
   ],
   renderChart,
 )
-watch(() => [props.startDate, props.endDate, props.zoomedOut], fetchData)
+watch(
+  () => [props.startDate, props.endDate, props.zoomedOut, timeframe.value],
+  () => {
+    drill.value = null
+    activeKey.value = null
+  },
+)
+watch(() => [props.startDate, props.endDate, needsWarmup.value], fetchData)
 watch(
   () => [timeframe.value, showComparisonOverlay.value, props.startDate, props.endDate],
   fetchComparisonData,
@@ -938,10 +882,36 @@ onMounted(() => {
   fetchData()
   fetchComparisonData()
 })
-onUnmounted(() => chartInstance.value?.destroy())
+onUnmounted(() => {
+  primarySeq += 1
+  comparisonSeq += 1
+  destroyChart()
+})
 </script>
 
 <style scoped>
+.daily-net-chart__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.daily-net-chart__title-shell {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.daily-net-chart__controls-shell {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  display: flex;
+  justify-content: flex-end;
+}
+
 .daily-net-chart__state {
   min-height: 120px;
   display: flex;
@@ -967,38 +937,47 @@ onUnmounted(() => chartInstance.value?.destroy())
 
 .daily-net-chart__legend {
   display: flex;
-  flex-wrap: nowrap;
-  gap: 0.75rem;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
   align-items: center;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  padding-bottom: 0.2rem;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  list-style: none;
 }
 
-.daily-net-chart__legend-shell {
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: 108px;
-  display: flex;
-  align-items: flex-end;
-}
-
-.daily-net-chart__title-shell {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  min-height: 108px;
+.daily-net-chart__legend--overlays {
+  gap: 0.35rem 0.5rem;
 }
 
 .daily-net-chart__legend-item {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  padding: 0.28rem 0.58rem;
+}
+
+.daily-net-chart__legend-item.angular-chart-chip {
+  padding: 0.22rem 0.5rem;
   border-radius: var(--chart-shell-radius-tight);
 }
 
-.daily-net-chart__legend-swatch {
+.daily-net-chart__swatch {
+  display: inline-block;
+  flex: none;
+}
+
+.daily-net-chart__swatch--bar {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 2px;
+  background: var(--legend-color);
+}
+
+.daily-net-chart__swatch--dash {
+  width: 1.1rem;
+  border-top: 3px solid var(--legend-color);
+}
+
+.daily-net-chart__swatch--dashed {
   width: 1rem;
   border-top: 2px dashed var(--legend-color);
 }
@@ -1008,64 +987,29 @@ onUnmounted(() => chartInstance.value?.destroy())
   color: var(--color-text-muted);
 }
 
-.daily-net-chart__meta {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) 290px auto;
-  align-items: center;
-  column-gap: 0.85rem;
-  min-height: 124px;
-  margin-bottom: 1rem;
-  padding: 0.9rem 1rem 1rem;
-  border-radius: var(--chart-shell-radius);
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--color-accent-cyan) 10%, transparent),
-      transparent 42%
-    ),
-    color-mix(in srgb, var(--theme-bg-surface, var(--theme-bg)) 84%, transparent);
-  box-shadow: var(--chart-shell-shadow);
-}
-
-.daily-net-chart__legend-placeholder {
-  width: 100%;
-  min-height: 1px;
-}
-
-.daily-net-chart__controls-shell {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  min-height: 108px;
+.daily-net-chart__notice {
+  margin: 0 0 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
 }
 
 .daily-net-chart__details {
-  width: 100%;
-  max-width: 290px;
-  min-height: 108px;
-  padding: 0.7rem 0.8rem 0.75rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 0.5rem 1.25rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem 1rem;
   border-color: var(--chart-shell-border);
   border-radius: var(--chart-shell-radius-tight);
   background: color-mix(in srgb, var(--theme-bg-surface, var(--theme-bg)) 90%, transparent);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 10px 24px rgba(0, 0, 0, 0.18);
-  backdrop-filter: blur(6px);
-  display: flex;
-  flex-direction: column;
-}
-
-.daily-net-chart__details-top-accent {
-  width: 3.5rem;
-  border-top: 3px solid color-mix(in srgb, var(--color-accent-yellow) 88%, white 12%);
-  border-radius: 999px;
-  margin-bottom: 0.45rem;
 }
 
 .daily-net-chart__details-header {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
+  min-width: 0;
 }
 
 .daily-net-chart__details-date {
@@ -1074,18 +1018,34 @@ onUnmounted(() => chartInstance.value?.destroy())
   color: var(--color-text-muted);
 }
 
+.daily-net-chart__details-partial {
+  margin-left: 0.35rem;
+  padding: 0 0.35rem;
+  border: 1px solid var(--divider);
+  border-radius: 999px;
+  font-size: 0.75rem;
+}
+
 .daily-net-chart__details-net {
   margin: 0;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-warning);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text-light);
+}
+
+.daily-net-chart__details-net.is-positive {
+  color: var(--color-accent-green);
+}
+
+.daily-net-chart__details-net.is-negative {
+  color: var(--color-accent-red);
 }
 
 .daily-net-chart__details-metrics {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.4rem;
-  margin: 0.4rem 0 0;
+  margin: 0;
 }
 
 .daily-net-chart__details-metrics div {
@@ -1102,12 +1062,12 @@ onUnmounted(() => chartInstance.value?.destroy())
 
 .daily-net-chart__details-metrics dd {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--color-text-light);
 }
 
 .daily-net-chart__details-comparison {
-  margin-top: 0.4rem;
+  grid-column: 1 / -1;
   padding-top: 0.4rem;
   border-top: 1px solid var(--divider);
   font-size: 0.8125rem;
@@ -1123,56 +1083,107 @@ onUnmounted(() => chartInstance.value?.destroy())
   color: var(--color-accent-yellow);
 }
 
-.daily-net-chart__canvas-wrap {
-  position: relative;
-  height: 400px;
-}
-
-.daily-net-chart__hover-indicator {
-  position: absolute;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.2rem 0.4rem;
+.daily-net-chart__drill-btn,
+.daily-net-chart__back {
+  justify-self: start;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--divider);
   border-radius: var(--chart-shell-radius-tight);
-  border-color: var(--chart-shell-border);
-  background: color-mix(in srgb, var(--theme-bg-surface, var(--theme-bg)) 92%, transparent);
+  background: transparent;
   color: var(--color-text-light);
   font-size: 0.8125rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  transform: translate(-50%, -100%);
-  pointer-events: none;
-  white-space: nowrap;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
 }
 
-.daily-net-chart__hover-dot {
-  width: 0.4rem;
-  height: 0.4rem;
-  border-radius: 999px;
-  background: var(--color-accent-cyan);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent-cyan) 25%, transparent);
+.daily-net-chart__drill-btn:focus-visible,
+.daily-net-chart__back:focus-visible,
+.daily-net-chart__row-btn:focus-visible,
+.daily-net-chart__canvas-wrap:focus-visible {
+  outline: 2px solid var(--color-accent-cyan);
+  outline-offset: 2px;
 }
 
-.daily-net-chart__hover-label {
+.daily-net-chart__breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.daily-net-chart__crumb {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.daily-net-chart__canvas-wrap {
+  position: relative;
+  height: clamp(260px, 45vh, 400px);
+}
+
+.daily-net-chart__table-disclosure {
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.daily-net-chart__table-disclosure summary {
+  cursor: pointer;
+  width: fit-content;
+}
+
+.daily-net-chart__table-scroll {
+  max-width: 100%;
+  max-height: 18rem;
+  overflow: auto;
+  margin-top: 0.5rem;
+}
+
+.daily-net-chart__table {
+  width: 100%;
+  border-collapse: collapse;
   color: var(--color-text-light);
+}
+
+.daily-net-chart__table th,
+.daily-net-chart__table td {
+  padding: 0.25rem 0.5rem;
+  border-bottom: 1px solid var(--divider);
+  text-align: right;
+  white-space: nowrap;
+  font-weight: 400;
+}
+
+.daily-net-chart__table th:first-child {
+  text-align: left;
+}
+
+.daily-net-chart__table tr.is-active {
+  background: color-mix(in srgb, var(--color-accent-yellow) 12%, transparent);
+}
+
+.daily-net-chart__row-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 @media (max-width: 900px) {
-  .daily-net-chart__meta {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    min-height: 0;
+  .daily-net-chart__controls-shell {
+    flex-basis: 100%;
+    justify-content: flex-start;
   }
 
-  .daily-net-chart__title-shell,
-  .daily-net-chart__legend-shell,
-  .daily-net-chart__controls-shell,
   .daily-net-chart__details {
-    min-height: 0;
-    max-width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .daily-net-chart__details-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 </style>

@@ -10,6 +10,7 @@ import DailyNetChart from '../DailyNetChart.vue'
 import { fetchDailyNet } from '@/api/charts'
 
 const chartMock = vi.fn()
+const clickPoints = vi.hoisted(() => ({ value: [] }))
 
 vi.mock('chart.js', async () => {
   const actual = await vi.importActual('chart.js')
@@ -19,7 +20,7 @@ vi.mock('chart.js', async () => {
       destroy: vi.fn(),
       stop: vi.fn(),
       data: config.data,
-      getElementsAtEventForMode: vi.fn().mockReturnValue([]),
+      getElementsAtEventForMode: vi.fn(() => clickPoints.value),
       getDatasetMeta: vi.fn().mockReturnValue({ data: [] }),
     }
   })
@@ -56,6 +57,7 @@ async function flushRender() {
 describe('DailyNetChart.vue', () => {
   beforeEach(() => {
     chartMock.mockClear()
+    clickPoints.value = []
     fetchDailyNet.mockReset()
 
     fetchDailyNet.mockResolvedValue({
@@ -119,6 +121,10 @@ describe('DailyNetChart.vue', () => {
   })
 
   it('keeps labels aligned to the selected date range', async () => {
+    fetchDailyNet.mockResolvedValueOnce({
+      status: 'success',
+      data: [{ date: '2024-02-12', income: { parsedValue: 5 }, expenses: { parsedValue: 0 }, net: { parsedValue: 5 } }],
+    })
     const start = new Date('2024-02-10T00:00:00')
     const end = new Date(start.getFullYear(), 1, 29)
 
@@ -412,7 +418,7 @@ describe('DailyNetChart.vue', () => {
     const lastConfig = chartMock.mock.calls.at(-1)[0]
     const details = wrapper.find('.daily-net-chart__details')
     expect(details.exists()).toBe(true)
-    expect(details.text()).toContain('Jun 01, 2024')
+    expect(details.text()).toContain('Jun 1, 2024')
     expect(details.text()).toContain('Net: $60.00')
     expect(details.text()).toContain('Income')
     expect(details.text()).toContain('$80.00')
@@ -426,7 +432,7 @@ describe('DailyNetChart.vue', () => {
     lastConfig.options.onHover({}, [{ index: 1 }])
     await flushRender()
 
-    expect(details.text()).toContain('Jun 02, 2024')
+    expect(details.text()).toContain('Jun 2, 2024')
     expect(details.text()).toContain('Net: $60.00')
     expect(details.text()).toContain('Income')
     expect(details.text()).toContain('$100.00')
@@ -440,7 +446,7 @@ describe('DailyNetChart.vue', () => {
     lastConfig.options.onHover({}, [{ index: 0 }])
     await flushRender()
 
-    expect(details.text()).toContain('Jun 01, 2024')
+    expect(details.text()).toContain('Jun 1, 2024')
     expect(details.text()).toContain('Net: $60.00')
     expect(details.text()).toContain('Income')
     expect(details.text()).toContain('$80.00')
@@ -485,15 +491,15 @@ describe('DailyNetChart.vue', () => {
     await flushRender()
 
     const lastConfig = chartMock.mock.calls.at(-1)[0]
-    expect(wrapper.find('.daily-net-chart__details').text()).toContain('Jun 02, 2024')
+    expect(wrapper.find('.daily-net-chart__details').text()).toContain('Jun 2, 2024')
 
     lastConfig.options.onHover({}, [{ index: 0 }])
     await flushRender()
-    expect(wrapper.find('.daily-net-chart__details').text()).toContain('Jun 01, 2024')
+    expect(wrapper.find('.daily-net-chart__details').text()).toContain('Jun 1, 2024')
 
     lastConfig.options.onHover({}, [])
     await flushRender()
-    expect(wrapper.find('.daily-net-chart__details').text()).toContain('Jun 01, 2024')
+    expect(wrapper.find('.daily-net-chart__details').text()).toContain('Jun 1, 2024')
   })
 
   it('keeps selected index through overlay rerenders and recomputes comparison details', async () => {
@@ -557,7 +563,7 @@ describe('DailyNetChart.vue', () => {
     await flushRender()
     await flushRender()
 
-    expect(wrapper.find('.daily-net-chart__details').text()).toContain('Jun 01, 2024')
+    expect(wrapper.find('.daily-net-chart__details').text()).toContain('Jun 1, 2024')
     expect(wrapper.find('.daily-net-chart__details').text()).not.toContain('This Day Last Month')
 
     await wrapper.setProps({ showComparisonOverlay: true })
@@ -617,7 +623,7 @@ describe('DailyNetChart.vue', () => {
     await flushRender()
 
     const detailsText = wrapper.find('.daily-net-chart__details').text()
-    expect(detailsText).toContain('Jul 02, 2024')
+    expect(detailsText).toContain('Jul 2, 2024')
     expect(detailsText).toContain('Net: $150.00')
     expect(detailsText).toContain('Transactions')
     expect(detailsText).toContain('4')
@@ -682,7 +688,7 @@ describe('DailyNetChart.vue', () => {
     await flushRender()
 
     const legendLabels = wrapper
-      .findAll('.daily-net-chart__legend-label')
+      .findAll('.daily-net-chart__legend--overlays .daily-net-chart__legend-label')
       .map((node) => node.text())
 
     expect(legendLabels).toEqual(['Avg Income', '30-Day Avg', '7-Day Avg'])
@@ -726,7 +732,7 @@ describe('DailyNetChart.vue', () => {
     await flushRender()
 
     const legendLabels = wrapper
-      .findAll('.daily-net-chart__legend-label')
+      .findAll('.daily-net-chart__legend--overlays .daily-net-chart__legend-label')
       .map((node) => node.text())
 
     expect(legendLabels).toEqual(['Avg Expenses', 'This Day Last Month'])
@@ -746,7 +752,7 @@ describe('DailyNetChart.vue', () => {
     await flushRender()
     await flushRender()
 
-    expect(wrapper.text()).toContain('No transactions found for the selected date range.')
+    expect(wrapper.text()).toContain('No activity in this period')
     expect(wrapper.find('canvas').exists()).toBe(false)
     expect(chartMock).not.toHaveBeenCalled()
   })
@@ -789,5 +795,394 @@ describe('DailyNetChart.vue', () => {
     expect(wrapper.text()).not.toContain(
       'Unable to load daily net data right now. Please try again.',
     )
+  })
+})
+
+const money = (value) => ({ source: String(value), parsedValue: value })
+const dayRow = (date, income, expenses, refunds = 0, extra = {}) => ({
+  date,
+  income: money(income),
+  expenses: money(expenses),
+  refunds,
+  net: money(Math.round((income + expenses + refunds) * 100) / 100),
+  transaction_count: 1,
+  ...extra,
+})
+
+function deferred() {
+  let resolve
+  const promise = new Promise((r) => {
+    resolve = r
+  })
+  return { promise, resolve }
+}
+
+describe('DailyNetChart period buckets', () => {
+  beforeEach(() => {
+    chartMock.mockClear()
+    clickPoints.value = []
+    fetchDailyNet.mockReset()
+  })
+
+  const lastConfig = () => chartMock.mock.calls.at(-1)[0]
+  async function settle() {
+    await flushRender()
+    await flushRender()
+    await flushRender()
+  }
+
+  it('shows economic net with a separate refund segment in daily, weekly and monthly views', async () => {
+    const rows = [
+      dayRow('2026-10-05', 1000, -300, 25, {
+        transfer_in: 200,
+        debt_settlement: 131.64,
+        unclassified_inflows: 100,
+      }),
+    ]
+    for (const [timeframe, start, label] of [
+      ['custom', '2026-10-01', 'daily'],
+      ['3m', '2026-08-01', 'weekly'],
+      ['ytd', '2026-01-01', 'monthly'],
+    ]) {
+      fetchDailyNet.mockResolvedValue({ status: 'success', data: rows })
+      const wrapper = mount(DailyNetChart, {
+        props: { startDate: start, endDate: '2026-10-19', timeframe },
+      })
+      await settle()
+      const config = lastConfig()
+      const at = (name) => config.data.datasets.find((d) => d.label === name).data
+      const idx = at('Income').findIndex((v) => v !== 0)
+      expect(at('Income')[idx]).toBe(1000)
+      expect(at('Expenses')[idx]).toBe(-300)
+      expect(at('Refunds')[idx]).toBe(25)
+      const details = wrapper.get('.daily-net-chart__details').text()
+      expect(details).toContain('Economic Net: $725.00')
+      expect(details).not.toContain('$700.00')
+      expect(wrapper.text()).toContain(`${label[0].toUpperCase()}${label.slice(1)} economic net table`)
+      wrapper.unmount()
+    }
+  })
+
+  it.each([
+    ['7d', '2026-10-13', 7],
+    ['rolling_30', '2026-09-20', 30],
+    ['mtd', '2026-10-01', 19],
+  ])('draws %s as one local day per bar', async (timeframe, start, count) => {
+    fetchDailyNet.mockResolvedValue({ status: 'success', data: [dayRow('2026-10-15', 10, -2)] })
+    mount(DailyNetChart, { props: { startDate: start, endDate: '2026-10-19', timeframe } })
+    await settle()
+    expect(lastConfig().data.labels).toHaveLength(count)
+  })
+
+  it('draws YTD as exactly ten month bars with a partial October and never daily bars', async () => {
+    fetchDailyNet.mockResolvedValue({ status: 'success', data: [dayRow('2026-03-02', 10, -2)] })
+    const wrapper = mount(DailyNetChart, {
+      props: { startDate: '2026-01-01', endDate: '2026-10-19', timeframe: 'ytd' },
+    })
+    await settle()
+    const config = lastConfig()
+    expect(config.data.labels).toHaveLength(10)
+    expect(config.data.labels[0]).toBe('2026-01-01')
+    expect(config.data.labels[9]).toBe('2026-10-01')
+    const last = wrapper.findAll('.daily-net-chart__table tbody tr').at(-1)
+    expect(last.text()).toContain('Oct 2026 (Oct 1–19)')
+  })
+
+  it('accepts every dashboard preset as a timeframe', () => {
+    const validator = DailyNetChart.props.timeframe.validator
+    ;['7d', 'rolling_30', 'mtd', '3m', '6m', 'ytd', '1y', 'custom'].forEach((value) =>
+      expect(validator(value)).toBe(true),
+    )
+    expect(validator('quarterly')).toBe(false)
+  })
+
+  it('emits daily source rows and totals incl. refunds for the selected period only', async () => {
+    fetchDailyNet.mockResolvedValue({
+      status: 'success',
+      data: [dayRow('2026-09-25', 999, -1), dayRow('2026-10-05', 1000, -300, 25)],
+    })
+    const wrapper = mount(DailyNetChart, {
+      props: { startDate: '2026-10-01', endDate: '2026-10-19', timeframe: 'ytd', show7Day: true },
+    })
+    await settle()
+    expect(wrapper.emitted('summary-change').at(-1)[0]).toEqual({
+      totalIncome: 1000,
+      totalExpenses: -300,
+      totalRefunds: 25,
+      totalNet: 725,
+    })
+    const daily = wrapper.emitted('data-change').at(-1)[0]
+    expect(daily).toHaveLength(19)
+    expect(daily[0].date).toBe('2026-10-01')
+  })
+
+  it('emits zero summary and an empty series when the period has no activity', async () => {
+    fetchDailyNet.mockResolvedValue({ status: 'success', data: [dayRow('2026-09-25', 50, -5)] })
+    const wrapper = mount(DailyNetChart, {
+      props: { startDate: '2026-10-01', endDate: '2026-10-19', show7Day: true },
+    })
+    await settle()
+    expect(wrapper.text()).toContain('No activity in this period')
+    expect(wrapper.emitted('summary-change').at(-1)[0]).toEqual({
+      totalIncome: 0,
+      totalExpenses: 0,
+      totalRefunds: 0,
+      totalNet: 0,
+    })
+    expect(wrapper.emitted('data-change').at(-1)[0]).toEqual([])
+  })
+
+  it('drills a monthly bar into its days, then restores YTD without touching global dates', async () => {
+    fetchDailyNet.mockResolvedValue({
+      status: 'success',
+      data: [dayRow('2026-02-10', 100, -20), dayRow('2026-03-04', 40, -10)],
+    })
+    const wrapper = mount(DailyNetChart, {
+      props: { startDate: '2026-01-01', endDate: '2026-10-19', timeframe: 'ytd' },
+    })
+    await settle()
+    expect(fetchDailyNet).toHaveBeenCalledTimes(1)
+
+    clickPoints.value = [{ index: 1 }]
+    lastConfig().options.onClick({})
+    await settle()
+
+    expect(wrapper.emitted('bar-click')).toBeUndefined()
+    expect(wrapper.get('.daily-net-chart__back').text()).toContain('Back to Monthly')
+    expect(wrapper.get('.daily-net-chart__crumb').text()).toContain('Feb 2026')
+    const config = lastConfig()
+    expect(config.data.labels).toHaveLength(28)
+    expect(config.data.labels[0]).toBe('2026-02-01')
+    expect(config.data.labels.at(-1)).toBe('2026-02-28')
+    expect(fetchDailyNet).toHaveBeenCalledTimes(1)
+    // The parent still gets the whole YTD period, not the drilled month.
+    expect(wrapper.emitted('data-change')).toHaveLength(1)
+
+    clickPoints.value = [{ index: 9 }]
+    lastConfig().options.onClick({})
+    await settle()
+    expect(wrapper.emitted('bar-click').at(-1)).toEqual(['2026-02-10'])
+
+    await wrapper.get('.daily-net-chart__back').trigger('click')
+    await settle()
+    expect(wrapper.find('.daily-net-chart__back').exists()).toBe(false)
+    expect(lastConfig().data.labels).toHaveLength(10)
+    expect(wrapper.get('.daily-net-chart__details').text()).toContain('Feb 2026')
+  })
+
+  it('opens the day modal directly from a daily bar', async () => {
+    fetchDailyNet.mockResolvedValue({ status: 'success', data: [dayRow('2026-10-15', 10, -2)] })
+    const wrapper = mount(DailyNetChart, {
+      props: { startDate: '2026-10-13', endDate: '2026-10-19', timeframe: '7d' },
+    })
+    await settle()
+    clickPoints.value = [{ index: 2 }]
+    lastConfig().options.onClick({})
+    expect(wrapper.emitted('bar-click').at(-1)).toEqual(['2026-10-15'])
+    expect(wrapper.find('.daily-net-chart__back').exists()).toBe(false)
+  })
+
+  it('resets the drilldown when the global period changes', async () => {
+    fetchDailyNet.mockResolvedValue({ status: 'success', data: [dayRow('2026-02-10', 100, -20)] })
+    const wrapper = mount(DailyNetChart, {
+      props: { startDate: '2026-01-01', endDate: '2026-10-19', timeframe: 'ytd' },
+    })
+    await settle()
+    clickPoints.value = [{ index: 1 }]
+    lastConfig().options.onClick({})
+    await settle()
+    expect(wrapper.find('.daily-net-chart__back').exists()).toBe(true)
+
+    await wrapper.setProps({ startDate: '2026-10-13', endDate: '2026-10-19', timeframe: '7d' })
+    await settle()
+    expect(wrapper.find('.daily-net-chart__back').exists()).toBe(false)
+  })
+
+  it('supports keyboard navigation, drilldown and escape without a pointer', async () => {
+    fetchDailyNet.mockResolvedValue({
+      status: 'success',
+      data: [dayRow('2026-01-10', 100, -20), dayRow('2026-02-10', 60, -10)],
+    })
+    const wrapper = mount(DailyNetChart, {
+      props: { startDate: '2026-01-01', endDate: '2026-03-31', timeframe: 'custom' },
+    })
+    await settle()
+    // 90 days => weekly buckets; Home selects the first week.
+    const wrap = wrapper.get('.daily-net-chart__canvas-wrap')
+    expect(wrap.attributes('tabindex')).toBe('0')
+    await wrap.trigger('keydown', { key: 'Home' })
+    expect(wrapper.get('.daily-net-chart__details').text()).toContain('Jan 1–4, 2026')
+    await wrap.trigger('keydown', { key: 'ArrowRight' })
+    expect(wrapper.get('.daily-net-chart__details').text()).toContain('Jan 5–11, 2026')
+    await wrap.trigger('keydown', { key: 'Enter' })
+    await settle()
+    expect(wrapper.get('.daily-net-chart__back').text()).toContain('Back to Weekly')
+    expect(lastConfig().data.labels).toHaveLength(7)
+    await wrap.trigger('keydown', { key: 'Escape' })
+    await settle()
+    expect(wrapper.find('.daily-net-chart__back').exists()).toBe(false)
+  })
+
+  it('exposes every bucket in an accessible table with text values', async () => {
+    fetchDailyNet.mockResolvedValue({ status: 'success', data: [dayRow('2026-03-02', 100, -20, 5)] })
+    const wrapper = mount(DailyNetChart, {
+      props: { startDate: '2026-01-01', endDate: '2026-03-31', timeframe: 'ytd' },
+    })
+    await settle()
+    const rows = wrapper.findAll('.daily-net-chart__table tbody tr')
+    expect(rows).toHaveLength(3)
+    expect(rows[2].text()).toContain('Mar 2026')
+    expect(rows[2].text()).toContain('$100.00')
+    expect(rows[2].text()).toContain('$5.00')
+    expect(rows[2].text()).toContain('$85.00')
+    await rows[2].get('button').trigger('click')
+    await settle()
+    expect(wrapper.get('.daily-net-chart__crumb').text()).toContain('Mar 2026')
+  })
+
+  it('always shows a legend for income, expenses, refunds when present, and the net dash', async () => {
+    fetchDailyNet.mockResolvedValue({ status: 'success', data: [dayRow('2026-10-15', 10, -2)] })
+    const wrapper = mount(DailyNetChart, {
+      props: { startDate: '2026-10-13', endDate: '2026-10-19', timeframe: '7d' },
+    })
+    await settle()
+    const labels = () => wrapper.findAll('[data-testid="daily-net-legend"] li').map((n) => n.text())
+    expect(labels()).toEqual(['Income', 'Expenses', 'Economic net'])
+
+    fetchDailyNet.mockResolvedValue({ status: 'success', data: [dayRow('2026-10-15', 10, -2, 3)] })
+    await wrapper.setProps({ endDate: '2026-10-18' })
+    await settle()
+    expect(labels()).toEqual(['Income', 'Expenses', 'Refunds', 'Economic net'])
+  })
+
+  it('only plots 7/30-day trends on daily bars and keeps them out of coarse buckets', async () => {
+    fetchDailyNet.mockResolvedValue({ status: 'success', data: [dayRow('2026-10-15', 70, 0)] })
+    const daily = mount(DailyNetChart, {
+      props: { startDate: '2026-10-13', endDate: '2026-10-19', timeframe: '7d', show7Day: true },
+    })
+    await settle()
+    expect(lastConfig().data.datasets.some((d) => d.label === '7-Day Avg')).toBe(true)
+    daily.unmount()
+
+    mount(DailyNetChart, {
+      props: { startDate: '2026-01-01', endDate: '2026-10-19', timeframe: 'ytd', show7Day: true, show30Day: true },
+    })
+    await settle()
+    const labels = lastConfig().data.datasets.map((d) => d.label)
+    expect(labels).not.toContain('7-Day Avg')
+    expect(labels).not.toContain('30-Day Avg')
+  })
+
+  it('labels average lines per visible bar period and flags partial buckets', async () => {
+    fetchDailyNet.mockResolvedValue({
+      status: 'success',
+      data: [dayRow('2026-01-10', 100, -20), dayRow('2026-02-10', 300, -40)],
+    })
+    mount(DailyNetChart, {
+      props: { startDate: '2026-01-01', endDate: '2026-02-15', timeframe: 'custom' },
+    })
+    await settle()
+    // 46 days => weekly; averages are per week, not a daily mean.
+    const labels = lastConfig().data.datasets.map((d) => d.label)
+    expect(labels).not.toContain('Avg Income')
+
+    fetchDailyNet.mockResolvedValue({
+      status: 'success',
+      data: [dayRow('2026-01-10', 100, -20), dayRow('2026-02-10', 300, -40)],
+    })
+    mount(DailyNetChart, {
+      props: { startDate: '2026-01-01', endDate: '2026-02-15', timeframe: 'ytd', showAvgIncome: true },
+    })
+    await settle()
+    const avg = lastConfig().data.datasets.find((d) => d.label.startsWith('Avg Income'))
+    expect(avg.label).toBe('Avg Income / month (incl. partial)')
+    expect(avg.data[0]).toBe(200)
+  })
+
+  it('compares YTD against the prior calendar year to date with matching day spans', async () => {
+    fetchDailyNet
+      .mockResolvedValueOnce({ status: 'success', data: [dayRow('2026-02-10', 100, -20)] })
+      .mockResolvedValueOnce({
+        status: 'success',
+        data: [{ date: '2025-01-15', net: money(40) }, { date: '2025-02-10', net: money(10) }],
+      })
+    const wrapper = mount(DailyNetChart, {
+      props: {
+        startDate: '2026-01-01',
+        endDate: '2026-02-15',
+        timeframe: 'ytd',
+        showComparisonOverlay: true,
+      },
+    })
+    await settle()
+    expect(fetchDailyNet).toHaveBeenLastCalledWith({ start_date: '2025-01-01', end_date: '2025-02-15' })
+    const comparison = lastConfig().data.datasets.find((d) => d.label === 'Same period last year')
+    // Partial Feb 1-15 pairs with the same 15 days of 2025, not the full prior February.
+    expect(comparison.data).toEqual([40, 10])
+    expect(wrapper.get('.daily-net-chart__details').text()).toContain('Same period last year: $10.00')
+  })
+
+  it('does not block the chart when only the comparison request fails', async () => {
+    fetchDailyNet
+      .mockResolvedValueOnce({ status: 'success', data: [dayRow('2026-10-15', 10, -2)] })
+      .mockRejectedValueOnce(new Error('comparison down'))
+    const wrapper = mount(DailyNetChart, {
+      props: {
+        startDate: '2026-10-13',
+        endDate: '2026-10-19',
+        timeframe: '7d',
+        showComparisonOverlay: true,
+      },
+    })
+    await settle()
+    expect(wrapper.find('.daily-net-chart__retry').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Comparison data is unavailable')
+    expect(lastConfig().data.datasets.some((d) => d.label === 'Previous period')).toBe(false)
+  })
+
+  it('ignores a stale response after a fast period switch', async () => {
+    const slow = deferred()
+    fetchDailyNet
+      .mockImplementationOnce(() => slow.promise)
+      .mockResolvedValueOnce({ status: 'success', data: [dayRow('2026-10-15', 11, -1)] })
+    const wrapper = mount(DailyNetChart, {
+      props: { startDate: '2026-01-01', endDate: '2026-10-19', timeframe: '1y' },
+    })
+    await flushRender()
+    await wrapper.setProps({ startDate: '2026-10-13', endDate: '2026-10-19', timeframe: '7d' })
+    await settle()
+    const summary = wrapper.emitted('summary-change').at(-1)[0]
+    expect(summary.totalIncome).toBe(11)
+
+    slow.resolve({ status: 'success', data: [dayRow('2026-03-01', 9999, -1)] })
+    await settle()
+    expect(wrapper.emitted('summary-change')).toHaveLength(1)
+    expect(wrapper.emitted('summary-change').at(-1)[0].totalIncome).toBe(11)
+    expect(lastConfig().data.labels).toHaveLength(7)
+  })
+
+  it('keeps the toolbar slots mounted and scoped with granularity in empty and error states', async () => {
+    fetchDailyNet.mockResolvedValue({ status: 'success', data: [] })
+    const wrapper = mount(DailyNetChart, {
+      props: { startDate: '2026-01-01', endDate: '2026-10-19', timeframe: 'ytd' },
+      slots: {
+        title: '<template #title="{ granularityTitle }"><h2>Economic Net · {{ granularityTitle }}</h2></template>',
+        controls: '<template #controls="{ granularity }"><button>{{ granularity }}</button></template>',
+      },
+    })
+    await settle()
+    expect(wrapper.text()).toContain('No activity in this period')
+    expect(wrapper.text()).toContain('Economic Net · Monthly')
+    expect(wrapper.get('.daily-net-chart__controls-shell button').text()).toBe('monthly')
+  })
+
+  it('coarsens bars one step when the range selector is zoomed out', async () => {
+    fetchDailyNet.mockResolvedValue({ status: 'success', data: [dayRow('2026-10-15', 10, -2)] })
+    mount(DailyNetChart, {
+      props: { startDate: '2026-10-13', endDate: '2026-10-19', timeframe: '7d', zoomedOut: true },
+    })
+    await settle()
+    expect(lastConfig().data.labels).toHaveLength(2)
+    expect(fetchDailyNet).toHaveBeenCalledTimes(1)
   })
 })
