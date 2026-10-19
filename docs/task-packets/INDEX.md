@@ -6,6 +6,8 @@ See [README.md](README.md) for naming, lifecycle, execution, and authoring rules
 
 ## Active
 
+| TP-20261019-001 | Daily Net Period Buckets, Readability and Reconciliation | Ready | 2026-10-19 | [active/TP-20261019-001-daily-net-period-buckets-visual-truth.md](active/TP-20261019-001-daily-net-period-buckets-visual-truth.md) |
+
 | Packet ID | Title | Status | Created | Canonical packet |
 | --- | --- | --- | --- | --- |
 | TP-20261016-001 | Forecast Transaction Sign Contract and Reconciliation | Complete | 2026-10-17 | [completed/TP-20261016-001-forecast-transaction-sign-contract.md](completed/TP-20261016-001-forecast-transaction-sign-contract.md) |
