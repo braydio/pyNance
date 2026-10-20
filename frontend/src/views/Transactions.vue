@@ -11,7 +11,7 @@
     <!-- Activity Tab -->
     <template #Activity>
       <!-- Summary metrics and prioritized review queue (server-side, over ALL matching rows) -->
-      <Card class="p-4 md:p-6 ui-radius-3 card-surface">
+      <Card class="p-4 md:p-6 ui-radius-3 card-surface insights-surface">
         <TransactionInsightsPanel
           :insights="insights"
           :loading="insightsLoading"
@@ -106,7 +106,7 @@
       </div>
 
       <!-- Table is the dominant surface -->
-      <Card class="p-4 md:p-6 space-y-3 ui-radius-3 card-surface">
+      <Card class="p-4 md:p-6 space-y-3 ui-radius-3 card-surface ledger-surface">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <h2 class="section-title">
             Transactions
@@ -886,9 +886,26 @@ export default {
 }
 
 .card-surface {
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--divider);
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.18);
+  background: var(--surface-2);
+  border: 0;
+  box-shadow: none;
+}
+
+/* A quiet insights zone sits openly above the primary ledger rather than
+   nesting another identical framed card into the dashboard. */
+.insights-surface {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding-inline: 0;
+}
+
+/* Exactly one dominant ledger surface; its table child has no outer border. */
+.ledger-surface {
+  background: var(--surface-2);
+  border: 0;
+  box-shadow: var(--depth-shadow-resting);
+  border-radius: var(--radius-3);
 }
 
 .eyebrow {
@@ -933,6 +950,9 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  background: transparent;
+  border: 0;
+  padding-inline: 0;
 }
 
 /* Compact selects share one row with the search box instead of each taking a full line. */
