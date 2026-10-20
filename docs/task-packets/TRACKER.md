@@ -6,6 +6,10 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 
 | Packet ID | Title | Status | Priority | Depends on | Target | Last updated | Packet |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| TP-20261019-002 | Filter-Aware Financial Table Totals and Scope Contract | Ready | P0 | None; use completed economic-flow TP-20261017-003/004 | main | 2026-10-19 | [packet](active/TP-20261019-002-filter-aware-table-summary-contract.md) |
+| TP-20261019-003 | Professional Table System, Totals and Drilldowns | Ready | P1 | TP-20261019-002 | main | 2026-10-19 | [packet](active/TP-20261019-003-professional-tables-and-total-bars.md) |
+| TP-20261019-004 | Dashboard Glanceability, Panel Hierarchy and Overflow | Ready | P1 | TP-20261019-003 (table chrome baseline) | main | 2026-10-19 | [packet](active/TP-20261019-004-dashboard-glanceability-and-surface-hierarchy.md) |
+| TP-20261019-005 | Investment, Planning and Recurring Ledger Summaries | Ready | P2 | TP-20261019-003 and TP-20261019-004 | main | 2026-10-19 | [packet](active/TP-20261019-005-domain-ledger-breakdowns-and-qa.md) |
 | TP-20261016-001 | Forecast Transaction Sign Contract and Reconciliation | Complete | P0 | None | main | 2026-10-17 | [packet](completed/TP-20261016-001-forecast-transaction-sign-contract.md) |
 | TP-20261016-002 | Recurring Stream Persistence, Account Scope and Legacy API Repair | Complete | P0 | None | main | 2026-10-17 | [packet](completed/TP-20261016-002-recurring-schema-api-integrity.md) |
 | TP-20261016-003 | Transfer Matching Security, Scope, Evidence and Review | Complete | P0 | TP-20261016-001 | main | 2026-10-17 | [packet](completed/TP-20261016-003-transfer-review-scan-safety.md) |
