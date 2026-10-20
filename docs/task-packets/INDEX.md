@@ -11,7 +11,7 @@ See [README.md](README.md) for naming, lifecycle, execution, and authoring rules
 | --- | --- | --- | --- | --- |
 | TP-20261019-002 | Filter-Aware Financial Table Totals and Scope Contract | Complete | 2026-10-19 | [completed/TP-20261019-002-filter-aware-table-summary-contract.md](completed/TP-20261019-002-filter-aware-table-summary-contract.md) |
 | TP-20261019-003 | Professional Table System, Totals and Drilldowns | Complete | 2026-10-19 | [completed/TP-20261019-003-professional-tables-and-total-bars.md](completed/TP-20261019-003-professional-tables-and-total-bars.md) |
-| TP-20261019-004 | Dashboard Glanceability, Panel Hierarchy and Overflow | Ready | 2026-10-19 | [active/TP-20261019-004-dashboard-glanceability-and-surface-hierarchy.md](active/TP-20261019-004-dashboard-glanceability-and-surface-hierarchy.md) |
+| TP-20261019-004 | Dashboard Glanceability, Panel Hierarchy and Overflow | Complete | 2026-10-19 | [completed/TP-20261019-004-dashboard-glanceability-and-surface-hierarchy.md](completed/TP-20261019-004-dashboard-glanceability-and-surface-hierarchy.md) |
 | TP-20261019-005 | Investment, Planning and Recurring Ledger Summaries | Ready | 2026-10-19 | [active/TP-20261019-005-domain-ledger-breakdowns-and-qa.md](active/TP-20261019-005-domain-ledger-breakdowns-and-qa.md) |
 | TP-20261016-001 | Forecast Transaction Sign Contract and Reconciliation | Complete | 2026-10-17 | [completed/TP-20261016-001-forecast-transaction-sign-contract.md](completed/TP-20261016-001-forecast-transaction-sign-contract.md) |
 | TP-20261016-002 | Recurring Stream Persistence, Account Scope and Legacy API Repair | Complete | 2026-10-17 | [completed/TP-20261016-002-recurring-schema-api-integrity.md](completed/TP-20261016-002-recurring-schema-api-integrity.md) |
@@ -82,6 +82,7 @@ See [README.md](README.md) for naming, lifecycle, execution, and authoring rules
 | TP-20261019-001 | Daily Net Period Buckets, Readability and Reconciliation | Complete | 2026-10-19 | [completed/TP-20261019-001-daily-net-period-buckets-visual-truth.md](completed/TP-20261019-001-daily-net-period-buckets-visual-truth.md) |
 | TP-20261019-002 | Filter-Aware Financial Table Totals and Scope Contract | Complete | 2026-10-19 | [completed/TP-20261019-002-filter-aware-table-summary-contract.md](completed/TP-20261019-002-filter-aware-table-summary-contract.md) |
 | TP-20261019-003 | Professional Table System, Totals and Drilldowns | Complete | 2026-10-19 | [completed/TP-20261019-003-professional-tables-and-total-bars.md](completed/TP-20261019-003-professional-tables-and-total-bars.md) |
+| TP-20261019-004 | Dashboard Glanceability, Panel Hierarchy and Overflow | Complete | 2026-10-19 | [completed/TP-20261019-004-dashboard-glanceability-and-surface-hierarchy.md](completed/TP-20261019-004-dashboard-glanceability-and-surface-hierarchy.md) |
 
 ## Archived
 

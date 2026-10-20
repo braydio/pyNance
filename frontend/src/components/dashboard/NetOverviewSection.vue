@@ -42,7 +42,7 @@
 
     <!-- Tier 1: Now -->
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-3 items-stretch" data-testid="now-tier">
-      <div class="surface-primary p-4 md:p-5 flex flex-col lg:col-span-1">
+      <div class="surface-primary p-4 md:p-6 flex flex-col min-w-0 lg:col-span-2">
         <SafeToSpendCard
           :payload="safeToSpend"
           :loading="safeToSpendLoading"
@@ -54,7 +54,20 @@
           Current guidance (not filtered by chart dates)
         </p>
       </div>
-      <div class="surface-normal p-4 md:p-5 flex flex-col gap-3" data-testid="transactions-card">
+      <div class="now-rail flex flex-col min-w-0" data-testid="now-rail">
+      <div class="now-rail__item flex flex-col gap-1" data-testid="cash-direction">
+        <h3 class="text-sm font-semibold">Economic net</h3>
+        <p class="text-sm text-muted" data-testid="cash-direction-period">{{ periodText }}</p>
+        <p
+          class="net-overview-net"
+          :class="netSummary.totalNet < 0 ? 'is-negative' : 'is-positive'"
+        >
+          {{ netSummary.totalNet < 0 ? '▼' : '▲' }} {{ formatAmount(netSummary.totalNet) }}
+          <span class="net-overview-net__label">net in selected period</span>
+        </p>
+        <p class="text-sm text-muted" data-testid="cash-direction-totals">{{ totalsText }}</p>
+      </div>
+      <div class="now-rail__item flex flex-col gap-2" data-testid="transactions-card">
         <h3 class="text-sm font-semibold">Transactions</h3>
         <p class="net-overview-review-status-text" role="status">{{ transactionCountLabel }}</p>
         <div class="flex flex-wrap items-center gap-2 mt-auto">
@@ -86,17 +99,6 @@
           @input="emit('update:review-tag-filter', $event.target.value)"
         />
       </div>
-      <div class="surface-normal p-4 md:p-5 flex flex-col gap-2" data-testid="cash-direction">
-        <h3 class="text-sm font-semibold">Cash direction</h3>
-        <p class="text-sm text-muted" data-testid="cash-direction-period">{{ periodText }}</p>
-        <p
-          class="net-overview-net"
-          :class="netSummary.totalNet < 0 ? 'is-negative' : 'is-positive'"
-        >
-          {{ netSummary.totalNet < 0 ? '▼' : '▲' }} {{ formatAmount(netSummary.totalNet) }}
-          <span class="net-overview-net__label">net in selected period</span>
-        </p>
-        <p class="text-sm text-muted" data-testid="cash-direction-totals">{{ totalsText }}</p>
       </div>
     </div>
 
@@ -393,8 +395,24 @@ const periodText = computed(() => {
   color: var(--color-text-muted);
 }
 
+.now-rail {
+  gap: 1rem;
+  padding: 0.25rem 0.25rem 0.25rem 1rem;
+}
+
+.now-rail__item + .now-rail__item {
+  padding-top: 1rem;
+  border-top: 1px solid var(--divider);
+}
+
+@media (max-width: 1023px) {
+  .now-rail {
+    padding-left: 0.25rem;
+  }
+}
+
 .net-overview-review-status-text {
-  font-size: 1.25rem;
+  font-size: 0.9375rem;
   font-weight: 600;
 }
 
@@ -441,8 +459,8 @@ const periodText = computed(() => {
 }
 
 .net-overview-panel {
-  border: 1px solid var(--edge-contrast-1);
-  box-shadow: var(--depth-inner-glow), var(--depth-shadow-resting);
+  border: 0;
+  box-shadow: var(--depth-shadow-resting);
 }
 
 .net-overview-panel--accent-cyan {

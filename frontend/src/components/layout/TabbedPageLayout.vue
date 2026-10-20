@@ -4,7 +4,7 @@
     <div class="flex flex-col gap-8 lg:flex-row">
       <div class="min-w-0 flex-1">
         <nav
-          class="tabbed-nav ui-radius-3 border border-subtle bg-surface-2"
+          class="tabbed-nav ui-radius-3 bg-surface-2"
           data-testid="tabbed-nav"
         >
           <ul

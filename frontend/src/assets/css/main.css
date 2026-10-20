@@ -718,29 +718,39 @@ textarea.input {
 }
 
 /* Semantic surface roles (see docs/frontend/PRODUCT_UI_HIERARCHY.md). */
+/* Surface roles: hierarchy comes from tone, elevation and spacing, not repeated outlines.
+   primary = the one raised focal area (accent rail), normal = tonal region,
+   quiet = open region (separators only between siblings), attention = status rail. */
 .surface-primary {
   background-color: var(--accent-surface, var(--frosted-bg));
-  border: 1px solid var(--accent-primary, var(--border-subtle));
+  border: 0;
+  border-left: 3px solid var(--accent-primary, var(--border-subtle));
   border-radius: var(--radius-2, 0.5rem);
   box-shadow: 0 6px 18px var(--shadow);
 }
 
 .surface-normal {
   background-color: var(--frosted-bg);
-  border: 1px solid var(--border-subtle);
+  border: 0;
   border-radius: var(--radius-2, 0.5rem);
+  box-shadow: var(--depth-shadow-resting);
 }
 
 .surface-quiet {
   background-color: transparent;
-  border: 1px solid var(--divider);
+  border: 0;
   border-radius: var(--radius-2, 0.5rem);
+}
+
+/* Opt-in boundary for form controls, tables and anything that needs an explicit edge. */
+.surface-outlined {
+  border: 1px solid var(--border-subtle);
 }
 
 .surface-attention {
   background-color: color-mix(in srgb, var(--color-danger, #dc2626) 10%, var(--frosted-bg));
-  border: 1px solid color-mix(in srgb, var(--color-danger, #dc2626) 55%, transparent);
-  border-left-width: 4px;
+  border: 0;
+  border-left: 4px solid var(--color-danger, #dc2626);
   border-radius: var(--radius-2, 0.5rem);
 }
 
@@ -795,7 +805,7 @@ tr:nth-child(even) {
     color-mix(in srgb, var(--color-bg-sec) 92%, rgba(99, 205, 207, 0.08)) 0%,
     color-mix(in srgb, var(--color-bg-dark) 82%, rgba(122, 162, 247, 0.06)) 100%
   );
-  border: 1px solid var(--edge-contrast-1);
+  border: 0;
   box-shadow: var(--depth-inner-glow), var(--depth-shadow-resting);
   border-radius: var(--panel-radius-roomy);
 }

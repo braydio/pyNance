@@ -225,4 +225,40 @@ describe('SafeToSpendCard', () => {
       )
     })
   })
+
+  it('keeps warnings visible and puts formula detail behind one disclosure', () => {
+    const wrapper = mount(SafeToSpendCard, {
+      props: {
+        payload: { ...payload, warnings: ['Balance data is stale'] },
+        selectedMode: 'today',
+      },
+    })
+    const detail = wrapper.get('[data-testid="how-calculated"]')
+    expect(detail.element.tagName).toBe('DETAILS')
+    expect(detail.text()).toContain('Spendable cash')
+    expect(detail.find('[data-testid="warnings"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="warnings"]').text()).toContain('stale')
+  })
+
+  it('labels the amount as mode-specific and not a cash balance', () => {
+    const wrapper = mount(SafeToSpendCard, { props: { payload, selectedMode: 'until_payday' } })
+    const caption = wrapper.get('[data-testid="mode-caption"]').text()
+    expect(caption).toContain('Until Payday')
+    expect(caption).toContain('Not your cash balance')
+  })
+
+  it('draws the allocation strip only when components reconcile', () => {
+    const coherent = {
+      ...payload,
+      total_protected_room_cents: 13000,
+    }
+    const ok = mount(SafeToSpendCard, { props: { payload: coherent, selectedMode: 'today' } })
+    expect(ok.get('[data-testid="allocation-bridge"]').attributes('aria-label')).toContain(
+      'protected spending room $130',
+    )
+    const off = mount(SafeToSpendCard, {
+      props: { payload: { ...payload, total_protected_room_cents: 99999 }, selectedMode: 'today' },
+    })
+    expect(off.find('[data-testid="allocation-bridge"]').exists()).toBe(false)
+  })
 })

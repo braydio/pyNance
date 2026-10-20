@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { shallowMount, flushPromises } from '@vue/test-utils'
-import { defineComponent, h, ref } from 'vue'
+import { defineComponent, h, ref, computed } from 'vue'
 import Transactions from '../Transactions.vue'
 
 const useTransactionsMock = vi.fn()
@@ -71,6 +71,8 @@ function mountView() {
     isLoading: ref(false),
     error: ref(null),
     fetchTransactions: vi.fn(),
+    currentPageRows: ref([{ transaction_id: 'tx-1', amount: 12 }]),
+    queryFilters: computed(() => ({})),
   })
   return shallowMount(Transactions, {
     global: {

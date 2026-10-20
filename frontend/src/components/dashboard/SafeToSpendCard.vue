@@ -39,6 +39,7 @@
         <span class="safe-spend-card__amount">{{ formatCents(primaryAmount) }}</span>
         <span class="safe-spend-card__amount-copy">Daily allowance</span>
       </div>
+      <p class="safe-spend-card__secondary" data-testid="mode-caption">{{ modeCaption }}</p>
       <p class="safe-spend-card__message">{{ payload.message }}</p>
       <p
         v-if="protectedTotal !== null"
@@ -47,101 +48,128 @@
       >
         Total protected spending room: {{ formatCents(protectedTotal) }}
       </p>
-      <ul v-if="windowLines.length" class="safe-spend-card__windows" data-testid="windows">
-        <li v-for="line in windowLines" :key="line">{{ line }}</li>
-      </ul>
       <ul v-if="warnings.length" class="safe-spend-card__warnings" data-testid="warnings">
         <li v-for="warning in warnings" :key="warning">{{ warning }}</li>
       </ul>
+      <div
+        v-if="allocation"
+        class="safe-spend-card__bridge"
+        role="img"
+        data-testid="allocation-bridge"
+        :aria-label="allocation.label"
+      >
+        <span
+          v-for="segment in allocation.segments"
+          :key="segment.key"
+          :class="`safe-spend-card__bridge-seg safe-spend-card__bridge-seg--${segment.key}`"
+          :style="{ flexGrow: segment.cents }"
+        ></span>
+      </div>
 
-      <dl class="safe-spend-card__components">
-        <div>
-          <dt>Spendable cash</dt>
-          <dd>{{ formatCents(payload.components?.spendable_cash_cents) }}</dd>
-        </div>
-        <div>
-          <dt>Upcoming bills</dt>
-          <dd>-{{ formatCents(payload.components?.upcoming_outflows_cents) }}</dd>
-        </div>
-        <div>
-          <dt>Protected buffer{{ bufferNote }}</dt>
-          <dd>-{{ formatCents(payload.components?.required_buffer_cents) }}</dd>
-        </div>
-        <div>
-          <dt>Spent today (already in balance)</dt>
-          <dd>{{ formatCents(payload.components?.spent_today_cents) }}</dd>
-        </div>
-      </dl>
+      <details class="safe-spend-card__detail" data-testid="how-calculated">
+        <summary>How calculated / Upcoming obligations</summary>
+        <ul v-if="windowLines.length" class="safe-spend-card__windows" data-testid="windows">
+          <li v-for="line in windowLines" :key="line">{{ line }}</li>
+        </ul>
+        <dl class="safe-spend-card__components">
+          <div>
+            <dt>Spendable cash</dt>
+            <dd>{{ formatCents(payload.components?.spendable_cash_cents) }}</dd>
+          </div>
+          <div>
+            <dt>Upcoming bills</dt>
+            <dd>-{{ formatCents(payload.components?.upcoming_outflows_cents) }}</dd>
+          </div>
+          <div>
+            <dt>Protected buffer{{ bufferNote }}</dt>
+            <dd>-{{ formatCents(payload.components?.required_buffer_cents) }}</dd>
+          </div>
+          <div>
+            <dt>Spent today (already in balance)</dt>
+            <dd>{{ formatCents(payload.components?.spent_today_cents) }}</dd>
+          </div>
+        </dl>
 
-      <section class="safe-spend-card__reserved" data-testid="reserved">
-        <button
-          class="safe-spend-card__reserved-toggle"
-          type="button"
-          aria-controls="safe-spend-reserved-panel"
-          :aria-expanded="reservedOpen"
-          @click="reservedOpen = !reservedOpen"
-        >
-          <span>What's reserved?</span>
-          <span aria-hidden="true">{{ reservedOpen ? '−' : '+' }}</span>
-        </button>
-        <p class="safe-spend-card__reserved-summary" data-testid="reserved-summary">
-          {{ reservedSummary }}
-        </p>
-        <div v-show="reservedOpen" id="safe-spend-reserved-panel" data-testid="reserved-panel">
-          <div v-for="group in reserveGroups" :key="group.status" class="safe-spend-card__group">
-            <h3 class="safe-spend-card__group-title">
-              <span>{{ group.label }}</span>
-              <span>-{{ formatCents(group.total) }}</span>
-            </h3>
-            <ul class="safe-spend-card__bills">
-              <li v-for="bill in group.rows" :key="bill.id + bill.due_date" data-testid="bill-row">
+        <section class="safe-spend-card__reserved" data-testid="reserved">
+          <button
+            class="safe-spend-card__reserved-toggle"
+            type="button"
+            aria-controls="safe-spend-reserved-panel"
+            :aria-expanded="reservedOpen"
+            @click="reservedOpen = !reservedOpen"
+          >
+            <span>What's reserved?</span>
+            <span aria-hidden="true">{{ reservedOpen ? '−' : '+' }}</span>
+          </button>
+          <p class="safe-spend-card__reserved-summary" data-testid="reserved-summary">
+            {{ reservedSummary }}
+          </p>
+          <div v-show="reservedOpen" id="safe-spend-reserved-panel" data-testid="reserved-panel">
+            <div v-for="group in reserveGroups" :key="group.status" class="safe-spend-card__group">
+              <h3 class="safe-spend-card__group-title">
+                <span>{{ group.label }}</span>
+                <span>-{{ formatCents(group.total) }}</span>
+              </h3>
+              <ul class="safe-spend-card__bills">
+                <li
+                  v-for="bill in group.rows"
+                  :key="bill.id + bill.due_date"
+                  data-testid="bill-row"
+                >
+                  <span class="safe-spend-card__bill-name">
+                    {{ bill.name }}
+                    <small>
+                      {{ bill.due_date
+                      }}<template v-if="accountName(bill.account_id)">
+                        · {{ accountName(bill.account_id) }}</template
+                      ><template v-if="bill.estimated"> · estimated</template>
+                    </small>
+                  </span>
+                  <span class="safe-spend-card__bill-amount"
+                    >-{{ formatCents(bill.amount_cents) }}</span
+                  >
+                </li>
+              </ul>
+            </div>
+            <p
+              v-if="!reserveGroups.length"
+              class="safe-spend-card__secondary"
+              data-testid="no-reserved"
+            >
+              {{ noReservedCopy }}
+            </p>
+            <p v-if="beyondProtectionCopy" class="safe-spend-card__secondary">
+              {{ beyondProtectionCopy }}
+            </p>
+          </div>
+          <div v-if="needsReview.length" class="safe-spend-card__review" data-testid="needs-review">
+            <p class="safe-spend-card__secondary">
+              Needs review (not reserved): {{ needsReview.length }}
+              {{ needsReview.length === 1 ? 'bill' : 'bills' }}, {{ formatCents(needsReviewCents) }}
+            </p>
+            <ul v-show="reservedOpen" class="safe-spend-card__bills">
+              <li
+                v-for="bill in needsReview"
+                :key="bill.id + bill.due_date"
+                data-testid="review-row"
+              >
                 <span class="safe-spend-card__bill-name">
                   {{ bill.name }}
-                  <small>
-                    {{ bill.due_date
-                    }}<template v-if="accountName(bill.account_id)">
-                      · {{ accountName(bill.account_id) }}</template
-                    ><template v-if="bill.estimated"> · estimated</template>
-                  </small>
+                  <small>{{ bill.due_date }} · {{ reviewReason(bill) }}</small>
                 </span>
-                <span class="safe-spend-card__bill-amount"
-                  >-{{ formatCents(bill.amount_cents) }}</span
-                >
+                <span class="safe-spend-card__bill-amount">{{
+                  formatCents(bill.amount_cents)
+                }}</span>
               </li>
             </ul>
+            <router-link
+              class="safe-spend-card__review-link"
+              :to="{ path: '/transactions', query: { tab: 'Recurring' } }"
+              >Review recurring bills</router-link
+            >
           </div>
-          <p
-            v-if="!reserveGroups.length"
-            class="safe-spend-card__secondary"
-            data-testid="no-reserved"
-          >
-            {{ noReservedCopy }}
-          </p>
-          <p v-if="beyondProtectionCopy" class="safe-spend-card__secondary">
-            {{ beyondProtectionCopy }}
-          </p>
-        </div>
-        <div v-if="needsReview.length" class="safe-spend-card__review" data-testid="needs-review">
-          <p class="safe-spend-card__secondary">
-            Needs review (not reserved): {{ needsReview.length }}
-            {{ needsReview.length === 1 ? 'bill' : 'bills' }}, {{ formatCents(needsReviewCents) }}
-          </p>
-          <ul v-show="reservedOpen" class="safe-spend-card__bills">
-            <li v-for="bill in needsReview" :key="bill.id + bill.due_date" data-testid="review-row">
-              <span class="safe-spend-card__bill-name">
-                {{ bill.name }}
-                <small>{{ bill.due_date }} · {{ reviewReason(bill) }}</small>
-              </span>
-              <span class="safe-spend-card__bill-amount">{{ formatCents(bill.amount_cents) }}</span>
-            </li>
-          </ul>
-          <router-link
-            class="safe-spend-card__review-link"
-            :to="{ path: '/transactions', query: { tab: 'Recurring' } }"
-            >Review recurring bills</router-link
-          >
-        </div>
-      </section>
+        </section>
+      </details>
 
       <div class="safe-spend-card__footer">
         <span>{{ horizonLabel }}</span>
@@ -207,6 +235,42 @@ const windowLines = computed(() => {
     lines.push(`Next payday ${payday.next_payday} (${kind}, ${payday.confidence} confidence)`)
   }
   return lines
+})
+const MODE_COPY = {
+  today: 'Today: what you can spend today after protecting bills and your buffer.',
+  until_payday: 'Until Payday: a per-day figure that stretches protected room to payday.',
+  week: 'Next 7 Days: a per-day figure across the next 7 days.',
+}
+/** Amounts differ by horizon and are a spending guide, not a cash balance. */
+const modeCaption = computed(
+  () =>
+    `${MODE_COPY[props.selectedMode] || 'Amount depends on the selected horizon.'} Not your cash balance.`,
+)
+/**
+ * Spendable cash split into bills, buffer and protected room, drawn only when the server
+ * components reconcile exactly (spendable - bills - buffer = protected room).
+ */
+const allocation = computed(() => {
+  const c = props.payload?.components
+  const protectedRoom = props.payload?.total_protected_room_cents
+  if (!c || protectedRoom == null) return null
+  const {
+    spendable_cash_cents: cash,
+    upcoming_outflows_cents: bills,
+    required_buffer_cents: buffer,
+  } = c
+  if ([cash, bills, buffer].some((v) => typeof v !== 'number' || v < 0)) return null
+  if (cash <= 0 || cash - bills - buffer !== protectedRoom || protectedRoom < 0) return null
+  return {
+    segments: [
+      { key: 'bills', cents: bills },
+      { key: 'buffer', cents: buffer },
+      { key: 'room', cents: protectedRoom },
+    ].filter((segment) => segment.cents > 0),
+    label:
+      `Spendable cash ${formatCents(cash)} splits into upcoming bills ${formatCents(bills)}, ` +
+      `buffer ${formatCents(buffer)} and protected spending room ${formatCents(protectedRoom)}.`,
+  }
 })
 const reservedOpen = ref(false)
 const GROUPS = [
@@ -288,6 +352,41 @@ function formatCents(cents) {
 </script>
 
 <style scoped>
+.safe-spend-card__detail > summary {
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.safe-spend-card__detail[open] > summary {
+  margin-bottom: 0.75rem;
+}
+
+.safe-spend-card__bridge {
+  display: flex;
+  height: 0.5rem;
+  gap: 2px;
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+.safe-spend-card__bridge-seg {
+  flex-basis: 0;
+  min-width: 2px;
+}
+
+.safe-spend-card__bridge-seg--bills {
+  background: var(--color-text-muted);
+}
+
+.safe-spend-card__bridge-seg--buffer {
+  background: color-mix(in srgb, var(--color-text-muted) 50%, transparent);
+}
+
+.safe-spend-card__bridge-seg--room {
+  background: var(--color-accent-green, currentColor);
+}
+
 .safe-spend-card {
   display: flex;
   min-height: 100%;

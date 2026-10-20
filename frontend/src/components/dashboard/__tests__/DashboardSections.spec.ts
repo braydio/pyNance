@@ -124,6 +124,11 @@ describe('Dashboard section components', () => {
     )
     expect(wrapper.text()).not.toContain('Welcome')
     expect(wrapper.find('.summary-slot').exists()).toBe(true)
+    // Now tier: one raised lead plus an open supporting rail, not three equal cards.
+    const tier = wrapper.get('[data-testid="now-tier"]')
+    expect(tier.findAll('.surface-primary')).toHaveLength(1)
+    expect(tier.findAll('.surface-normal')).toHaveLength(0)
+    expect(tier.get('[data-testid="now-rail"]').text()).toContain('Economic net')
     expect(wrapper.findComponent(DateRangeSelectorStub).props()).toMatchObject({
       startDate: '2025-01-01',
       endDate: '2025-01-31',

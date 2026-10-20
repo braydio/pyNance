@@ -19,9 +19,9 @@ const props = defineProps({
   },
   borderTone: {
     type: String,
-    default: 'subtle',
+    default: 'none',
     validator: (value) =>
-      ['subtle', 'strong', 'accent-cyan', 'accent-red', 'accent-yellow', 'accent-green'].includes(
+      ['none', 'subtle', 'strong', 'accent-cyan', 'accent-red', 'accent-yellow', 'accent-green'].includes(
         value,
       ),
   },
@@ -49,6 +49,8 @@ const panelClasses = computed(() => {
     tertiary: 'bg-surface-3',
   }
   const borderTone = {
+    // Tonal surface plus elevation separates panels; opt in to an outline where a boundary is needed.
+    none: '',
     subtle: 'border border-subtle',
     strong: 'border border-strong',
     'accent-cyan': 'border-2 border-[var(--color-accent-cyan)]',

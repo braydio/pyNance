@@ -43,3 +43,21 @@ Ledger tables use the shared `.ledger-*` classes in `frontend/src/assets/css/mai
 - **Totals bars** (`.ledger-bar`): label the scope. "All matching" figures come from the server summary (`docs/frontend/TRANSACTIONS_TABLE_SUMMARIES.md`); local tables (modal, legacy, dashboard) only show page or visible-row subtotals and never claim an all-matching total.
 - **Accounts/institutions:** assets and liabilities are separated via `utils/accountPortfolio.js` (`portfolioTotals`); hidden accounts are called out and excluded unless included; missing balances read "Unavailable", never `$0`.
 - **States:** empty, loading and error states share the `.ledger-state` height family; empty filtered states offer **Reset filters**.
+
+## Surface roles and the dashboard "Now" tier (TP-20261019-004)
+
+Hierarchy comes from tone, elevation and spacing; repeated identical outlines are avoided.
+
+| Role | Treatment |
+| --- | --- |
+| `.surface-primary` | The one raised focal area per view: filled, elevated, with an accent **rail** (left) instead of a full outline |
+| `.surface-normal` | Tonal fill with resting elevation, no perimeter border |
+| `.surface-quiet` | Open region: transparent, no border; use dividers only between sibling content |
+| `.surface-attention` | Status rail (left) plus text/icon; never colour alone |
+| `.surface-outlined` | Opt-in 1px boundary for form controls and anything needing an explicit edge |
+
+`BasePanel` now defaults `borderTone` to `none`; pass `subtle`/`strong`/accent tones where a boundary is wanted. `.dashboard-panel` no longer adds a border. This supersedes the earlier "every surface has a 1px border" wording; the "one dominant surface per view" rule still applies.
+
+**Dashboard Now tier** (`NetOverviewSection.vue`): a 2/3 Safe to Spend lead (`surface-primary`) and a 1/3 open rail with **Economic net** (exact selected range) and the period transaction link, separated by a divider. The rail and the lead cover different horizons: Safe to Spend is current guidance and is not filtered by the chart dates.
+
+**Safe to Spend card:** first view shows one amount, its mode-specific caption ("not your cash balance"), status and confidence, the protected-through date and any warnings (warnings are never collapsed). Windows, component math, the allocation strip and reserved obligations sit under one "How calculated / Upcoming obligations" disclosure. The allocation strip is drawn only when `spendable - bills - buffer = protected room` holds exactly.
