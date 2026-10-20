@@ -71,3 +71,21 @@ describe('BillList', () => {
     expect(again.emitted('edit')?.[0][0]).toMatchObject({ id: 'b1' })
   })
 })
+
+describe('BillList summary', () => {
+  it('totals only bills due in the window, keeps predicted apart and never calls the mix monthly', () => {
+    const wrapper = mount(BillList, { props: { bills, today: '2026-10-25' } })
+    // Rent (Nov 1, manual) is inside 30 days; the predicted bill (Nov 20) is separate.
+    expect(wrapper.get('[data-testid="bill-summary-upcoming"]').text()).toContain('$1,500.00')
+    expect(wrapper.get('[data-testid="bill-summary-predicted"]').text()).toContain('$123.45')
+    expect(wrapper.get('[data-testid="bill-summary-mixed"]').text()).toContain('$1,623.45')
+    expect(wrapper.get('[data-testid="bill-summary-mixed"]').text()).toContain(
+      'not a monthly total',
+    )
+  })
+
+  it('excludes bills outside the window', () => {
+    const wrapper = mount(BillList, { props: { bills, today: '2026-06-01' } })
+    expect(wrapper.get('[data-testid="bill-summary-upcoming"]').text()).toContain('$0.00')
+  })
+})

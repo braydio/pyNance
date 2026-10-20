@@ -285,3 +285,32 @@ describe('AccountPortfolioList', () => {
     expect(ids).toEqual(['portfolio-row-cc', 'portfolio-row-cc2'])
   })
 })
+
+describe('AccountPortfolioList totals', () => {
+  it('shows assets and liabilities separately with per-group subtotals', () => {
+    const wrapper = mount(AccountPortfolioList, { props: { accounts } })
+    expect(wrapper.get('[data-testid="portfolio-summary-assets"]').text()).toContain('$6,000')
+    expect(wrapper.get('[data-testid="portfolio-summary-liabilities"]').text()).toContain('$9,350')
+    expect(wrapper.get('[data-testid="ledger-subtotal-depository"]').text()).toContain(
+      'assets $1,000',
+    )
+    expect(wrapper.get('[data-testid="ledger-subtotal-credit"]').text()).toContain('owed')
+  })
+
+  it('keeps an all-accounts comparator when a filter narrows the list', () => {
+    const wrapper = mount(AccountPortfolioList, {
+      props: {
+        accounts,
+        filters: {
+          query: 'checking',
+          group: 'all',
+          institution: 'all',
+          connection: 'all',
+          sort: 'name',
+          includeHidden: false,
+        },
+      },
+    })
+    expect(wrapper.get('[data-testid="portfolio-summary-scope"]').text()).toContain('all accounts')
+  })
+})

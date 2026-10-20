@@ -304,3 +304,27 @@ describe('RecurringTransactionSection', () => {
     expect(wrapper.get('section').attributes('aria-labelledby')).toBe('recurring-heading')
   })
 })
+
+describe('RecurringTransactionSection upcoming summary', () => {
+  it('sums only confirmed plans due in the next 30 days and splits direction', async () => {
+    const income = {
+      ...plan,
+      stream_id: 'p1',
+      display_name: 'Paycheck',
+      amount_cash_delta: '2000.00',
+      amount_mode: 'variable',
+      next_due_date: '2026-10-28',
+    }
+    const later = { ...plan, stream_id: 'l1', display_name: 'Annual', next_due_date: '2027-03-01' }
+    arrange({ streams: [plan, income, later, ignored] })
+    const wrapper = await mountSection({ today: '2026-10-20' })
+    const due = wrapper.get('[data-testid="confirmed-summary-due"]').text()
+    expect(due).toContain('$700.00')
+    expect(due).toContain('$2,000.00')
+    expect(due).toContain('2 due')
+    expect(due).toContain('1 estimated')
+    const scope = wrapper.get('[data-testid="confirmed-summary-scope"]').text()
+    expect(scope).toContain('1 suggestion')
+    expect(scope).toContain('not a monthly total')
+  })
+})

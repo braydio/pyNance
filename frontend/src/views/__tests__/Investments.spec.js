@@ -375,3 +375,71 @@ describe('Investments UI details', () => {
     expect(source).not.toMatch(/#6b7280|#94a3b8|color:\s*#fff\b/i)
   })
 })
+
+describe('Investments.vue ledger summaries', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.clearAllMocks()
+    apiMocks.fetchInvestmentAccounts.mockResolvedValue({
+      data: [
+        { account_id: 'a1', name: 'Brokerage', institution_name: 'Fidelity' },
+        { account_id: 'a2', name: 'IRA', institution_name: 'Vanguard' },
+      ],
+    })
+    apiMocks.fetchHoldings.mockResolvedValue({
+      data: [
+        { account_id: 'a1', security_id: 's1', institution_value: 1000 },
+        { account_id: 'a1', security_id: 's2', institution_value: 500 },
+        { account_id: 'a2', security_id: 's1', institution_value: 2500 },
+      ],
+    })
+    apiMocks.refreshInvestmentsAll.mockResolvedValue({ summary: {} })
+  })
+
+  it('shows filtered holdings value beside the entire connected value', async () => {
+    apiMocks.fetchInvestmentTransactions.mockResolvedValue({ transactions: [], total: 0 })
+    const wrapper = mountInvestments()
+    await flushPromises()
+    const all = wrapper.get('[data-testid="holdings-summary"]').text()
+    expect(all).toContain('Filtered holdings value')
+    expect(all).toContain('$4,000.00')
+    expect(wrapper.get('[data-testid="holdings-summary-scope"]').text()).toContain(
+      '3 holdings in 2 accounts',
+    )
+
+    await wrapper.findAll('.filters select')[0].setValue('Fidelity')
+    await flushPromises()
+    expect(wrapper.get('[data-testid="holdings-summary"]').text()).toContain('$1,500.00')
+    const entire = wrapper.get('[data-testid="holdings-summary-entire"]').text()
+    expect(entire).toContain('Entire connected holdings value: $4,000.00')
+    expect(entire).toContain('3 holdings in 2 accounts')
+  })
+
+  it('groups page activity by provider type and labels it page-only', async () => {
+    apiMocks.fetchInvestmentTransactions.mockResolvedValue({
+      transactions: [
+        { investment_transaction_id: 't1', type: 'buy', amount: 100, date: '2026-01-01' },
+        { investment_transaction_id: 't2', type: 'buy', amount: 50, date: '2026-01-02' },
+        { investment_transaction_id: 't3', type: 'sell', amount: -80, date: '2026-01-03' },
+        {
+          investment_transaction_id: 't4',
+          type: 'cash',
+          subtype: 'dividend',
+          amount: -5,
+          date: '2026-01-04',
+        },
+      ],
+      total: 40,
+    })
+    const wrapper = mountInvestments()
+    await flushPromises()
+    expect(wrapper.get('[data-testid="tx-activity-scope"]').text()).toContain(
+      'not an all-matching total',
+    )
+    expect(wrapper.get('[data-testid="tx-activity-buy"]').text()).toContain('2')
+    expect(wrapper.get('[data-testid="tx-activity-buy"]').text()).toContain('$150.00')
+    expect(wrapper.get('[data-testid="tx-activity-dividend"]').text()).toContain('Dividends')
+    expect(wrapper.find('[role="table"]').exists()).toBe(true)
+    expect(wrapper.findAll('[role="columnheader"]').length).toBe(7)
+  })
+})

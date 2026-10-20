@@ -1,12 +1,12 @@
 # TP-20261019-005: Investment, Planning and Recurring Ledger Summaries
 
 **Packet ID:** TP-20261019-005  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-19  
 **Last updated:** 2026-10-19  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261019-005-domain-ledger-breakdowns-and-qa.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261019-005-domain-ledger-breakdowns-and-qa.md`  
 **Priority:** P2  
 **Workstream size:** One independently testable implementation packet  
 **Depends on:** TP-20261019-003 and TP-20261019-004  

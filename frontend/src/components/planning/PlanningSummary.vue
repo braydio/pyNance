@@ -23,8 +23,11 @@
         <dd>{{ planningBalanceFormatted }}</dd>
       </div>
       <div>
-        <dt>Upcoming bills</dt>
+        <dt>Listed plan bills</dt>
         <dd>{{ totalBillsFormatted }}</dd>
+        <dd class="text-sm text-muted" data-testid="plan-bills-scope">
+          This scenario only; mixed cadence, not a monthly total
+        </dd>
       </div>
       <div>
         <dt>Allocated</dt>

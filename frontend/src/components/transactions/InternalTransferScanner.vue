@@ -18,6 +18,9 @@
       Scanned {{ range.start }} to {{ range.end }} · {{ visiblePairs.length }}
       {{ visiblePairs.length === 1 ? 'pair' : 'pairs' }} to review
       <span v-if="dismissedCount"> · {{ dismissedCount }} dismissed</span>
+      <span v-if="truncated" data-testid="scan-loaded-only">
+        · loaded pairs only, not every transfer</span
+      >
     </p>
     <p v-if="truncated" class="text-sm text-muted" role="status" data-testid="scan-truncated">
       Results were limited to keep the review fast. Confirm or dismiss these, then scan again to see

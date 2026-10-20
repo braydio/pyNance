@@ -17,6 +17,21 @@
       </p>
     </header>
 
+    <div
+      v-if="totalCount"
+      class="portfolio-summary"
+      role="status"
+      data-testid="portfolio-summary-bar"
+    >
+      <span data-testid="portfolio-summary-assets"> Assets {{ money(shownTotals.assets) }} </span>
+      <span data-testid="portfolio-summary-liabilities">
+        Liabilities owed {{ money(shownTotals.liabilities) }}
+      </span>
+      <span class="portfolio-summary__note" data-testid="portfolio-summary-scope">
+        {{ summaryScopeNote }}
+      </span>
+    </div>
+
     <div class="portfolio-filters">
       <label class="portfolio-field portfolio-field--search">
         <span class="portfolio-field__label">Search</span>
@@ -114,6 +129,9 @@
       >
         <h3 class="portfolio-group-title">
           {{ group.label }} <span class="portfolio-group-count">{{ group.count }}</span>
+          <span class="portfolio-group-subtotal" :data-testid="`ledger-subtotal-${group.group}`">
+            {{ groupSubtotal(group) }}
+          </span>
         </h3>
         <div
           v-for="institution in group.institutions"
@@ -238,6 +256,7 @@ import {
   groupAccountsForLedger,
   institutionOptions,
   isLiabilityGroup,
+  portfolioTotals,
   sortPortfolioAccounts,
   syncStatus,
 } from '@/utils/accountPortfolio'
@@ -296,6 +315,45 @@ const activeChips = computed(() => {
   return chips
 })
 
+/** Totals for the accounts shown, and a fixed comparator over all non-hidden accounts. */
+const shownTotals = computed(() => portfolioTotals(visibleAccounts.value, { includeHidden: true }))
+const allTotals = computed(() => portfolioTotals(props.accounts))
+const summaryScopeNote = computed(() => {
+  const t = shownTotals.value
+  const parts = [`${visibleAccounts.value.length} shown`]
+  if (t.unknownBalances) parts.push(`${t.unknownBalances} balance unknown, not counted as $0`)
+  const hidden = props.accounts.filter((a) => a.is_hidden).length
+  if (hidden)
+    parts.push(
+      props.filters.includeHidden ? `${hidden} hidden included` : `${hidden} hidden not counted`,
+    )
+  const all = allTotals.value
+  if (visibleAccounts.value.length !== all.accountCount) {
+    parts.push(`all accounts: assets ${money(all.assets)}, owed ${money(all.liabilities)}`)
+  }
+  return parts.join(' · ')
+})
+
+function money(value) {
+  return value === null || value === undefined ? 'Unavailable' : formatAmount(value)
+}
+
+/** One subtotal per group, labelled by what it measures (assets or amount owed). */
+function groupSubtotal(group) {
+  const accounts = group.institutions.flatMap((institution) => institution.accounts)
+  const totals = portfolioTotals(accounts, { includeHidden: true })
+  const parts = []
+  if (isLiabilityGroup(group.group)) {
+    parts.push(`owed ${money(totals.liabilities)}`)
+  } else {
+    parts.push(`assets ${money(totals.assets)}`)
+    if (group.group === 'other' && totals.liabilities)
+      parts.push(`owed ${money(totals.liabilities)}`)
+  }
+  if (totals.unknownBalances) parts.push(`${totals.unknownBalances} unknown`)
+  return parts.join(' · ')
+}
+
 function isLiability(account) {
   return isLiabilityGroup(classifyAccount(account))
 }
@@ -334,6 +392,26 @@ function aprCaption(account) {
 </script>
 
 <style scoped>
+.portfolio-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.portfolio-summary__note,
+.portfolio-group-subtotal {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.portfolio-group-subtotal {
+  margin-left: 0.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .portfolio-list {
   display: flex;
   flex-direction: column;

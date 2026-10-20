@@ -72,11 +72,24 @@
       <div v-if="loading" class="text-muted">Loading holdings…</div>
       <div v-else-if="filteredHoldings.length === 0" class="text-muted">No holdings yet.</div>
       <div v-else class="holdings-table" role="region" aria-label="Holdings" tabindex="0">
-        <div class="totals-bar">
+        <div class="totals-bar" data-testid="holdings-summary">
           <div>
-            Total (filtered): <strong>{{ formatCurrency(filteredTotal) }}</strong>
+            Filtered holdings value: <strong>{{ formatCurrency(filteredTotal) }}</strong>
+            <span class="muted" data-testid="holdings-summary-scope">
+              · {{ filteredHoldings.length }} holding{{
+                filteredHoldings.length === 1 ? '' : 's'
+              }}
+              in {{ filteredAccountIds.length }} account{{
+                filteredAccountIds.length === 1 ? '' : 's'
+              }}
+            </span>
           </div>
-          <div class="muted">Portfolio total: {{ formatCurrency(portfolioTotal) }}</div>
+          <div class="muted" data-testid="holdings-summary-entire">
+            Entire connected holdings value: {{ formatCurrency(portfolioTotal) }}
+            <template v-if="isFilteredHoldings">
+              · {{ holdings.length }} holdings in {{ accounts.length }} accounts
+            </template>
+          </div>
         </div>
         <template v-if="showAggregateHoldings">
           <div class="thead holdings-summary-head">
@@ -179,7 +192,12 @@
       <div v-if="showAggregateHoldings" class="text-muted holdings-note">
         Multiple accounts are selected. Expand an account to inspect individual holdings.
       </div>
-      <div v-if="Object.keys(totalsByInstitution).length" class="inst-summary">
+      <div
+        v-if="Object.keys(totalsByInstitution).length > 1"
+        class="inst-summary"
+        data-testid="inst-summary"
+      >
+        <div class="muted">Subtotal by institution (filtered holdings)</div>
         <div v-for="(val, inst) in totalsByInstitution" :key="inst" class="inst-row">
           <span class="inst">{{ inst }}</span>
           <span class="val">{{ formatCurrency(val) }}</span>
@@ -260,37 +278,49 @@
       <div v-if="txLoading" class="text-muted">Loading transactions…</div>
       <div v-else>
         <div v-if="txData.length === 0" class="text-muted">No transactions found.</div>
-        <div
-          v-else
-          class="tx-table"
-          role="region"
-          aria-label="Investment transactions"
-          tabindex="0"
-        >
-          <div class="thead">
-            <div>Date</div>
-            <div>Account</div>
-            <div>Security</div>
-            <div>Name</div>
-            <div class="num">Qty</div>
-            <div class="num">Price</div>
-            <div class="num">Amount</div>
+        <template v-else>
+          <div class="tx-activity" data-testid="tx-activity">
+            <span class="muted" data-testid="tx-activity-scope">
+              This page only · {{ txData.length }} transaction{{
+                txData.length === 1 ? '' : 's'
+              }}
+              (page {{ txPage }} of {{ txTotalPages }}); not an all-matching total
+            </span>
+            <ul class="tx-activity__groups">
+              <li
+                v-for="group in txActivityGroups"
+                :key="group.key"
+                :data-testid="`tx-activity-${group.key}`"
+              >
+                {{ group.label }} · {{ group.count }} · {{ formatCurrency(group.amount) }}
+              </li>
+            </ul>
           </div>
-          <div v-for="tx in txData" :key="tx.investment_transaction_id" class="trow">
-            <div>{{ (tx.date || '').slice(0, 10) }}</div>
-            <div>{{ accountLabelById[tx.account_id] || tx.account_id }}</div>
-            <div>{{ tx.security_id || '—' }}</div>
-            <div class="name-clip">
-              {{ tx.name || tx.subtype || tx.type }}
+          <div
+            class="tx-table"
+            role="table"
+            aria-label="Investment transactions, current page"
+            tabindex="0"
+          >
+            <div class="thead" role="row">
+              <div role="columnheader">Date</div>
+              <div role="columnheader">Account</div>
+              <div role="columnheader">Security</div>
+              <div role="columnheader">Name</div>
+              <div class="num" role="columnheader">Qty</div>
+              <div class="num" role="columnheader">Price</div>
+              <div class="num" role="columnheader">Amount</div>
             </div>
-            <div class="num">
-              {{ formatNum(tx.quantity) }}
-            </div>
-            <div class="num">
-              {{ formatCurrency(tx.price) }}
-            </div>
-            <div class="num">
-              {{ formatCurrency(tx.amount) }}
+            <div v-for="tx in txData" :key="tx.investment_transaction_id" class="trow" role="row">
+              <div role="cell">{{ (tx.date || '').slice(0, 10) }}</div>
+              <div role="cell">{{ accountLabelById[tx.account_id] || tx.account_id }}</div>
+              <div role="cell">{{ tx.security_id || '—' }}</div>
+              <div class="name-clip" role="cell">
+                {{ tx.name || tx.subtype || tx.type }}
+              </div>
+              <div class="num" role="cell">{{ formatNum(tx.quantity) }}</div>
+              <div class="num" role="cell">{{ formatCurrency(tx.price) }}</div>
+              <div class="num" role="cell">{{ formatCurrency(tx.amount) }}</div>
             </div>
           </div>
           <div class="pager">
@@ -312,7 +342,7 @@
               Next
             </button>
           </div>
-        </div>
+        </template>
       </div>
     </section>
     <section
@@ -546,6 +576,34 @@ function holdingValue(h) {
 }
 
 // Portfolio totals and allocation
+const isFilteredHoldings = computed(() => filteredHoldings.value.length !== holdings.value.length)
+const TX_ACTIVITY_LABELS = {
+  buy: 'Buys',
+  sell: 'Sells',
+  dividend: 'Dividends',
+  transfer: 'Transfers',
+  cash: 'Cash',
+  fee: 'Fees',
+}
+/**
+ * Page-only activity grouped by provider type. Amounts of unlike activity are never
+ * combined into a single profit or net figure.
+ */
+const txActivityGroups = computed(() => {
+  const groups = new Map()
+  for (const tx of txData.value) {
+    const subtype = String(tx.subtype || '').toLowerCase()
+    const type = String(tx.type || '').toLowerCase()
+    const key = subtype.includes('dividend') ? 'dividend' : type || 'other'
+    if (!groups.has(key)) {
+      groups.set(key, { key, label: TX_ACTIVITY_LABELS[key] || 'Other', count: 0, amount: 0 })
+    }
+    const group = groups.get(key)
+    group.count += 1
+    group.amount += Number(tx.amount) || 0
+  }
+  return Array.from(groups.values())
+})
 const portfolioTotal = computed(() => holdings.value.reduce((s, h) => s + holdingValue(h), 0))
 const filteredTotal = computed(() =>
   filteredHoldings.value.reduce((s, h) => s + holdingValue(h), 0),
@@ -1020,6 +1078,24 @@ section[id]:focus-visible {
   grid-template-columns: 1fr;
   gap: 0.75rem;
 }
+.tx-activity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.tx-activity__groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-variant-numeric: tabular-nums;
+}
+
 .pager {
   display: flex;
   gap: 0.75rem;

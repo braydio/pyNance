@@ -15,7 +15,28 @@
       No bills yet. Add one to begin planning this scenario.
     </div>
 
-    <ul v-else class="rounded border border-subtle">
+    <div v-if="sortedBills.length" class="bill-summary text-sm" data-testid="bill-summary">
+      <p data-testid="bill-summary-upcoming">
+        Due in the next {{ UPCOMING_DAYS }} days:
+        <strong>{{ money(upcoming.enteredCents) }}</strong>
+        · {{ upcoming.enteredCount }} {{ upcoming.enteredCount === 1 ? 'bill' : 'bills' }}
+        <template v-if="upcoming.predictedCount">
+          <span class="text-muted" data-testid="bill-summary-predicted">
+            (+ {{ money(upcoming.predictedCents) }} predicted, not entered by you:
+            {{ upcoming.predictedCount }})
+          </span>
+        </template>
+      </p>
+      <p class="text-muted" data-testid="bill-summary-scope">
+        Each bill counts once at its next due date; repeats are not multiplied. This scenario's
+        {{ sortedBills.length }} listed {{ sortedBills.length === 1 ? 'bill' : 'bills' }} only.
+      </p>
+      <p class="text-muted" data-testid="bill-summary-mixed">
+        Listed plan amounts, mixed cadence (not a monthly total): {{ money(listedTotalCents) }}
+      </p>
+    </div>
+
+    <ul v-if="sortedBills.length" class="rounded border border-subtle">
       <li v-for="bill in sortedBills" :key="bill.id" :class="billRowClass(bill)">
         <div class="bill-row__main">
           <button
@@ -105,11 +126,14 @@ const props = withDefaults(
     bills: Bill[]
     currencyCode?: string
     selectedBillId?: string | null
+    /** ISO date (YYYY-MM-DD) treated as today; defaults to the local date. */
+    today?: string
   }>(),
   {
     bills: () => [],
     currencyCode: 'USD',
     selectedBillId: null,
+    today: '',
   },
 )
 
@@ -133,6 +157,47 @@ const sortedBills = computed<DisplayBill[]>(() =>
       frequencyLabel: frequencyCopy(bill.frequency),
     })),
 )
+
+const UPCOMING_DAYS = 30
+
+function localToday(): string {
+  const d = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+function addDays(iso: string, days: number): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  const next = new Date(y, m - 1, d + days)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${next.getFullYear()}-${pad(next.getMonth() + 1)}-${pad(next.getDate())}`
+}
+
+/**
+ * Bills due within the window, counted once at their next due date. Predicted bills are
+ * candidates from history, so they are reported apart from bills the user entered.
+ */
+const upcoming = computed(() => {
+  const start = props.today || localToday()
+  const end = addDays(start, UPCOMING_DAYS)
+  const inWindow = props.bills.filter((bill) => bill.dueDate >= start && bill.dueDate <= end)
+  const entered = inWindow.filter((bill) => bill.origin !== 'predicted')
+  const predicted = inWindow.filter((bill) => bill.origin === 'predicted')
+  const sum = (rows: Bill[]) => rows.reduce((total, bill) => total + bill.amountCents, 0)
+  return {
+    enteredCents: sum(entered),
+    enteredCount: entered.length,
+    predictedCents: sum(predicted),
+    predictedCount: predicted.length,
+  }
+})
+const listedTotalCents = computed(() =>
+  props.bills.reduce((total, bill) => total + bill.amountCents, 0),
+)
+
+function money(cents: number): string {
+  return formatCurrency(cents / 100, props.currencyCode)
+}
 
 const expandedIds = ref<Set<string>>(new Set())
 const pendingDeleteId = ref<string | null>(null)

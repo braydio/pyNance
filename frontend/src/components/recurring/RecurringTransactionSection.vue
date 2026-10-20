@@ -203,6 +203,24 @@
       <h3 id="confirmed-heading" class="subheading">
         Confirmed &amp; upcoming ({{ confirmed.length }})
       </h3>
+      <div v-if="confirmed.length" class="plan-summary" data-testid="confirmed-summary">
+        <p data-testid="confirmed-summary-due">
+          Next {{ UPCOMING_DAYS }} days (confirmed, one due date per plan): money out
+          <strong>{{ formatAmount(upcoming.out) }}</strong> · money in
+          <strong>{{ formatAmount(upcoming.in) }}</strong>
+          <span class="text-muted">
+            · {{ upcoming.count }} due<template v-if="upcoming.estimated">
+              , {{ upcoming.estimated }} estimated</template
+            >
+          </span>
+        </p>
+        <p class="text-muted" data-testid="confirmed-summary-scope">
+          {{ confirmed.length }} confirmed {{ confirmed.length === 1 ? 'plan' : 'plans' }} shown ·
+          {{ candidates.length }} suggestion{{ candidates.length === 1 ? '' : 's' }} and
+          {{ inactive.length }} ignored/ended not included. Repeats within the window are not
+          multiplied, so this is not a monthly total.
+        </p>
+      </div>
       <p v-if="!loading && !confirmed.length" class="text-muted">
         No confirmed plans yet. Add one, or confirm a suggestion above.
       </p>
@@ -290,6 +308,8 @@ const props = defineProps({
   accountId: { type: String, default: '' },
   /** Optional: already-known accounts ({ account_id, name }) to avoid refetching. */
   accounts: { type: Array, default: null },
+  /** Optional ISO date treated as today (tests); defaults to the local date. */
+  today: { type: String, default: '' },
 })
 
 const cadenceOptions = [
@@ -327,6 +347,35 @@ const blankForm = () => ({
   notes: '',
 })
 const form = reactive(blankForm())
+
+const UPCOMING_DAYS = 30
+
+function isoDate(date) {
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
+/**
+ * Confirmed plans due within the window, counted once at their next due date and split by
+ * direction. Suggestions and ignored/ended plans are never part of this figure.
+ */
+const upcoming = computed(() => {
+  const start = props.today || isoDate(new Date())
+  const [y, m, d] = start.split('-').map(Number)
+  const end = isoDate(new Date(y, m - 1, d + UPCOMING_DAYS))
+  const out = { out: 0, in: 0, count: 0, estimated: 0 }
+  for (const item of confirmed.value) {
+    const due = item.next_due_date
+    if (!due || due < start || due > end) continue
+    const delta = Number(item.amount_cash_delta)
+    if (!Number.isFinite(delta)) continue
+    if (delta < 0) out.out += -delta
+    else out.in += delta
+    out.count += 1
+    if (item.amount_mode === 'variable') out.estimated += 1
+  }
+  return out
+})
 
 const accountOptions = computed(() => props.accounts ?? accountList.value)
 const confirmed = computed(() =>
