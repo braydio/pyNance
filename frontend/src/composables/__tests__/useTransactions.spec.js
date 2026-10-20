@@ -11,10 +11,8 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 
-// Ensure filteredTransactions returns only search matches without padding
-// when a query is applied.
 describe('useTransactions', () => {
-  it('filters results without padding when searching', () => {
+  it('does not narrow loaded rows locally: search is a server filter', () => {
     const { transactions, searchQuery, filteredTransactions } = useTransactions(3)
     transactions.value = [
       { transaction_id: '1', description: 'Coffee', category: 'Food' },
@@ -22,8 +20,8 @@ describe('useTransactions', () => {
       { transaction_id: '3', description: 'Gas', category: 'Transport' },
     ]
     searchQuery.value = 'coffee'
-    const result = filteredTransactions.value
-    expect(result).toHaveLength(1)
+    // The loaded rows are untouched; the matching rows arrive from the API with `search`.
+    expect(filteredTransactions.value).toHaveLength(3)
   })
 
   it('keeps API category when no primary/detailed fields are provided', async () => {

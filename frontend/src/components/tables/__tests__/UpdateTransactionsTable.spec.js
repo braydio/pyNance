@@ -660,4 +660,73 @@ describe('UpdateTransactionsTable.vue', () => {
       expect(wrapper.get('[data-testid="sort-amount"]').element.tagName).toBe('BUTTON')
     })
   })
+
+  describe('server-filtered mode', () => {
+    const rows = [
+      {
+        transaction_id: 'a',
+        date: '2024-01-01',
+        amount: 10,
+        description: 'Alpha',
+        category: 'Food',
+      },
+      {
+        transaction_id: 'b',
+        date: '2024-01-02',
+        amount: 20,
+        description: 'Beta',
+        category: 'Bills',
+      },
+      {
+        transaction_id: 'c',
+        date: '2024-01-03',
+        amount: 30,
+        description: 'Gamma',
+        category: 'Bills',
+      },
+    ]
+    const mountServerFiltered = (props = {}) =>
+      mount(UpdateTransactionsTable, {
+        props: { transactions: rows, currentPage: 2, pageSize: 2, serverFiltered: true, ...props },
+        global: { stubs: ['Modal', 'FuzzyDropdown'] },
+      })
+
+    it('renders the page it is given without re-slicing or narrowing it', async () => {
+      const wrapper = mountServerFiltered()
+      await flushPromises()
+      wrapper.vm.selectedPrimaryCategory = 'Food'
+      await flushPromises()
+
+      const displayed = wrapper.vm.displayTransactions.filter((tx) => !tx._placeholder)
+      expect(displayed.map((tx) => tx.transaction_id).sort()).toEqual(['a', 'b', 'c'])
+    })
+
+    it('reports column and category filters as server parameters instead of applying them', async () => {
+      const wrapper = mountServerFiltered()
+      await flushPromises()
+
+      wrapper.vm.selectFilterField('description')
+      wrapper.vm.fieldSearch = ' alpha '
+      wrapper.vm.addFieldFilter()
+      wrapper.vm.selectedPrimaryCategory = 'Food'
+      await flushPromises()
+
+      const emitted = wrapper.emitted('update:filters')
+      expect(emitted.at(-1)[0]).toEqual({ filter_description: 'alpha', category_primary: 'Food' })
+
+      wrapper.vm.removeFilterTag('field:description')
+      await flushPromises()
+      expect(wrapper.emitted('update:filters').at(-1)[0]).toEqual({ category_primary: 'Food' })
+    })
+
+    it('does not emit filters in standalone mode', async () => {
+      const wrapper = mount(UpdateTransactionsTable, {
+        props: { transactions: rows },
+        global: { stubs: ['Modal', 'FuzzyDropdown'] },
+      })
+      wrapper.vm.selectedPrimaryCategory = 'Food'
+      await flushPromises()
+      expect(wrapper.emitted('update:filters')).toBeUndefined()
+    })
+  })
 })

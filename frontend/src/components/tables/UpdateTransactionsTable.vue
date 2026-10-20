@@ -462,7 +462,7 @@ import Modal from '@/components/ui/Modal.vue'
 import FuzzyDropdown from '@/components/ui/FuzzyDropdown.vue'
 import { formatAmount } from '@/utils/format'
 const toast = useToast()
-const emit = defineEmits(['editRecurringFromTransaction'])
+const emit = defineEmits(['editRecurringFromTransaction', 'update:filters', 'changed'])
 const props = defineProps({
   transactions: {
     type: Array,
@@ -479,6 +479,17 @@ const props = defineProps({
   autoEditTransactionId: {
     type: [String, Number],
     default: '',
+  },
+  /**
+   * When true the parent owns filtering and paging: `transactions` is already the server's page of
+   * matching rows, so the table neither narrows nor re-slices it. Column and category filters are
+   * reported through `update:filters` as server query parameters instead of being applied locally,
+   * which keeps counts, totals and exports on the same filter set. When false (standalone use) the
+   * table filters and pages the rows it is given and the result is only a loaded-page view.
+   */
+  serverFiltered: {
+    type: Boolean,
+    default: false,
   },
 })
 
@@ -944,6 +955,7 @@ async function saveEdit(tx) {
     editingTransactionId.value = null
     editingTransactionSnapshot.value = null
     toast.success('Transaction updated')
+    emit('changed')
 
     // Offer to save a rule for future matches when key fields change
     const changedField = ['category', 'merchant_name', 'merchant_type'].find((f) => f in payload)
@@ -1024,6 +1036,7 @@ async function toggleInternal(tx) {
       const counterpart = props.transactions.find((t) => t.transaction_id === tx.internal_match_id)
       if (counterpart) counterpart.is_internal = false
       toast.success('Unmarked internal')
+      emit('changed')
     }
   } catch (e) {
     console.error('Failed to toggle internal flag:', e)
@@ -1054,6 +1067,7 @@ async function confirmInternal() {
       counterpart.internal_match_id = activeInternalTx.value.transaction_id
     }
     toast.success('Marked as internal')
+    emit('changed')
   } catch (e) {
     console.error('Failed to mark internal:', e)
     toast.error('Failed to mark internal')
@@ -1143,9 +1157,32 @@ function sortBy(key) {
   }
 }
 
+/**
+ * Query parameters for the column and category filters, in the backend's vocabulary. The parent
+ * merges these into the one request filter set shared by the page, count, summary and export.
+ */
+const serverFilterParams = computed(() => {
+  const params = {}
+  activeFieldFilters.value.forEach((filter) => {
+    const query = filter.query.trim()
+    if (query) params[`filter_${filter.key}`] = query
+  })
+  if (selectedPrimaryCategory.value) params.category_primary = selectedPrimaryCategory.value
+  if (selectedSubcategory.value) params.category_sub = selectedSubcategory.value
+  return params
+})
+
+watch(
+  serverFilterParams,
+  (params) => {
+    if (props.serverFiltered) emit('update:filters', params)
+  },
+  { deep: true },
+)
+
 const filteredTransactions = computed(() => {
   let txs = [...props.transactions]
-  if (activeFieldFilters.value.length) {
+  if (!props.serverFiltered && activeFieldFilters.value.length) {
     activeFieldFilters.value.forEach((filter) => {
       const query = filter.query.trim()
       if (!query) return
@@ -1158,16 +1195,16 @@ const filteredTransactions = computed(() => {
     })
   }
   // Primary category filter if selected
-  if (selectedPrimaryCategory.value) {
+  if (!props.serverFiltered && selectedPrimaryCategory.value) {
     const primary = selectedPrimaryCategory.value.toLowerCase()
     txs = txs.filter((tx) => (tx.category || '').toLowerCase().startsWith(primary))
   }
-  // Subcategory filter further narrows
-  if (selectedSubcategory.value) {
+  // Subcategory filter further narrows (server-filtered pages only get ordered below)
+  if (!props.serverFiltered && selectedSubcategory.value) {
     txs = txs.filter((tx) =>
       tx.category?.toLowerCase().includes(selectedSubcategory.value.toLowerCase()),
     )
-  } else if (selectedPrimaryCategory.value) {
+  } else if (!props.serverFiltered && selectedPrimaryCategory.value) {
     txs = txs.filter(
       (tx) => tx.primary_category?.toLowerCase() === selectedPrimaryCategory.value.toLowerCase(),
     )
@@ -1190,6 +1227,7 @@ const filteredTransactions = computed(() => {
 })
 
 const paginatedFilteredTransactions = computed(() => {
+  if (props.serverFiltered) return filteredTransactions.value
   const start = (props.currentPage - 1) * props.pageSize
   return filteredTransactions.value.slice(start, start + props.pageSize)
 })

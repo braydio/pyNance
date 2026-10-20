@@ -1,12 +1,12 @@
 # TP-20261019-002: Filter-Aware Financial Table Totals and Scope Contract
 
 **Packet ID:** TP-20261019-002  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-19  
 **Last updated:** 2026-10-19  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261019-002-filter-aware-table-summary-contract.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261019-002-filter-aware-table-summary-contract.md`  
 **Priority:** P0  
 **Workstream size:** One independently testable implementation packet  
 **Depends on:** None; use completed economic-flow TP-20261017-003/004  

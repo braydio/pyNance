@@ -6,6 +6,7 @@
  *
  * Exposed helpers:
  * - `fetchTransactions(params)` - paginated listing of transactions
+ * - `fetchTransactionsSummary(params)` - totals over every row matching the same filters
  * - `updateTransaction(transactionData)` - modify a transaction
  * - `fetchTagSuggestions(q, limit?, user_id?)` - tag autocomplete list
  * - `fetchRecentTransactions(accountId, limit?)` - newest transactions for an account
@@ -28,6 +29,44 @@ import axios from 'axios'
  * @returns {Promise<Object>} Result containing a transactions array and total count.
  */
 export const fetchTransactions = async (params = {}) => {
+  const query = toFilterQuery(params)
+  const response = await axios.get('/api/transactions/get_transactions', { params: query })
+  return response.data?.status === 'success' ? response.data.data : { transactions: [], total: 0 }
+}
+
+/**
+ * Fetch totals over ALL rows matching the same filters as `fetchTransactions`.
+ *
+ * The summary ignores paging and sorting. Pass the identical filter object (including `search`
+ * and the column filters) so the table, its count, the export and this aggregate agree.
+ *
+ * @param {Object} params - Filter parameters; `page`, `page_size`, `sort` and running-balance flags
+ *   are dropped.
+ * @param {{signal?: AbortSignal}} [options]
+ * @returns {Promise<Object>} Summary data (`income`, `expenses`, `refunds`, `economic_net`,
+ *   movement buckets, `breakdowns`, `matching_count`, `as_of`).
+ * @throws When the request fails or the server reports an error (never returns zeros for an error).
+ */
+export const fetchTransactionsSummary = async (params = {}, options = {}) => {
+  // eslint-disable-next-line no-unused-vars
+  const { page, page_size, sort, include_running_balance, transaction_id, ...filters } = params
+  const response = await axios.get('/api/transactions/summary', {
+    params: toFilterQuery(filters),
+    signal: options.signal,
+  })
+  if (response.data?.status !== 'success') {
+    throw new Error(response.data?.message || 'Unable to load transaction totals')
+  }
+  return response.data.data
+}
+
+/**
+ * Normalize filter parameters into the query string shared by the list and summary endpoints.
+ *
+ * @param {Object} params
+ * @returns {Object}
+ */
+function toFilterQuery(params = {}) {
   const {
     category_ids,
     account_ids,
@@ -64,9 +103,7 @@ export const fetchTransactions = async (params = {}) => {
   if (merchant) {
     query.merchant = merchant
   }
-
-  const response = await axios.get('/api/transactions/get_transactions', { params: query })
-  return response.data?.status === 'success' ? response.data.data : { transactions: [], total: 0 }
+  return query
 }
 
 /**

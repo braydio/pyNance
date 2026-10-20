@@ -4,10 +4,11 @@
  * Provides transaction table state and helpers for dashboard components.
  * Handles pagination, search, and sort logic while fetching from the API.
  * Supports dynamic filters via ``filtersRef`` (e.g., ``start_date`` or
- * ``account_ids``) which trigger refetches when changed.
+ * ``account_ids``) which trigger refetches when changed. Search is a server-side filter over every
+ * matching row; ``queryFilters`` is the one canonical filter set that the page request, the
+ * all-matching summary and CSV export all share.
  */
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
-import Fuse from 'fuse.js'
+import { ref, shallowRef, computed, onMounted, watch } from 'vue'
 import { fetchTransactions as fetchTransactionsApi } from '@/api/transactions'
 
 /**
@@ -38,6 +39,9 @@ export function useTransactions(
   options = {},
 ) {
   const transactions = ref([])
+  // Server pages by number for the active filters; `currentPageRows` reads the page itself so a
+  // jump to page 5 never depends on pages 2-4 having been loaded.
+  const pageMap = shallowRef(new Map())
   const searchQuery = ref('')
   const sortKey = ref('date')
   const sortOrder = ref(-1)
@@ -53,8 +57,34 @@ export function useTransactions(
 
   const PREFETCH_DEPTH = 3
 
+  // Debounced so typing issues one request; clearing applies immediately.
+  const appliedSearch = ref('')
+  let searchTimer = null
+  const SEARCH_DEBOUNCE_MS = 300
+
+  /** The canonical server filter set: caller filters plus the applied search term. */
+  const queryFilters = computed(() => {
+    const filters = { ...(filtersRef.value || {}) }
+    const term = appliedSearch.value.trim()
+    if (term) filters.search = term
+    return filters
+  })
+
+  /** Stable key for the canonical filter set (also used to discard stale responses). */
+  const filterHash = computed(() => {
+    const filters = queryFilters.value
+    return JSON.stringify(
+      Object.keys(filters)
+        .sort()
+        .reduce((acc, key) => {
+          acc[key] = filters[key]
+          return acc
+        }, {}),
+    )
+  })
+
   const cacheKey = computed(() => {
-    const filters = filtersRef.value || {}
+    const filters = queryFilters.value
     const sorted = Object.keys(filters)
       .sort()
       .reduce((acc, key) => {
@@ -113,7 +143,7 @@ export function useTransactions(
         page_size: 1,
         transaction_id: transactionId,
         ...(includeRunningBalance ? { include_running_balance: true } : {}),
-        ...(filtersRef.value || {}),
+        ...queryFilters.value,
       })
 
       if (!res || !Array.isArray(res.transactions) || res.transactions.length === 0) {
@@ -159,20 +189,17 @@ export function useTransactions(
     }
 
     transactions.value = combined
+    pageMap.value = new Map(pageCache)
   }
 
   /**
-   * Synchronize pagination metadata with the current filtered dataset.
+   * Synchronize pagination metadata with the server-reported matching total.
    *
-   * When a search query is active, totals reflect the client-side filtered
-   * collection. Otherwise the backend-reported total is preferred so page
-   * controls remain accurate while additional pages are fetched on demand.
+   * Search and every other filter run on the server across all matching rows, so the total never
+   * has to be derived from the rows that happen to be loaded.
    */
   function updatePaginationMeta() {
-    const filteredLength = filteredTransactions.value.length
-    const derivedTotal = searchQuery.value.trim()
-      ? filteredLength
-      : Math.max(serverTotal.value || 0, filteredLength)
+    const derivedTotal = Math.max(serverTotal.value || 0, 0)
 
     totalCount.value = derivedTotal
     totalPages.value = Math.max(1, Math.ceil(derivedTotal / pageSize))
@@ -193,7 +220,7 @@ export function useTransactions(
       page,
       page_size: pageSize,
       ...(includeRunningBalance ? { include_running_balance: true } : {}),
-      ...(filtersRef.value || {}),
+      ...queryFilters.value,
     })
   }
 
@@ -205,7 +232,12 @@ export function useTransactions(
    * @returns {Promise<Array<Object>>} Normalized transactions for the page.
    */
   async function loadPage(bucket, page) {
+    const requestedHash = filterHash.value
     const res = await fetchPageData(page)
+    if (requestedHash !== filterHash.value) {
+      // Filters changed while this request was in flight: its rows belong to a different query.
+      return []
+    }
     if (!res || typeof res !== 'object' || !('transactions' in res)) {
       throw new Error('Received an unexpected response from the server.')
     }
@@ -230,40 +262,6 @@ export function useTransactions(
     return Math.max(1, Math.ceil((bucket.lastTotal || 0) / pageSize))
   }
 
-  /**
-   * Ensure the filtered collection contains enough items for the active page.
-   *
-   * Additional pages are fetched sequentially when the current slice does not
-   * yet contain enough filtered results to fill the visible page. This allows
-   * client-side filters to backfill rows with matches from later pages instead
-   * of showing placeholders.
-   *
-   * @param {Map<string, *>} bucket - Cache bucket for the active filter set.
-   */
-  async function ensurePageCoverage(bucket) {
-    const needed = currentPage.value * pageSize
-    let nextPage = Math.max(...bucket.pages.keys(), 0) + 1
-    const upperBound = maxServerPage(bucket)
-
-    while (filteredTransactions.value.length < needed && nextPage <= upperBound) {
-      if (bucket.pages.has(nextPage)) {
-        nextPage += 1
-        continue
-      }
-
-      try {
-        await loadPage(bucket, nextPage)
-        refreshTransactionsFromCache(bucket.pages)
-        await nextTick()
-      } catch (prefetchErr) {
-        console.warn(`Backfill for page ${nextPage} failed`, prefetchErr)
-        break
-      }
-
-      nextPage += 1
-    }
-  }
-
   const fetchTransactions = async (page = currentPage.value, { force = false } = {}) => {
     const bucket = ensureBucket()
     const hasCachedPage = bucket.pages.has(page)
@@ -275,12 +273,13 @@ export function useTransactions(
       const targetTx = await fetchTargetTransaction(targetTransactionId.value)
       highlightedTransaction.value = targetTx
 
+      const requestedHash = filterHash.value
       if (!hasCachedPage || force) {
         await loadPage(bucket, page)
       }
+      if (requestedHash !== filterHash.value) return
 
       refreshTransactionsFromCache(bucket.pages)
-      await ensurePageCoverage(bucket)
       updatePaginationMeta()
       prefetchNeighborPages(bucket, page, maxServerPage(bucket), cacheKey.value)
     } catch (err) {
@@ -316,35 +315,12 @@ export function useTransactions(
     }
   }
 
-  // Fuse instance for fuzzy searching across common transaction fields
-  const fuse = computed(
-    () =>
-      new Fuse(transactions.value, {
-        includeScore: true,
-        shouldSort: true,
-        keys: [
-          'transaction_id',
-          'date',
-          'description',
-          'merchant_name',
-          'account_name',
-          'institution_name',
-          'category',
-        ],
-        threshold: 0.35,
-        ignoreLocation: true,
-      }),
-  )
+  /** Order loaded rows: optional column sort, then promote a requested transaction id. */
+  function orderRows(source) {
+    let items = source
 
-  const filteredTransactions = computed(() => {
-    let items = transactions.value
-
-    const query = searchQuery.value.trim()
-    if (query) {
-      // fzf-like narrowing; preserve Fuse order by score
-      items = fuse.value.search(query).map((r) => r.item)
-    } else if (sortKey.value) {
-      // Optional sort by column
+    // Search narrows on the server, so the loaded rows are only ordered here.
+    if (sortKey.value) {
       items = [...items].sort((a, b) => {
         const valA = a[sortKey.value] || ''
         const valB = b[sortKey.value] || ''
@@ -372,13 +348,24 @@ export function useTransactions(
     }
 
     return items
+  }
+
+  const filteredTransactions = computed(() => orderRows(transactions.value))
+
+  /** Rows of the current server page only (plus a targeted transaction on page 1). */
+  const currentPageRows = computed(() => {
+    const rows = pageMap.value.get(currentPage.value) || []
+    const target = highlightedTransaction.value
+    const withTarget =
+      target &&
+      currentPage.value === 1 &&
+      !rows.some((tx) => tx.transaction_id === target.transaction_id)
+        ? [target, ...rows]
+        : rows
+    return orderRows(withTarget)
   })
 
   const paginatedTransactions = computed(() => {
-    if (searchQuery.value.trim()) {
-      return filteredTransactions.value
-    }
-
     const start = (currentPage.value - 1) * pageSize
     return filteredTransactions.value.slice(start, start + pageSize)
   })
@@ -405,23 +392,31 @@ export function useTransactions(
     },
   )
 
-  watch(
-    filtersRef,
-    () => {
-      cacheStore.clear() // reset buckets for new filters
-      highlightedTransaction.value = null
-      transactions.value = []
-      totalPages.value = 1
-      totalCount.value = 0
-      serverTotalRef.value = 0
-      if (currentPage.value !== 1) {
-        currentPage.value = 1
-      } else {
-        fetchTransactions(1, { force: true })
-      }
-    },
-    { deep: true },
-  )
+  watch(searchQuery, (value) => {
+    clearTimeout(searchTimer)
+    if (!String(value || '').trim()) {
+      appliedSearch.value = ''
+      return
+    }
+    searchTimer = setTimeout(() => {
+      appliedSearch.value = String(value)
+    }, SEARCH_DEBOUNCE_MS)
+  })
+
+  watch(filterHash, () => {
+    cacheStore.clear() // reset buckets for new filters
+    highlightedTransaction.value = null
+    transactions.value = []
+    pageMap.value = new Map()
+    totalPages.value = 1
+    totalCount.value = 0
+    serverTotalRef.value = 0
+    if (currentPage.value !== 1) {
+      currentPage.value = 1
+    } else {
+      fetchTransactions(1, { force: true })
+    }
+  })
 
   async function prefetchNeighborPages(bucket, current, total, bucketKey) {
     const upper = Math.min(total, PREFETCH_DEPTH)
@@ -462,13 +457,15 @@ export function useTransactions(
     )
   }
 
-  watch([filteredTransactions, searchQuery, serverTotal], updatePaginationMeta, {
+  watch([filteredTransactions, serverTotal], updatePaginationMeta, {
     immediate: true,
   })
 
   return {
     transactions,
     searchQuery,
+    queryFilters,
+    filterHash,
     sortKey,
     sortOrder,
     currentPage,
@@ -481,6 +478,7 @@ export function useTransactions(
     setPage,
     setSort,
     filteredTransactions,
+    currentPageRows,
     paginatedTransactions,
     hasNextPage: computed(() => currentPage.value < totalPages.value),
   }

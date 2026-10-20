@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { disagreesWithChart, flowChipLabel, flowTitle, summarizeFlows } from '../flowSummary'
+import {
+  disagreesWithChart,
+  flowChipLabel,
+  flowTitle,
+  summarizeFlows,
+  visiblePageSubtotal,
+} from '../flowSummary'
 
 const row = (id, kind, delta, extra = {}) => ({
   transaction_id: id,
@@ -82,5 +88,23 @@ describe('chart reconciliation and labels', () => {
     const title = flowTitle(OCT_13[1])
     expect(title).toContain('no matching pair')
     expect(title).not.toMatch(/verified/i)
+  })
+})
+
+describe('visiblePageSubtotal', () => {
+  it('sums only the rendered rows and keeps cash movement apart from economic amounts', () => {
+    const rows = [
+      { amount: -10.1, economic_amount: -10.1 },
+      { amount: -0.2, economic_amount: -0.2 },
+      { amount: 200, economic_amount: null }, // transfer: cash moved, nothing economic
+      { _placeholder: true, amount: 999, economic_amount: 999 },
+      { amount: 'n/a' },
+    ]
+    expect(visiblePageSubtotal(rows)).toEqual({ count: 4, cashMovement: 189.7, economic: -10.3 })
+  })
+
+  it('treats a missing page as empty rather than inventing zeros for failures', () => {
+    expect(visiblePageSubtotal(undefined)).toEqual({ count: 0, cashMovement: 0, economic: 0 })
+    expect(visiblePageSubtotal([])).toEqual({ count: 0, cashMovement: 0, economic: 0 })
   })
 })

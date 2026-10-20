@@ -124,53 +124,107 @@ describe('useTransactions', () => {
     expect(totalPages.value).toBe(2)
   })
 
-  it('backfills filtered results across cached pages before paginating', async () => {
-    const filtersRef = ref({ account_ids: ['acct-1'] })
-    const pageSize = 2
-    const firstPage = [
-      { transaction_id: 'alpha-1', date: '2024-02-01', description: 'Apple Store' },
-      { transaction_id: 'beta-1', date: '2024-02-02', description: 'Book Shop' },
-    ]
-    const secondPage = [
-      { transaction_id: 'alpha-2', date: '2024-02-03', description: 'Apricot Market' },
-      { transaction_id: 'gamma-1', date: '2024-02-04', description: 'Grocery' },
-    ]
+  it('searches on the server across all matching rows and trusts the server total', async () => {
+    vi.useFakeTimers()
+    try {
+      const filtersRef = ref({ account_ids: ['acct-1'] })
+      vi.mocked(fetchTransactions).mockImplementation(({ search }) =>
+        Promise.resolve(
+          search
+            ? { transactions: [{ transaction_id: 'alpha-9', date: '2024-02-01' }], total: 51 }
+            : { transactions: [{ transaction_id: 'beta-1', date: '2024-02-02' }], total: 400 },
+        ),
+      )
+      let composable
+      mount({
+        template: '<div />',
+        setup() {
+          composable = useTransactions(15, null, filtersRef)
+          return {}
+        },
+      })
+      await flushPromises()
+      expect(composable.totalCount.value).toBe(400)
 
-    vi.mocked(fetchTransactions).mockImplementation(({ page, account_ids }) => {
-      expect(account_ids).toEqual(['acct-1'])
-      if (page === 2) {
-        return Promise.resolve({ transactions: secondPage, total: 4 })
-      }
-      return Promise.resolve({ transactions: firstPage, total: 4 })
-    })
+      composable.searchQuery.value = 'ap'
+      await nextTick()
+      // Debounced: typing does not fire a request per keystroke.
+      expect(vi.mocked(fetchTransactions).mock.calls.some(([p]) => p.search)).toBe(false)
 
+      await vi.advanceTimersByTimeAsync(350)
+      await flushPromises()
+
+      expect(fetchTransactions).toHaveBeenCalledWith(
+        expect.objectContaining({ search: 'ap', account_ids: ['acct-1'], page: 1 }),
+      )
+      expect(composable.queryFilters.value).toMatchObject({ search: 'ap' })
+      // The count is the server's whole-set count, not the number of loaded rows.
+      expect(composable.totalCount.value).toBe(51)
+      expect(composable.totalPages.value).toBe(4)
+      expect(composable.currentPageRows.value.map((tx) => tx.transaction_id)).toEqual(['alpha-9'])
+
+      composable.searchQuery.value = ''
+      await flushPromises()
+      expect(composable.queryFilters.value.search).toBeUndefined()
+      expect(composable.totalCount.value).toBe(400)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps each server page separate so a jump to page 5 does not need pages 2-4', async () => {
+    const filtersRef = ref({})
+    vi.mocked(fetchTransactions).mockImplementation(({ page }) =>
+      Promise.resolve({
+        transactions: [{ transaction_id: `p${page}-a`, date: '2024-02-01' }],
+        total: 100,
+      }),
+    )
     let composable
     mount({
       template: '<div />',
       setup() {
-        composable = useTransactions(pageSize, null, filtersRef)
+        composable = useTransactions(10, null, filtersRef)
         return {}
       },
     })
+    await flushPromises()
+    composable.setPage(5)
+    await flushPromises()
+    expect(composable.currentPageRows.value.map((tx) => tx.transaction_id)).toEqual(['p5-a'])
+  })
 
-    const {
-      fetchTransactions: fetchTransactionsPage,
-      paginatedTransactions,
-      searchQuery,
-      totalCount,
-    } = composable
-
-    await fetchTransactionsPage(1, { force: true })
-    await fetchTransactionsPage(2, { force: true })
+  it('ignores a slow response for filters that were replaced', async () => {
+    const filtersRef = ref({ tx_type: 'debit' })
+    let releaseFirst
+    vi.mocked(fetchTransactions).mockImplementation(({ tx_type }) => {
+      if (tx_type === 'debit') {
+        return new Promise((resolve) => {
+          releaseFirst = () =>
+            resolve({ transactions: [{ transaction_id: 'old', date: '2024-01-01' }], total: 9 })
+        })
+      }
+      return Promise.resolve({
+        transactions: [{ transaction_id: 'new', date: '2024-01-02' }],
+        total: 1,
+      })
+    })
+    let composable
+    mount({
+      template: '<div />',
+      setup() {
+        composable = useTransactions(10, null, filtersRef)
+        return {}
+      },
+    })
+    await nextTick()
+    filtersRef.value = { tx_type: 'credit' }
+    await flushPromises()
+    releaseFirst()
     await flushPromises()
 
-    searchQuery.value = 'ap'
-    await nextTick()
-
-    const filteredIds = paginatedTransactions.value.map((tx) => tx.transaction_id)
-    expect(filteredIds).toEqual(expect.arrayContaining(['alpha-1', 'alpha-2']))
-    expect(filteredIds).toHaveLength(2)
-    expect(totalCount.value).toBe(2)
+    expect(composable.currentPageRows.value.map((tx) => tx.transaction_id)).toEqual(['new'])
+    expect(composable.totalCount.value).toBe(1)
   })
 
   it('fills the visible page when filtered API responses are sparse', async () => {

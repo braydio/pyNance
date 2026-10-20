@@ -609,6 +609,60 @@ def user_modified_update_transaction():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+TEXT_FILTER_PARAMS = {
+    "filter_date": "date",
+    "filter_description": "description",
+    "filter_merchant_name": "merchant_name",
+    "filter_account_name": "account_name",
+    "filter_institution_name": "institution_name",
+    "filter_category": "category",
+    "category_primary": "category_primary",
+    "category_sub": "category_sub",
+}
+MAX_FILTER_TEXT = 200
+
+
+def _parse_transaction_filters(args):
+    """Parse the Activity table filter query string shared by the page, count and summary routes.
+
+    Returns ``(filters, applied)``: ``filters`` are keyword arguments for
+    ``account_logic.build_transaction_filter_query`` (everything except ``user_id``/pending policy)
+    and ``applied`` is the echo of the non-empty filters. Raises ``ValueError`` for bad input.
+    """
+    account_ids = _parse_account_ids(args)
+    account_id_single = args.get("account_id")
+    if account_id_single and account_id_single not in account_ids:
+        account_ids.append(account_id_single)
+    tx_type_raw = args.get("tx_type") or args.get("transaction_type") or args.get("type")
+    tx_type = tx_type_raw.lower() if tx_type_raw else None
+    if tx_type not in (None, "", "credit", "debit"):
+        tx_type = None
+    text_filters = {}
+    for param, field in TEXT_FILTER_PARAMS.items():
+        value = (args.get(param) or "").strip()
+        if value:
+            text_filters[field] = value[:MAX_FILTER_TEXT]
+    search = (args.get("search") or "").strip()[:MAX_FILTER_TEXT]
+    filters = {
+        "start_date": _parse_iso_date(args.get("start_date")),
+        "end_date": _parse_iso_date(args.get("end_date")),
+        "category": args.get("category") or None,
+        "merchant": args.get("merchant") or None,
+        "tags": _parse_tag_filters(args) or None,
+        "account_ids": account_ids or None,
+        "tx_type": tx_type,
+        "include_transfers": _truthy_param(args.get("include_transfers"), default=False),
+        "search": search or None,
+        "text_filters": text_filters or None,
+    }
+    applied = {
+        key: (value.isoformat() if hasattr(value, "isoformat") else value)
+        for key, value in filters.items()
+        if value not in (None, "", [], {}, False)
+    }
+    return filters, applied
+
+
 @transactions.route("/get_transactions", methods=["GET"])
 def get_transactions_paginated():
     """Return paginated transactions with optional filters.
@@ -628,31 +682,16 @@ def get_transactions_paginated():
         include_running_balance = request.args.get("include_running_balance") == "true"
         transaction_id = request.args.get("transaction_id")
 
-        start_date_str = request.args.get("start_date")
-        end_date_str = request.args.get("end_date")
-        category = request.args.get("category")
-        merchant = request.args.get("merchant")  # Filter by merchant_name or merchant_slug
-        tags = _parse_tag_filters(request.args)
-        account_ids = _parse_account_ids(request.args)
-        account_id_single = request.args.get("account_id")
-        if account_id_single and account_id_single not in account_ids:
-            account_ids.append(account_id_single)
-
-        tx_type_raw = request.args.get("tx_type") or request.args.get("transaction_type") or request.args.get("type")
-        tx_type = tx_type_raw.lower() if tx_type_raw else None
-
         try:
-            start_date = _parse_iso_date(start_date_str)
-            end_date = _parse_iso_date(end_date_str)
+            filters, _applied = _parse_transaction_filters(request.args)
         except ValueError as exc:
             return jsonify({"status": "error", "message": str(exc)}), 400
 
         sort = request.args.get("sort") or "date_desc"
         if sort not in TRANSACTION_SORTS:
             return jsonify({"status": "error", "message": f"sort must be one of {', '.join(TRANSACTION_SORTS)}"}), 400
-        include_transfers = _truthy_param(request.args.get("include_transfers"), default=False)
         owner_id = None
-        if include_transfers:
+        if filters["include_transfers"]:
             # Transfer history is owner data: bind it to the trusted server owner and fail closed.
             from app.services import recurring_repository
 
@@ -664,18 +703,11 @@ def get_transactions_paginated():
         transactions, total, meta = account_logic.get_paginated_transactions(
             page,
             page_size,
-            start_date=start_date,
-            end_date=end_date,
-            category=category,
             user_id=owner_id,
-            merchant=merchant,
-            account_ids=account_ids or None,
-            tx_type=tx_type,
             transaction_id=transaction_id,
-            tags=tags or None,
             include_running_balance=include_running_balance,
-            include_transfers=include_transfers,
             sort=sort,
+            **filters,
         )
 
         return (
@@ -695,6 +727,35 @@ def get_transactions_paginated():
     except Exception as e:
         logger.error("Error in get_transactions_paginated: %s", e, exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@transactions.route("/summary", methods=["GET"])
+def get_transactions_summary():
+    """Totals over ALL rows matching the Activity filters (independent of page and sort).
+
+    Accepts the same filter parameters as ``/get_transactions`` (``start_date``, ``end_date``,
+    ``account_ids``, ``tx_type``, ``category``, ``merchant``, ``tags``, ``search``, ``filter_<field>``,
+    ``category_primary``, ``category_sub``, ``include_transfers``). Economic income, expenses and
+    refunds come from the shared flow classifier; transfers, debt settlements, investment movement
+    and unclassified rows are reported separately. Bound to the trusted server owner (503 without
+    one), pending rows are excluded and counted. Read-only; no external service is called.
+    """
+    from app.services import recurring_repository, transaction_summary
+
+    try:
+        try:
+            owner_id = recurring_repository.trusted_owner_id()
+        except recurring_repository.OwnerNotConfigured as exc:
+            return jsonify({"status": "error", "code": exc.code, "message": str(exc)}), exc.status
+        try:
+            filters, applied = _parse_transaction_filters(request.args)
+        except ValueError as exc:
+            return jsonify({"status": "error", "message": str(exc)}), 400
+        data = transaction_summary.summarize_transactions(owner_id, filters, applied=applied)
+        return jsonify({"status": "success", "data": data}), 200
+    except Exception as e:
+        logger.error("Error building transaction summary: %s", e, exc_info=True)
+        return jsonify({"status": "error", "message": "Unable to build transaction summary"}), 500
 
 
 @transactions.route("/insights", methods=["GET"])

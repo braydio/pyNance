@@ -235,7 +235,17 @@ def load_classified_flows(
     )
     if account_ids:
         query = query.filter(Transaction.account_id.in_([str(a) for a in account_ids]))
-    rows = query.all()
+    return classify_rows(query.all())
+
+
+def classify_rows(rows: Iterable[tuple[Any, Any]]) -> list[SimpleNamespace]:
+    """Classify ``(Transaction, Account)`` rows with one batched lookup for linked counterparts.
+
+    Callers own the row selection (owner scope, filters); this only classifies. Extra tuple members
+    after the account (such as a joined category) are ignored. Returns
+    ``SimpleNamespace(tx, account, day, **classification)`` in input order.
+    """
+    rows = [(row[0], row[1]) for row in rows]
     match_ids = {tx.internal_match_id for tx, _ in rows if tx.internal_match_id}
     counterparts: dict[str, LinkedPair] = {}
     if match_ids:
@@ -320,6 +330,7 @@ __all__ = [
     "FLOW_KINDS",
     "LinkedPair",
     "classify_reporting_flow",
+    "classify_rows",
     "load_classified_flows",
     "rollup_by_day",
     "user_decision_for",

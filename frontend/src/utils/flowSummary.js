@@ -148,3 +148,29 @@ export function disagreesWithChart(summary, reference) {
     close(summary.net, reference.net)
   )
 }
+
+/**
+ * Subtotal of the rows actually rendered on the current page.
+ *
+ * `cashMovement` is the signed sum of the displayed `amount` values (money out is negative); it is
+ * cash movement for those rows, never an income or net figure. `economic` sums only rows the
+ * backend classified (`economic_amount`), so transfers and unclassified rows contribute nothing.
+ * Placeholder rows and rows without a numeric amount are ignored rather than counted as zero.
+ *
+ * @param {Array<Record<string, unknown>>} rows
+ * @returns {{count: number, cashMovement: number, economic: number}}
+ */
+export function visiblePageSubtotal(rows) {
+  let count = 0
+  let cash = 0
+  let economic = 0
+  for (const row of Array.isArray(rows) ? rows : []) {
+    if (!row || row._placeholder) continue
+    count += 1
+    const amount = Number(row.amount)
+    if (row.amount != null && Number.isFinite(amount)) cash += amount
+    const economicAmount = Number(row.economic_amount)
+    if (row.economic_amount != null && Number.isFinite(economicAmount)) economic += economicAmount
+  }
+  return { count, cashMovement: money(cash), economic: money(economic) }
+}

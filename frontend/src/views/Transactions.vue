@@ -124,18 +124,72 @@
           </button>
         </div>
         <div
-          v-if="hasActiveFilters && !isLoading && !error"
+          v-if="hasAnyFilter && !isLoading && !error"
           class="filter-summary"
           data-testid="filter-summary"
         >
-          <span
-            class="filter-summary__total"
-            :title="'Signed total of the rows on this page only (money out is negative).'"
+          <div class="filter-summary__scope" data-testid="summary-matching">
+            <span class="filter-summary__heading">
+              Filtered results · {{ matchingCountLabel }}
+            </span>
+            <span
+              v-if="summaryStatus === 'loading' && !matchingSummary"
+              class="filter-summary__note"
+            >
+              Updating totals…
+            </span>
+            <template v-else-if="matchingSummary">
+              <span class="filter-summary__total" data-testid="summary-income">
+                Economic income (excl. transfers) {{ formatCurrency(matchingSummary.income) }}
+              </span>
+              <span class="filter-summary__total" data-testid="summary-expenses">
+                Economic expenses {{ formatCurrency(matchingSummary.expenses) }}
+              </span>
+              <span class="filter-summary__total" data-testid="summary-refunds">
+                Refund adjustments {{ formatCurrency(matchingSummary.refunds) }}
+              </span>
+              <span
+                class="filter-summary__total filter-summary__total--net"
+                data-testid="summary-net"
+              >
+                Economic net {{ formatCurrency(matchingSummary.economic_net) }}
+              </span>
+              <span v-if="summaryStale" class="filter-summary__note" data-testid="summary-stale">
+                Stale: the last refresh failed
+              </span>
+            </template>
+            <span
+              v-if="summaryStatus === 'error'"
+              class="filter-summary__note"
+              data-testid="summary-error"
+              role="alert"
+            >
+              {{ matchingSummary ? 'Totals may be out of date.' : 'Totals unavailable.' }}
+              <button type="button" class="filter-summary__retry" @click="refreshSummary">
+                Retry
+              </button>
+            </span>
+          </div>
+          <div class="filter-summary__page" data-testid="summary-page">
+            Page {{ currentPage }} of {{ totalPages }} · {{ pageSubtotal.count }} shown ·
+            <span
+              :title="'Signed sum of the rows on this page only (money out is negative). This is cash movement, not income or net.'"
+            >
+              Cash movement (current page) {{ formatCurrency(pageSubtotal.cashMovement) }}
+            </span>
+          </div>
+          <details
+            v-if="matchingSummary && movementRows.length"
+            class="filter-summary__movement"
+            data-testid="summary-movement"
           >
-            This page, signed total {{ formatCurrency(filterSummary.totalAmount) }}
-          </span>
+            <summary>Transfers, debt payments and rows to review</summary>
+            <ul>
+              <li v-for="row in movementRows" :key="row.label">{{ row.label }}: {{ row.value }}</li>
+            </ul>
+          </details>
           <ul class="filter-summary__chips" aria-label="Active filters">
-            <li v-for="chip in activeFilterChips" :key="chip" class="pill pill-subtle">
+            <li v-for="chip in scopeChips" :key="chip" class="pill pill-subtle">
               {{ chip }}
             </li>
           </ul>
@@ -143,7 +197,7 @@
             type="button"
             class="filter-summary__clear"
             data-testid="clear-filters"
-            @click="clearFilters"
+            @click="clearSearchAndFilters"
           >
             Clear filters
           </button>
@@ -158,19 +212,23 @@
           />
           <UpdateTransactionsTable
             v-else
-            :transactions="filteredTransactions"
+            :key="tableResetKey"
+            :transactions="pageRows"
             :current-page="currentPage"
             :page-size="initialPageSize"
             :sort-key="sortKey"
             :sort-order="sortOrder"
             :auto-edit-transaction-id="targetTransactionId"
+            server-filtered
+            @update:filters="tableFilters = $event"
+            @changed="onTransactionsChanged"
             @sort="setSort"
             @editRecurringFromTransaction="prefillRecurringFromTransaction"
           />
         </transition>
       </Card>
       <PaginationControls
-        v-if="!searchQuery && !error"
+        v-if="!error"
         id="pagination-controls"
         :current-page="currentPage"
         :total-pages="totalPages"
@@ -204,6 +262,8 @@
 import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTransactions } from '@/composables/useTransactions.js'
+import { useTransactionSummary } from '@/composables/useTransactionSummary.js'
+import { visiblePageSubtotal } from '@/utils/flowSummary.js'
 import { fetchTransactions as fetchTransactionsApi } from '@/api/transactions'
 import api from '@/services/api'
 import { formatDateInput } from '@/composables/useDateRange.js'
@@ -272,6 +332,9 @@ export default {
     const filtersOpen = ref(false)
     const importOpen = ref(false)
     const isExporting = ref(false)
+    // Column and category filters owned by the table component, reported as server parameters.
+    const tableFilters = ref({})
+    const tableResetKey = ref(0)
 
     /**
      * Keep the provided ref synchronized with vue-router query parameters.
@@ -376,7 +439,7 @@ export default {
       if (accountFilter.value) f.account_ids = [accountFilter.value]
       if (txType.value) f.tx_type = txType.value
       if (sortOption.value && sortOption.value !== 'date_desc') f.sort = sortOption.value
-      return f
+      return { ...f, ...tableFilters.value }
     })
 
     const {
@@ -384,7 +447,8 @@ export default {
       currentPage,
       totalPages,
       totalCount,
-      filteredTransactions,
+      currentPageRows,
+      queryFilters,
       sortKey,
       sortOrder,
       setSort,
@@ -419,7 +483,9 @@ export default {
 
     const recurringFormRef = ref(null)
     const tabs = ['Activity', 'Recurring', { label: 'Transfer Review', slot: 'Scanner' }]
-    const activeTab = ref(coerceQueryValue(route.query?.tab) === 'Recurring' ? 'Recurring' : 'Activity')
+    const activeTab = ref(
+      coerceQueryValue(route.query?.tab) === 'Recurring' ? 'Recurring' : 'Activity',
+    )
 
     /**
      * Determine whether a top-level transaction filter is currently active.
@@ -430,65 +496,71 @@ export default {
       Boolean(startDate.value || endDate.value || accountFilter.value || txType.value),
     )
 
-    /**
-     * Convert a transaction amount value to a safe numeric value.
-     *
-     * @param {number | string | null | undefined} amount
-     * @returns {number}
-     */
-    function toNumericAmount(amount) {
-      const parsed = Number(amount)
-      return Number.isFinite(parsed) ? parsed : 0
-    }
+    /** Rows of the current server page, exactly what the table renders. */
+    const pageRows = computed(() =>
+      Array.isArray(currentPageRows.value) ? currentPageRows.value : [],
+    )
 
-    /**
-     * Build summary metrics for currently filtered transactions.
-     *
-     * @returns {{transactionCount: number, totalAmount: number, uniqueCounts: Record<string, number>}}
-     */
-    /** Rows actually shown on the current page (everything loaded while a search is active). */
-    const pageRows = computed(() => {
-      const all = Array.isArray(filteredTransactions.value) ? filteredTransactions.value : []
-      if (searchQuery.value.trim()) return all
-      const start = (currentPage.value - 1) * initialPageSize
-      return all.slice(start, start + initialPageSize)
-    })
+    const matchingTotal = computed(() => Number(totalCount.value || 0))
 
     /** Count label that never presents a page as the whole matching set. */
     const resultCountLabel = computed(() => {
-      if (searchQuery.value.trim()) {
-        return `${pageRows.value.length} found in loaded pages`
-      }
-      const matching = Number(totalCount.value || 0).toLocaleString('en-US')
+      const matching = matchingTotal.value.toLocaleString('en-US')
       return `${pageRows.value.length} on this page · ${matching} matching`
     })
 
-    const filterSummary = computed(() => {
-      const transactions = pageRows.value
-      const uniqueCategories = new Set()
-      const uniqueMerchants = new Set()
-      const uniqueAccounts = new Set()
-      const uniqueInstitutions = new Set()
-
-      const totalAmount = transactions.reduce((sum, tx) => {
-        if (tx?.category) uniqueCategories.add(tx.category)
-        if (tx?.merchant_name) uniqueMerchants.add(tx.merchant_name)
-        if (tx?.account_name) uniqueAccounts.add(tx.account_name)
-        if (tx?.institution_name) uniqueInstitutions.add(tx.institution_name)
-        return sum + toNumericAmount(tx?.amount)
-      }, 0)
-
-      return {
-        transactionCount: transactions.length,
-        totalAmount,
-        uniqueCounts: {
-          categories: uniqueCategories.size,
-          merchants: uniqueMerchants.size,
-          accounts: uniqueAccounts.size,
-          institutions: uniqueInstitutions.size,
-        },
-      }
+    const matchingCountLabel = computed(() => {
+      const count = matchingTotal.value
+      return `${count.toLocaleString('en-US')} ${count === 1 ? 'match' : 'matches'}`
     })
+
+    /** Subtotal of the rows actually rendered on this page (not the filtered dataset total). */
+    const pageSubtotal = computed(() => visiblePageSubtotal(pageRows.value))
+
+    // All-matching totals from the server for the identical filter set the table and export use.
+    const summaryFilters = computed(() => queryFilters?.value ?? filters.value)
+    const hasAnyFilter = computed(() =>
+      Boolean(
+        startDate.value ||
+        endDate.value ||
+        accountFilter.value ||
+        txType.value ||
+        String(searchQuery.value || '').trim() ||
+        Object.keys(tableFilters.value).length,
+      ),
+    )
+    const {
+      matchingSummary,
+      status: summaryStatus,
+      stale: summaryStale,
+      refresh: refreshSummary,
+    } = useTransactionSummary(summaryFilters, hasAnyFilter)
+
+    const movementRows = computed(() => {
+      const data = matchingSummary.value
+      if (!data) return []
+      const rows = []
+      const add = (label, value) => {
+        if (Number(value)) rows.push({ label, value: formatCurrency(value) })
+      }
+      add('Transfers in', data.transfers_in)
+      add('Transfers out', data.transfers_out)
+      add('Debt payments', data.debt_settlements)
+      add('Investment movement', data.investment_movements)
+      add('Unreviewed inflows', data.unclassified_in)
+      add('Unreviewed outflows', data.unclassified_out)
+      if (data.needs_review_count)
+        rows.push({ label: 'Needs review', value: `${data.needs_review_count} rows` })
+      if (data.pending_excluded_count) {
+        rows.push({ label: 'Pending, not counted', value: `${data.pending_excluded_count} rows` })
+      }
+      return rows
+    })
+
+    /** A table edit or transfer decision can change classification: refresh page and totals. */
+    function onTransactionsChanged() {
+      refreshSummary()
+    }
 
     /**
      * Format a numeric amount as a localized USD string.
@@ -513,6 +585,22 @@ export default {
       }
       if (accountFilter.value) chips.push('Account')
       if (txType.value) chips.push(`Type: ${txType.value}`)
+      return chips
+    })
+
+    /** Chips for every filter in play, including search and the table's column filters. */
+    const scopeChips = computed(() => {
+      const chips = [...activeFilterChips.value]
+      const term = String(searchQuery.value || '').trim()
+      if (term) chips.push(`Search: ${term}`)
+      for (const [key, value] of Object.entries(tableFilters.value)) {
+        const label = key
+          .replace(/^filter_/, '')
+          .replace(/^category_primary$/, 'category')
+          .replace(/^category_sub$/, 'subcategory')
+          .replace(/_/g, ' ')
+        chips.push(`${label}: ${value}`)
+      }
       return chips
     })
 
@@ -596,6 +684,10 @@ export default {
       endDate.value = ''
       accountFilter.value = ''
       txType.value = ''
+      if (Object.keys(tableFilters.value).length) {
+        tableFilters.value = {}
+        tableResetKey.value += 1 // remount the table so its own filter inputs reset too
+      }
     }
 
     /**
@@ -664,8 +756,10 @@ export default {
 
       try {
         const exportPageSize = 500
+        // The same canonical filters as the table page and the totals, including search and
+        // column filters, so the file contains exactly the rows being counted.
         const activeFilters = {
-          ...(filters.value || {}),
+          ...(summaryFilters.value || {}),
           include_running_balance: true,
         }
         let page = 1
@@ -692,24 +786,7 @@ export default {
           }
         }
 
-        const search = searchQuery.value.trim().toLowerCase()
-        const rowsForExport = !search
-          ? allRows
-          : allRows.filter((tx) =>
-              [
-                tx.transaction_id,
-                tx.date,
-                tx.description,
-                tx.category,
-                tx.merchant_name,
-                tx.account_name,
-                tx.institution_name,
-              ].some((value) =>
-                String(value || '')
-                  .toLowerCase()
-                  .includes(search),
-              ),
-            )
+        const rowsForExport = allRows
 
         const csv = toCsv(rowsForExport)
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -745,7 +822,19 @@ export default {
       totalPages,
       totalCount,
       initialPageSize,
-      filteredTransactions,
+      pageRows,
+      pageSubtotal,
+      matchingCountLabel,
+      matchingSummary,
+      summaryStatus,
+      summaryStale,
+      refreshSummary,
+      movementRows,
+      scopeChips,
+      hasAnyFilter,
+      tableFilters,
+      tableResetKey,
+      onTransactionsChanged,
       sortKey,
       sortOrder,
       setSort,
@@ -770,7 +859,6 @@ export default {
       exportFilteredTransactionsCsv,
       hasActiveFilters,
       clearSearchAndFilters,
-      filterSummary,
       formatCurrency,
       sortOptions,
       sortOption,
@@ -913,6 +1001,29 @@ export default {
 
 .filter-summary__total {
   font-weight: 600;
+}
+
+.filter-summary__scope,
+.filter-summary__page {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  flex-basis: 100%;
+}
+
+.filter-summary__heading {
+  font-weight: 700;
+}
+
+.filter-summary__page,
+.filter-summary__note,
+.filter-summary__movement {
+  color: var(--color-text-muted);
+}
+
+.filter-summary__retry {
+  text-decoration: underline;
 }
 
 .filter-summary__chips {

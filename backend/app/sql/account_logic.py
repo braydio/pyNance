@@ -1085,6 +1085,131 @@ def upsert_accounts(
     logger.info("Finished upserting accounts.")
 
 
+TEXT_FILTER_FIELDS = (
+    "date",
+    "description",
+    "merchant_name",
+    "account_name",
+    "institution_name",
+    "category",
+    "category_primary",
+    "category_sub",
+)
+
+
+def _like_pattern(value, mode="contains"):
+    """Escape LIKE wildcards in user text and wrap it for contains/prefix matching."""
+
+    escaped = str(value).strip().lower().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return f"{escaped}%" if mode == "prefix" else f"%{escaped}%"
+
+
+def _text_column(field):
+    """SQL expression (lower-cased text) a column filter or search term is matched against."""
+
+    columns = {
+        "date": func.cast(Transaction.date, db.String),
+        "description": func.coalesce(Transaction.description, Transaction.merchant_name, ""),
+        "merchant_name": func.coalesce(Transaction.merchant_name, ""),
+        "account_name": func.coalesce(Account.name, ""),
+        "institution_name": func.coalesce(Account.institution_name, ""),
+        "category": func.coalesce(Transaction.category, ""),
+        "category_primary": func.coalesce(Transaction.category, ""),
+        "category_sub": func.coalesce(Transaction.category, ""),
+        "transaction_id": Transaction.transaction_id,
+    }
+    return func.lower(columns[field])
+
+
+def build_transaction_filter_query(
+    *,
+    start_date=None,
+    end_date=None,
+    category=None,
+    user_id=None,
+    account_id=None,
+    account_ids=None,
+    tx_type=None,
+    transaction_id=None,
+    tags=None,
+    merchant=None,
+    include_transfers=False,
+    search=None,
+    text_filters=None,
+    exclude_pending=False,
+):
+    """Return the unordered ``(Transaction, Account, Category)`` query for a transaction filter set.
+
+    This is the single owner of the Activity table's filter semantics: ``get_paginated_transactions``
+    (page rows and total) and the filtered summary both build their relation here so a page, its
+    count, an export and an aggregate always describe the same rows. Every value is bound as a
+    parameter. ``exclude_pending`` is only for financial aggregates.
+    """
+
+    query = (
+        db.session.query(Transaction, Account, Category)
+        .join(Account, Transaction.account_id == Account.account_id)
+        .outerjoin(Category, Transaction.category_id == Category.id)
+        .filter(Account.is_hidden.is_(False))
+    )
+    if not include_transfers:
+        query = query.filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
+    if exclude_pending:
+        query = query.filter((Transaction.pending.is_(False)) | (Transaction.pending.is_(None)))
+
+    if user_id:
+        query = query.filter(Account.user_id == user_id)
+    if start_date:
+        query = query.filter(Transaction.date >= start_date)
+    if end_date:
+        query = query.filter(Transaction.date <= end_date)
+    if category:
+        query = query.filter(Transaction.category == category)
+    if account_id:
+        query = query.filter(Transaction.account_id == account_id)
+    if account_ids:
+        query = query.filter(Transaction.account_id.in_(account_ids))
+    if transaction_id:
+        query = query.filter(Transaction.transaction_id == transaction_id)
+    if tx_type == "credit":
+        query = query.filter(Transaction.amount > 0)
+    elif tx_type == "debit":
+        query = query.filter(Transaction.amount < 0)
+    if merchant:
+        # Filter by merchant_slug (indexed) or merchant_name as fallback
+        query = query.filter((Transaction.merchant_slug == merchant) | (Transaction.merchant_name == merchant))
+    if tags:
+        include_untagged = "#untagged" in tags
+        tag_names = [tag for tag in tags if tag != "#untagged"]
+        tag_filters = []
+        if tag_names:
+            tag_filters.append(Transaction.tags.any(Tag.name.in_(tag_names)))
+        if include_untagged:
+            tag_filters.append(~Transaction.tags.any())
+        if tag_filters:
+            query = query.filter(or_(*tag_filters))
+
+    for field, value in sorted((text_filters or {}).items()):
+        if field not in TEXT_FILTER_FIELDS or not str(value or "").strip():
+            continue
+        mode = "prefix" if field == "category_primary" else "contains"
+        query = query.filter(_text_column(field).like(_like_pattern(value, mode), escape="\\"))
+    term = str(search or "").strip()
+    if term:
+        pattern = _like_pattern(term)
+        fields = (
+            "transaction_id",
+            "date",
+            "description",
+            "merchant_name",
+            "account_name",
+            "institution_name",
+            "category",
+        )
+        query = query.filter(or_(*[_text_column(field).like(pattern, escape="\\") for field in fields]))
+    return query
+
+
 def get_paginated_transactions(
     page,
     page_size,
@@ -1103,6 +1228,8 @@ def get_paginated_transactions(
     merchant=None,
     include_transfers=False,
     sort="date_desc",
+    search=None,
+    text_filters=None,
 ):
     """Return paginated transaction rows with optional filtering.
 
@@ -1143,6 +1270,12 @@ def get_paginated_transactions(
         ``date_asc``, ``spend_desc`` (largest money-out first), ``amount_desc`` (largest absolute
         amount), ``merchant_asc`` or ``category_asc``. Unknown values fall back to newest first.
 
+    search : str, optional
+        Case-insensitive substring matched server-side across description, merchant, category,
+        account, institution, date and transaction id, over ALL matching rows.
+    text_filters : dict[str, str], optional
+        Column filters (``TEXT_FILTER_FIELDS``) with the same case-insensitive substring semantics.
+
     Every serialized row also carries ``reporting_flow_kind``, ``flow_confidence`` and
     ``flow_reason_codes`` from the shared economic-flow classifier.
 
@@ -1153,53 +1286,34 @@ def get_paginated_transactions(
         transaction includes a ``tags`` list with ``#untagged`` as a fallback.
     """
 
-    query = (
-        db.session.query(Transaction, Account, Category)
-        .join(Account, Transaction.account_id == Account.account_id)
-        .outerjoin(Category, Transaction.category_id == Category.id)
-        .filter(Account.is_hidden.is_(False))
-        .order_by(*_transaction_order(sort))
-    )
-    if not include_transfers:
-        query = query.filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
-
-    if user_id:
-        query = query.filter(Account.user_id == user_id)
-    if start_date:
-        query = query.filter(Transaction.date >= start_date)
-    if end_date:
-        query = query.filter(Transaction.date <= end_date)
-    if category:
-        query = query.filter(Transaction.category == category)
-    if account_id:
-        query = query.filter(Transaction.account_id == account_id)
-    if account_ids:
-        query = query.filter(Transaction.account_id.in_(account_ids))
-    if transaction_id:
-        query = query.filter(Transaction.transaction_id == transaction_id)
-    if tx_type == "credit":
-        query = query.filter(Transaction.amount > 0)
-    elif tx_type == "debit":
-        query = query.filter(Transaction.amount < 0)
-    if merchant:
-        # Filter by merchant_slug (indexed) or merchant_name as fallback
-        query = query.filter((Transaction.merchant_slug == merchant) | (Transaction.merchant_name == merchant))
-    if tags:
-        include_untagged = "#untagged" in tags
-        tag_names = [tag for tag in tags if tag != "#untagged"]
-        tag_filters = []
-        if tag_names:
-            tag_filters.append(Transaction.tags.any(Tag.name.in_(tag_names)))
-        if include_untagged:
-            tag_filters.append(~Transaction.tags.any())
-        if tag_filters:
-            query = query.filter(or_(*tag_filters))
+    query = build_transaction_filter_query(
+        start_date=start_date,
+        end_date=end_date,
+        category=category,
+        user_id=user_id,
+        account_id=account_id,
+        account_ids=account_ids,
+        tx_type=tx_type,
+        transaction_id=transaction_id,
+        tags=tags,
+        merchant=merchant,
+        include_transfers=include_transfers,
+        search=search,
+        text_filters=text_filters,
+    ).order_by(*_transaction_order(sort))
 
     total = query.order_by(None).count()
     offset = (page - 1) * page_size
 
     running_balance_expr = None
-    cacheable = not recent and not include_running_balance and page <= TX_CACHE_MAX_PAGE and page_size > 0
+    cacheable = (
+        not recent
+        and not include_running_balance
+        and not search
+        and not text_filters
+        and page <= TX_CACHE_MAX_PAGE
+        and page_size > 0
+    )
     cache_key = None
     cached_meta = {
         "cache_hit": False,

@@ -6,7 +6,6 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 
 | Packet ID | Title | Status | Priority | Depends on | Target | Last updated | Packet |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| TP-20261019-002 | Filter-Aware Financial Table Totals and Scope Contract | Ready | P0 | None; use completed economic-flow TP-20261017-003/004 | main | 2026-10-19 | [packet](active/TP-20261019-002-filter-aware-table-summary-contract.md) |
 | TP-20261019-003 | Professional Table System, Totals and Drilldowns | Ready | P1 | TP-20261019-002 | main | 2026-10-19 | [packet](active/TP-20261019-003-professional-tables-and-total-bars.md) |
 | TP-20261019-004 | Dashboard Glanceability, Panel Hierarchy and Overflow | Ready | P1 | TP-20261019-003 (table chrome baseline) | main | 2026-10-19 | [packet](active/TP-20261019-004-dashboard-glanceability-and-surface-hierarchy.md) |
 | TP-20261019-005 | Investment, Planning and Recurring Ledger Summaries | Ready | P2 | TP-20261019-003 and TP-20261019-004 | main | 2026-10-19 | [packet](active/TP-20261019-005-domain-ledger-breakdowns-and-qa.md) |
@@ -29,6 +28,7 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 | TP-20261017-006 | Correct Safe-to-Spend Cash Basis and Remove Double Charges | Complete | P0 | TP-20261016-001, TP-20261016-003, TP-20261016-007, TP-20261017-003 | main | 2026-10-17 | [packet](completed/TP-20261017-006-safe-spend-cash-basis-reconciliation.md) |
 | TP-20261017-007 | Safe-to-Spend Protection Horizon and Headline Truth | Complete | P0 | TP-20261017-005, TP-20261017-006 | main | 2026-10-17 | [packet](completed/TP-20261017-007-safe-spend-window-and-display-contract.md) |
 | TP-20261019-001 | Daily Net Period Buckets, Readability and Reconciliation | Complete | P1 | None (build on completed TP-20261017-003/004) | main | 2026-10-19 | [packet](completed/TP-20261019-001-daily-net-period-buckets-visual-truth.md) |
+| TP-20261019-002 | Filter-Aware Financial Table Totals and Scope Contract | Complete | P0 | None; use completed economic-flow TP-20261017-003/004 | main | 2026-10-19 | [packet](completed/TP-20261019-002-filter-aware-table-summary-contract.md) |
 | TP-20261014-010 | Theme Contrast and Typography | Complete | High | None | main | 2026-10-14 | [packet](completed/TP-20261014-010-theme-contrast-typography.md) |
 | TP-20261014-011 | Shared Fields, Buttons, Date and Select Geometry | Complete | High | TP-20261014-010 | main | 2026-10-14 | [packet](completed/TP-20261014-011-shared-controls-geometry.md) |
 | TP-20261014-012 | Dropdowns, Popovers and Expandable State | Complete | High | TP-20261014-010, TP-20261014-011 | main | 2026-10-14 | [packet](completed/TP-20261014-012-popovers-dropdowns-expandables.md) |

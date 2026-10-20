@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { shallowMount, flushPromises } from '@vue/test-utils'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import Transactions from '../Transactions.vue'
 
 const useTransactionsMock = vi.fn()
@@ -10,6 +10,12 @@ const useRouteMock = vi.fn(() => ({ query: {} }))
 vi.mock('@/composables/useTransactions.js', () => ({
   useTransactions: (...args) => useTransactionsMock(...args),
 }))
+
+const summaryApiMock = vi.hoisted(() => ({
+  fetchTransactions: vi.fn(),
+  fetchTransactionsSummary: vi.fn(),
+}))
+vi.mock('@/api/transactions', () => summaryApiMock)
 
 vi.mock('vue-router', () => ({
   useRoute: () => useRouteMock(),
@@ -56,6 +62,22 @@ const insightsFixture = {
   transfer_pair_count: 1,
   coverage: { unclassified_count: 1 },
 }
+const summaryFixture = {
+  scope: 'all_matching',
+  matching_count: 51,
+  income: 1000,
+  expenses: -300,
+  refunds: 25,
+  economic_net: 725,
+  transfers_in: 200,
+  transfers_out: 200,
+  debt_settlements: 131.64,
+  investment_movements: 0,
+  unclassified_in: 100,
+  unclassified_out: 0,
+  needs_review_count: 1,
+  pending_excluded_count: 0,
+}
 const apiMock = vi.hoisted(() => ({ getTransactionInsights: vi.fn(), getAccounts: vi.fn() }))
 vi.mock('@/services/api', () => ({ default: apiMock }))
 
@@ -65,6 +87,7 @@ describe('Transactions.vue', () => {
     useRouteMock.mockReturnValue({ query: {} })
     apiMock.getTransactionInsights.mockResolvedValue({ status: 'success', data: insightsFixture })
     apiMock.getAccounts.mockResolvedValue({ accounts: [] })
+    summaryApiMock.fetchTransactionsSummary.mockResolvedValue({ ...summaryFixture })
   })
 
   function mountView({ isLoading = false, error = null, query = {}, filtered = [] } = {}) {
@@ -76,6 +99,7 @@ describe('Transactions.vue', () => {
     const totalCount = ref(filtered.length)
     const filteredTransactions = ref(filtered)
     const paginatedTransactions = ref(filtered)
+    const currentPageRows = ref(filtered)
     const sortKey = ref(null)
     const sortOrder = ref(1)
     const isLoadingRef = ref(isLoading)
@@ -85,12 +109,18 @@ describe('Transactions.vue', () => {
     const setSort = vi.fn()
     const fetchTransactions = vi.fn()
 
-    useTransactionsMock.mockReturnValue({
+    useTransactionsMock.mockImplementation((_size, _promote, filtersRef) => ({
+      // The real composable adds the applied search term to the caller's filters.
+      queryFilters: computed(() => ({
+        ...filtersRef.value,
+        ...(searchQuery.value ? { search: searchQuery.value } : {}),
+      })),
       searchQuery,
       currentPage,
       totalPages,
       totalCount,
       filteredTransactions,
+      currentPageRows,
       paginatedTransactions,
       changePage,
       setPage,
@@ -100,7 +130,7 @@ describe('Transactions.vue', () => {
       isLoading: isLoadingRef,
       error: errorRef,
       fetchTransactions,
-    })
+    }))
 
     const wrapper = shallowMount(Transactions, {
       global: {
@@ -202,7 +232,8 @@ describe('Transactions.vue', () => {
     const summary = wrapper.find('[data-testid="filter-summary"]')
     expect(summary.exists()).toBe(true)
     const text = summary.text()
-    expect(text).toContain('This page, signed total $19.00')
+    expect(text).toContain('Cash movement (current page) $19.00')
+    expect(text).not.toContain('This page, signed total')
     expect(text).toContain('Type: debit')
     expect(wrapper.get('[data-testid="result-count"]').text()).toContain('3 on this page')
     expect(wrapper.get('[data-testid="filters-toggle"]').text()).toContain('(1)')
@@ -271,6 +302,89 @@ describe('Transactions.vue', () => {
     const { wrapper } = mountView()
     await flushPromises()
     expect(wrapper.find('[data-testid="clear-search-filters"]').exists()).toBe(false)
+  })
+
+  describe('filtered totals and scope', () => {
+    const pageOf = (n) =>
+      Array.from({ length: n }, (_, i) => ({ transaction_id: `t${i}`, amount: 1 }))
+
+    it('labels all-matching economic totals apart from the page subtotal', async () => {
+      const { wrapper, totalCount } = mountView({
+        query: { tx_type: 'debit' },
+        filtered: pageOf(15),
+      })
+      totalCount.value = 51
+      await flushPromises()
+
+      expect(summaryApiMock.fetchTransactionsSummary).toHaveBeenCalledTimes(1)
+      const matching = wrapper.get('[data-testid="summary-matching"]').text()
+      expect(matching).toContain('Filtered results · 51 matches')
+      expect(matching).toContain('Economic income (excl. transfers) $1,000.00')
+      expect(matching).toContain('Economic expenses -$300.00')
+      expect(matching).toContain('Refund adjustments $25.00')
+      expect(matching).toContain('Economic net $725.00')
+      const page = wrapper.get('[data-testid="summary-page"]').text()
+      expect(page).toContain('15 shown')
+      expect(page).toContain('Cash movement (current page) $15.00')
+      const movement = wrapper.get('[data-testid="summary-movement"]').text()
+      expect(movement).toContain('Transfers in: $200.00')
+      expect(movement).toContain('Debt payments: $131.64')
+      expect(movement).toContain('Needs review: 1 rows')
+    })
+
+    it('does not request totals when nothing is filtered', async () => {
+      mountView({ filtered: pageOf(3) })
+      await flushPromises()
+      expect(summaryApiMock.fetchTransactionsSummary).not.toHaveBeenCalled()
+    })
+
+    it('sends the table column filters to the page request and the totals together', async () => {
+      const { wrapper } = mountView({ query: { tx_type: 'debit' }, filtered: pageOf(2) })
+      await flushPromises()
+      const table = wrapper.findComponent({ name: 'UpdateTransactionsTable' })
+      expect(table.html()).toContain('serverfiltered="true"')
+
+      table.vm.$emit('update:filters', { filter_category: 'coffee', category_primary: 'Food' })
+      await flushPromises()
+
+      const filtersRef = useTransactionsMock.mock.calls[0][2]
+      expect(filtersRef.value).toMatchObject({
+        filter_category: 'coffee',
+        category_primary: 'Food',
+      })
+      // Totals are requested for the identical filter set (the mocked composable's queryFilters).
+      expect(wrapper.get('[data-testid="filter-summary"]').text()).toContain('category: coffee')
+    })
+
+    it('shows an error instead of zeros when totals fail, and recovers on retry', async () => {
+      summaryApiMock.fetchTransactionsSummary.mockRejectedValueOnce(new Error('boom'))
+      const { wrapper } = mountView({ query: { tx_type: 'debit' }, filtered: pageOf(2) })
+      await flushPromises()
+
+      const error = wrapper.get('[data-testid="summary-error"]')
+      expect(error.text()).toContain('Totals unavailable')
+      expect(wrapper.find('[data-testid="summary-income"]').exists()).toBe(false)
+
+      await error.get('button').trigger('click')
+      await flushPromises()
+      expect(wrapper.find('[data-testid="summary-error"]').exists()).toBe(false)
+      expect(wrapper.get('[data-testid="summary-net"]').text()).toContain('$725.00')
+    })
+
+    it('exports with the same canonical filters as the table and totals', async () => {
+      summaryApiMock.fetchTransactions.mockResolvedValue({ transactions: [], total: 0 })
+      const { wrapper } = mountView({ query: { tx_type: 'debit' }, filtered: pageOf(2) })
+      await flushPromises()
+      globalThis.URL.createObjectURL = vi.fn(() => 'blob:x')
+      globalThis.URL.revokeObjectURL = vi.fn()
+
+      await wrapper.get('[data-testid="transactions-export-csv-activity"]').trigger('click')
+      await flushPromises()
+
+      expect(summaryApiMock.fetchTransactions).toHaveBeenCalledWith(
+        expect.objectContaining({ tx_type: 'debit', page: 1, page_size: 500 }),
+      )
+    })
   })
 
   describe('insights and toolbar', () => {
