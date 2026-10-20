@@ -1410,11 +1410,13 @@ async function loadCategoryData() {
 @reference "../../assets/css/main.css";
 
 .transactions-table {
-  background: var(--color-bg-secondary);
-  border: 1.5px solid var(--divider);
-  border-radius: 1.5rem;
-  padding: 1.5rem;
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.2);
+  /* Parent ledger shell owns chrome; avoid a second box around the grid. */
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
   color: var(--color-text-light);
 }
 
@@ -1481,22 +1483,26 @@ async function loadCategoryData() {
 }
 
 .table-shell {
+  min-width: 0;
   background: var(--table-surface);
-  border: 1px solid var(--table-border);
+  border: 0;
+  border-top: 1px solid var(--table-border);
   border-radius: var(--radius-2, 0.5rem);
 }
 
-/* The grid scrolls inside this region only; no ancestor clips it. */
+/* Do not trap vertical wheel gestures when an X-scroll-only table has no
+   vertical movement. CSS overflow-x:auto can imply a Y scroll container. */
 .table-scroll {
   position: relative;
+  min-width: 0;
   background: var(--table-surface-alt);
   border-radius: inherit;
-  overscroll-behavior: contain;
+  overscroll-behavior-y: auto;
 }
 
-/* Paginated pages (10-25 rows) scroll with the page; only the virtualised view keeps an inner scroll. */
+/* Virtualized Y scroll should chain to the page at the top and bottom. */
 .table-scroll--virtual {
-  overscroll-behavior: contain;
+  overscroll-behavior-y: auto;
 }
 
 .flow-badge {

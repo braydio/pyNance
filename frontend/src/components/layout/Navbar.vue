@@ -177,10 +177,13 @@ function toggleTheme() {
   box-shadow: 0 0 0 2px var(--interactive-focus);
 }
 
-@media (max-width: 760px) {
+/* Avoid wrapping six primary destinations at intermediate widths. */
+@media (max-width: 1100px) {
   .nav-inner {
     align-items: center;
+    justify-content: space-between;
     gap: 0.5rem;
+    min-width: 0;
     padding-inline: 0.5rem;
   }
 
@@ -219,8 +222,11 @@ function toggleTheme() {
   }
 
   .nav-link {
+    flex: 0 0 auto;
     white-space: nowrap;
     scroll-snap-align: center;
+    font-size: 0.875rem;
+    padding: 0.45rem 0.65rem;
   }
 
   .nav-secondary-label,
