@@ -6,6 +6,8 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 
 | Packet ID | Title | Status | Priority | Depends on | Target | Last updated | Packet |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| TP-20261020-001 | Daily Net: Debt Payments, Missing Outflows and Cash-Basis Reconciliation | Ready | P0 | None; completed TP-20261017-003/004 and TP-20261019-001/002 | main | 2026-10-20 | [packet](active/TP-20261020-001-daily-net-cash-basis-debt-payment-reconciliation.md) |
+| TP-20261020-002 | Transactions Page Redesign, Scrolling and Responsive Navigation QA | Ready | P1 | TP-20261020-001 only for cash/expense terminology; UI independent | main | 2026-10-20 | [packet](active/TP-20261020-002-transactions-page-redesign-scroll-and-navigation-qa.md) |
 | TP-20261016-001 | Forecast Transaction Sign Contract and Reconciliation | Complete | P0 | None | main | 2026-10-17 | [packet](completed/TP-20261016-001-forecast-transaction-sign-contract.md) |
 | TP-20261016-002 | Recurring Stream Persistence, Account Scope and Legacy API Repair | Complete | P0 | None | main | 2026-10-17 | [packet](completed/TP-20261016-002-recurring-schema-api-integrity.md) |
 | TP-20261016-003 | Transfer Matching Security, Scope, Evidence and Review | Complete | P0 | TP-20261016-001 | main | 2026-10-17 | [packet](completed/TP-20261016-003-transfer-review-scan-safety.md) |

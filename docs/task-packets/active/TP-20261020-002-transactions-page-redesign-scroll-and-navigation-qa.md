@@ -1,0 +1,38 @@
+# TP-20261020-002: Transactions Page Redesign, Scrolling and Responsive Navigation QA
+
+**Packet ID:** TP-20261020-002  
+**Status:** Ready  
+**Created:** 2026-10-20  
+**Last updated:** 2026-10-20  
+**Repository:** braydio/pyNance  
+**Target branch:** main  
+**Canonical path:** `docs/task-packets/active/TP-20261020-002-transactions-page-redesign-scroll-and-navigation-qa.md`  
+**Priority:** P1  
+**Workstream size:** One independently testable implementation packet  
+**Depends on:** TP-20261020-001 only for cash/expense terminology; UI independent  
+**Series:** Two related packets: 001 finance first; 002 visual/scroll can run concurrently except metric labels.
+
+## Verified problems and initial mitigation already pushed
+At main snapshot `1f9657b7`:
+- `frontend/src/components/tables/UpdateTransactionsTable.vue` sets `overscroll-behavior: contain` on `.table-scroll` and its virtual variant even when the ordinary 15-row table is X-only scrollable. Vertical wheel can be trapped.
+- `frontend/src/components/layout/Navbar.vue` shifts to scrollable nowrap links only below 760px; 761–1100px wraps six links plus settings/theme, compressed into multiple lines.
+- `frontend/src/views/Transactions.vue` nests `Card.card-surface` → `UpdateTransactionsTable.vue::.transactions-table` (separate panel, thick radius, heavy shadow) → `.table-shell` (border) → `.table-scroll`; the same-color hairline layers dominate. Toolbar, insights and tabbed navigation add more rectangles.
+**A first CSS repair was committed directly on main in commit `668a4d6849498efb2d25badb406ac56f7c10350e`:** remove vertical overscroll containment, remove extra `.transactions-table` card/border and table shell perimeter, switch navbar to nowrap scroll at max-width 1100px. Browser testing was NOT run at packet authoring; this packet must verify actual behavior and finish redesign, not duplicate/remove the patch blindly.
+
+## Implementation order / exact files
+1. **Test wheel correctly**: `frontend/src/components/tables/UpdateTransactionsTable.vue`, `frontend/src/views/Transactions.vue`, `frontend/cypress/e2e/transactions.cy.js`. Ordinary short/paginated view: wheel/touchpad over grid should scroll document Y; X overflow can scroll grid horizontally. Virtualized >80 rows: internal Y scrolls while content remains; at bottom/top allow scroll chain back to page. Avoid `wheel.prevent`, `overscroll-behavior-y:contain`, nested trapped `overflow:auto`, or blur/overflow:clip on parents. Test touch, mouse, trackpad, keyboard PageDown and horizontal Shift-wheel; ensure no fake success from just computed CSS. Review `@tanstack/vue-virtual` scroll element and placeholder rows where relevant.
+2. **Replace equal-weight boxes with hierarchy**: `frontend/src/views/Transactions.vue` one unboxed PageHeader; show 2–3 genuinely useful scoped totals/metrics (post-001 default Money Out with debt service note, economic net in distinct section if desired, Needs Review count), unobtrusive review queue disclosure, then integrated search + period/account/sort + collapsed advanced filters/import/export, then **one ledger** as the main visual surface. No 3–4 nested card outlines. Keep `TransactionInsightsPanel.vue` available without a second attention-grabbing bordered card. Use `--surface-*`, `--table-*` and existing Nightfox tokens; let spacing/tonal contrast, not repeated 1px outlines, organize information.
+3. **Ledger polish**: `frontend/src/components/tables/UpdateTransactionsTable.vue`, `frontend/src/components/tables/PaginationControls.vue` and `Transactions.vue`. Remove redundant nested borders/shadows and gratuitous empty padded rows (`MIN_ROW_COUNT=12`) while retaining stable loading and virtualization; compact row density, readable merchant/account/category, right-aligned tabular currencies, restrained statuses, one clear sticky header, grouped actions (edit, transfer, recurring) without clipped controls. Keep one horizontal scroller inside ledger, not page body; communicate more columns on small screens. Preserve both filtered all-match totals and displayed-page subtotal from TP-20261019-002/003, no duplicated filter ownership, no summaries computed from placeholder data.
+4. **Navbar responsive refinement**: `frontend/src/components/layout/Navbar.vue`, `frontend/src/components/layout/TabbedPageLayout.vue`, `frontend/src/components/layout/AppLayout.vue`. QA widths 320, 390, 640, 768, 900–1100, 1280px; six primary routes, settings, theme, selected route always accessible without wrapping/crushing. Current horizontal scrollbar is hidden; add discoverable fade/scroll cue, auto-reveal active route, keyboard/focus/aria labels, and optionally a compact "More" menu only if mobile usability needs it. Do not turn navbar into inaccessible icon-only primary links or hide menus behind hover. Keep tab strip separate from main nav and no double-height nav bar at intermediate widths.
+5. **Full Transactions page aesthetic/overflow audit**: `frontend/src/views/Transactions.vue`, `frontend/src/components/tables/UpdateTransactionsTable.vue`, `frontend/src/components/transactions/TransactionInsightsPanel.vue`, `frontend/src/assets/css/main.css`, `frontend/src/styles/theme.css` (token reuse only). Remove visually identical stacked background/border panels, reduce oversized containers, label hierarchy clean, consistent spacing control sizes and subtle state accents. Avoid new gradients/glows everywhere. Ensure filter popovers/importer scroll intentionally and do not trap the outer page; no hidden sticky overlays over edit forms. No unrelated global theme rewrite.
+6. Record screenshots, before/after decisions and path-specific QA in `docs/frontend/TRANSACTIONS_PAGE_UX_AUDIT_2026-10-20.md`. Coordinate finance names with 001 but do not change classifier here.
+
+## Acceptance and evidence
+- At 390/768/950/1100/1280px nav is a single coherent row and active route remains visible. Short table wheel scrolls window; >80 rows scroll table internally, and page scroll resumes at ends. Verified in REAL browser, not only DOM/CSS tests.
+- At least one desktop/mobile comparison screenshot demonstrates visual hierarchy: one table ledger, quiet toolbar, no same-color triple-outline; control titles/metrics and number columns readable. Review flow, edit and transfer/recurring handoff still work, keyboard focus not clipped.
+- Filter state and backend summaries are unchanged by cosmetic redesign; screen-reader `aria-sort`/caption, per-page subtotal scope and export remain correct.
+- Commands: `cd frontend && npm run test -- --run src/components/tables/__tests__/UpdateTransactionsTable.spec.js src/views/__tests__/Transactions.spec.js src/components/layout/__tests__/Navbar.spec.js src/components/layout/__tests__/TabbedPageLayout.spec.ts && npm run build`; `frontend/cypress/e2e/transactions.cy.js` and `frontend/cypress/e2e/ui-visual-regression.cy.js` with wheel event assertions/screenshot if configured.
+- No DB migration, no finance calculation edits (owned by 001), no unrelated chart redesign, no new external UI dependencies.
+
+## Agent instructions and deliverable
+Read `AGENTS.md`, `docs/task-packets/README.md`, `INDEX.md`, `TRACKER.md`; sync main and preserve dirty work; validate ONLY named seams and tests, not full-repo rediscovery. Mark In Progress when starting, implement focused steps, test, record evidence, mark Complete and move to completed updating INDEX+TRACKER atomically. Push without force. In completion report include changed files, commit link, reconciliation/visual test results, what ran vs was not run, and any live-data/CI blockers. No made-up test results.
