@@ -152,3 +152,17 @@ This guide establishes a foundation for consistent theming. By defining all
 colors and common surfaces in a dedicated theme file, future designs can be
 implemented simply by creating additional theme files and adjusting the import in
 `global-colors.css`.
+
+## Canonical table anatomy (TP-20261019-003)
+
+Ledger tables use the shared `.ledger-*` classes in `frontend/src/assets/css/main.css`
+(wrapped by `components/base/BaseTable.vue`):
+
+- **One boundary:** `.ledger` is the single containing surface (`--table-surface`, `--table-border`); rows use internal separators only, with extremely subtle even-row tint.
+- **One scroll owner:** `.ledger-scroll` owns `overflow-x: auto`. Never nest a second scroll region inside a ledger (expanded institution rows render a plain table inside the parent). Sticky headers (`.ledger-scroll--sticky`) only where the region scrolls vertically.
+- **Headings:** quiet, uppercase 12px, `scope="col"`; sortable headings are `<button class="ledger-sort">` with `aria-sort` on the `th`.
+- **Numbers:** `.ledger-num` right-aligns with `font-variant-numeric: tabular-nums` and `--font-data`.
+- **Accessibility:** every table has a `<caption>` (visually hidden via `.ledger-caption--sr` when a visible heading exists); clickable rows are focusable (`tabindex=0`) and respond to Enter/Space.
+- **Totals bars** (`.ledger-bar`): label the scope. "All matching" figures come from the server summary (`docs/frontend/TRANSACTIONS_TABLE_SUMMARIES.md`); local tables (modal, legacy, dashboard) only show page or visible-row subtotals and never claim an all-matching total.
+- **Accounts/institutions:** assets and liabilities are separated via `utils/accountPortfolio.js` (`portfolioTotals`); hidden accounts are called out and excluded unless included; missing balances read "Unavailable", never `$0`.
+- **States:** empty, loading and error states share the `.ledger-state` height family; empty filtered states offer **Reset filters**.

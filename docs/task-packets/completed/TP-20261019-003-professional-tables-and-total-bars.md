@@ -1,12 +1,12 @@
 # TP-20261019-003: Professional Table System, Totals and Drilldowns
 
 **Packet ID:** TP-20261019-003  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-19  
 **Last updated:** 2026-10-19  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261019-003-professional-tables-and-total-bars.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261019-003-professional-tables-and-total-bars.md`  
 **Priority:** P1  
 **Workstream size:** One independently testable implementation packet  
 **Depends on:** TP-20261019-002  

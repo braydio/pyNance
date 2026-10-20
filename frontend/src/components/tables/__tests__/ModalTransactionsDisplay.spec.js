@@ -88,4 +88,24 @@ describe('ModalTransactionsDisplay flow styling', () => {
     await wrapper.find('tbody tr').trigger('click')
     expect(wrapper.emitted('row-click')).toHaveLength(1)
   })
+
+  it('has a caption, column scopes and keyboard-selectable rows that emit row-click', async () => {
+    const tx = {
+      transaction_id: 'tx-k',
+      account_name: 'Checking',
+      institution_name: 'Bank',
+      merchant_name: 'Cafe',
+      amount: -3,
+      date: '2026-02-01',
+    }
+    const wrapper = mount(ModalTransactionsDisplay, { props: { transactions: [tx] } })
+    expect(wrapper.find('caption').text()).toContain('1')
+    wrapper.findAll('th').forEach((th) => expect(th.attributes('scope')).toBe('col'))
+    const row = wrapper.get('tbody tr')
+    expect(row.attributes('tabindex')).toBe('0')
+    await row.trigger('keydown', { key: 'Enter' })
+    await row.trigger('click')
+    expect(wrapper.emitted('row-click')).toHaveLength(2)
+    expect(wrapper.emitted('row-click')[0][0]).toEqual(tx)
+  })
 })

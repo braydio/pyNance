@@ -222,6 +222,7 @@
             server-filtered
             @update:filters="tableFilters = $event"
             @changed="onTransactionsChanged"
+            @reset-filters="clearFilters"
             @sort="setSort"
             @editRecurringFromTransaction="prefillRecurringFromTransaction"
           />

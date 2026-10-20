@@ -121,6 +121,9 @@
         aria-label="Transactions table"
       >
         <table class="transactions-grid min-w-full border-separate border-spacing-0 mt-2">
+          <caption class="ledger-caption--sr">
+            Transactions, {{ paginatedFilteredTransactions.length }} rows on this page
+          </caption>
           <thead class="table-head" :class="{ 'sticky top-0 z-10': useVirtualization }">
             <tr>
               <th
@@ -388,8 +391,21 @@
     </div>
 
     <!-- Empty State -->
-    <div v-if="!hasVisibleTransactions" class="text-center text-secondary">
+    <div
+      v-if="!hasVisibleTransactions"
+      class="ledger-state"
+      role="status"
+      data-testid="transactions-empty"
+    >
       No transactions found.
+      <button
+        type="button"
+        class="btn btn-sm ml-2"
+        data-testid="transactions-reset-filters"
+        @click="emit('reset-filters')"
+      >
+        Reset filters
+      </button>
     </div>
     <Modal v-if="showInternalModal" @close="showInternalModal = false">
       <template #title>Select Internal Counterpart</template>
@@ -462,7 +478,12 @@ import Modal from '@/components/ui/Modal.vue'
 import FuzzyDropdown from '@/components/ui/FuzzyDropdown.vue'
 import { formatAmount } from '@/utils/format'
 const toast = useToast()
-const emit = defineEmits(['editRecurringFromTransaction', 'update:filters', 'changed'])
+const emit = defineEmits([
+  'editRecurringFromTransaction',
+  'update:filters',
+  'changed',
+  'reset-filters',
+])
 const props = defineProps({
   transactions: {
     type: Array,
@@ -1461,9 +1482,8 @@ async function loadCategoryData() {
 
 .table-shell {
   background: var(--table-surface);
-  border: 1.5px solid var(--table-border);
-  border-radius: 1.5rem;
-  box-shadow: 0 14px 48px rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--table-border);
+  border-radius: var(--radius-2, 0.5rem);
 }
 
 /* The grid scrolls inside this region only; no ancestor clips it. */

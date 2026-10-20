@@ -31,104 +31,139 @@
         </button>
       </span>
     </div>
-    <table class="min-w-full divide-y border-subtle">
-      <thead class="bg-surface-1 text-secondary text-sm font-semibold uppercase">
-        <tr>
-          <th class="px-3 py-2 cursor-pointer" @click="sortBy('date')">
-            Date <span v-if="sortKey === 'date'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-          </th>
-          <th class="px-3 py-2 cursor-pointer" @click="sortBy('amount')">
-            Amount <span v-if="sortKey === 'amount'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-          </th>
-          <th class="px-3 py-2 cursor-pointer" @click="sortBy('description')">
-            Description
-            <span v-if="sortKey === 'description'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-          </th>
-          <th class="px-3 py-2 cursor-pointer" @click="sortBy('category')">
-            Category
-            <span v-if="sortKey === 'category'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-          </th>
-          <th class="px-3 py-2 cursor-pointer" @click="sortBy('merchant_name')">
-            Merchant
-            <span v-if="sortKey === 'merchant_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-          </th>
-          <th class="px-3 py-2">Account</th>
-          <th class="px-3 py-2">Institution</th>
-          <th class="px-3 py-2">Subtype</th>
-          <th class="px-3 py-2">Actions</th>
-        </tr>
-      </thead>
+    <div class="ledger">
+      <div class="ledger-scroll">
+        <table class="ledger-table">
+          <caption class="ledger-caption--sr">
+            Master transactions, sorted by
+            {{
+              sortKey
+            }}
+            {{
+              sortOrder === 'asc' ? 'ascending' : 'descending'
+            }}
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col" class="" :aria-sort="ariaSort('date')">
+                <button type="button" class="ledger-sort" @click="sortBy('date')">
+                  Date
+                  <span v-if="sortKey === 'date'" aria-hidden="true">{{
+                    sortOrder === 'asc' ? '▲' : '▼'
+                  }}</span>
+                </button>
+              </th>
+              <th scope="col" class="ledger-num" :aria-sort="ariaSort('amount')">
+                <button type="button" class="ledger-sort" @click="sortBy('amount')">
+                  Amount
+                  <span v-if="sortKey === 'amount'" aria-hidden="true">{{
+                    sortOrder === 'asc' ? '▲' : '▼'
+                  }}</span>
+                </button>
+              </th>
+              <th scope="col" class="" :aria-sort="ariaSort('description')">
+                <button type="button" class="ledger-sort" @click="sortBy('description')">
+                  Description
+                  <span v-if="sortKey === 'description'" aria-hidden="true">{{
+                    sortOrder === 'asc' ? '▲' : '▼'
+                  }}</span>
+                </button>
+              </th>
+              <th scope="col" class="" :aria-sort="ariaSort('category')">
+                <button type="button" class="ledger-sort" @click="sortBy('category')">
+                  Category
+                  <span v-if="sortKey === 'category'" aria-hidden="true">{{
+                    sortOrder === 'asc' ? '▲' : '▼'
+                  }}</span>
+                </button>
+              </th>
+              <th scope="col" class="" :aria-sort="ariaSort('merchant_name')">
+                <button type="button" class="ledger-sort" @click="sortBy('merchant_name')">
+                  Merchant
+                  <span v-if="sortKey === 'merchant_name'" aria-hidden="true">{{
+                    sortOrder === 'asc' ? '▲' : '▼'
+                  }}</span>
+                </button>
+              </th>
+              <th scope="col">Account</th>
+              <th scope="col">Institution</th>
+              <th scope="col">Subtype</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
 
-      <tbody>
-        <tr
-          v-for="(tx, index) in paginatedTransactions"
-          :key="tx.transaction_id"
-          :class="['text-sm', editingIndex === index ? 'bg-surface-1' : 'hover-surface']"
-        >
-          <td class="px-3 py-2">
-            <input
-              v-if="editingIndex === index"
-              v-model="editBuffer.date"
-              type="date"
-              class="input"
-            />
-            <span v-else>{{ formatDate(tx.date) }}</span>
-          </td>
-          <td class="px-3 py-2">
-            <input
-              v-if="editingIndex === index"
-              v-model.number="editBuffer.amount"
-              type="number"
-              step="0.01"
-              class="input"
-            />
-            <span v-else>{{ formatAmount(tx.amount) }}</span>
-          </td>
-          <td class="px-3 py-2">
-            <input
-              v-if="editingIndex === index"
-              v-model="editBuffer.description"
-              type="text"
-              class="input"
-            />
-            <span v-else>{{ tx.description }}</span>
-          </td>
-          <td class="px-3 py-2">
-            <select v-if="editingIndex === index" v-model="editBuffer.category" class="input">
-              <option disabled value="">-- Select Category --</option>
-              <optgroup v-for="group in categoryTree" :label="group.name" :key="group.name">
-                <option v-for="child in group.children" :key="child.id" :value="child.name">
-                  {{ child.name }}
-                </option>
-              </optgroup>
-            </select>
-            <span v-else>{{ tx.category }}</span>
-          </td>
-          <td class="px-3 py-2">
-            <input
-              v-if="editingIndex === index"
-              v-model="editBuffer.merchant_name"
-              type="text"
-              class="input"
-            />
-            <span v-else>{{ tx.merchant_name }}</span>
-          </td>
-          <td class="px-3 py-2">{{ tx.account_name || 'N/A' }}</td>
-          <td class="px-3 py-2">{{ tx.institution_name || 'N/A' }}</td>
-          <td class="px-3 py-2">{{ tx.subtype || 'N/A' }}</td>
-          <td class="px-3 py-2 space-x-1">
-            <template v-if="editingIndex === index">
-              <button class="btn-sm" @click="saveEdit(tx)">Save</button>
-              <button class="btn-sm" @click="cancelEdit">Cancel</button>
-            </template>
-            <template v-else>
-              <button class="btn-sm" @click="startEdit(index, tx)">Edit</button>
-              <button class="btn-sm" @click="markRecurring(index)">Mark</button>
-            </template>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+          <tbody>
+            <tr
+              v-for="(tx, index) in paginatedTransactions"
+              :key="tx.transaction_id"
+              :class="['text-sm', editingIndex === index ? 'bg-surface-1' : 'hover-surface']"
+            >
+              <td class="">
+                <input
+                  v-if="editingIndex === index"
+                  v-model="editBuffer.date"
+                  type="date"
+                  class="input"
+                />
+                <span v-else>{{ formatDate(tx.date) }}</span>
+              </td>
+              <td class="">
+                <input
+                  v-if="editingIndex === index"
+                  v-model.number="editBuffer.amount"
+                  type="number"
+                  step="0.01"
+                  class="input"
+                />
+                <span v-else>{{ formatAmount(tx.amount) }}</span>
+              </td>
+              <td class="">
+                <input
+                  v-if="editingIndex === index"
+                  v-model="editBuffer.description"
+                  type="text"
+                  class="input"
+                />
+                <span v-else>{{ tx.description }}</span>
+              </td>
+              <td class="">
+                <select v-if="editingIndex === index" v-model="editBuffer.category" class="input">
+                  <option disabled value="">-- Select Category --</option>
+                  <optgroup v-for="group in categoryTree" :label="group.name" :key="group.name">
+                    <option v-for="child in group.children" :key="child.id" :value="child.name">
+                      {{ child.name }}
+                    </option>
+                  </optgroup>
+                </select>
+                <span v-else>{{ tx.category }}</span>
+              </td>
+              <td class="">
+                <input
+                  v-if="editingIndex === index"
+                  v-model="editBuffer.merchant_name"
+                  type="text"
+                  class="input"
+                />
+                <span v-else>{{ tx.merchant_name }}</span>
+              </td>
+              <td class="">{{ tx.account_name || 'N/A' }}</td>
+              <td class="">{{ tx.institution_name || 'N/A' }}</td>
+              <td class="">{{ tx.subtype || 'N/A' }}</td>
+              <td class="px-3 py-2 space-x-1">
+                <template v-if="editingIndex === index">
+                  <button class="btn-sm" @click="saveEdit(tx)">Save</button>
+                  <button class="btn-sm" @click="cancelEdit">Cancel</button>
+                </template>
+                <template v-else>
+                  <button class="btn-sm" @click="startEdit(index, tx)">Edit</button>
+                  <button class="btn-sm" @click="markRecurring(index)">Mark</button>
+                </template>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
 
     <div v-if="filteredTransactions.length === 0" class="text-secondary text-sm">
       No transactions found.
@@ -268,6 +303,12 @@ function formatDate(dateStr) {
     month: 'short',
     day: 'numeric',
   })
+}
+
+/** aria-sort value for a sortable column header. */
+function ariaSort(key) {
+  if (sortKey.value !== key) return 'none'
+  return sortOrder.value === 'asc' ? 'ascending' : 'descending'
 }
 
 function sortBy(key) {

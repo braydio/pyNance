@@ -1,112 +1,104 @@
 <template>
-  <div
-    class="overflow-x-auto rounded-xl shadow bg-[var(--table-surface)] text-[var(--color-text-light)] px-4 py-4 border border-[var(--table-border)]"
-  >
-    <!-- Title Date Above Table -->
-    <div v-if="titleDate" class="mb-2 ml-2 text-base font-medium">
+  <div class="ledger text-[var(--color-text-light)]">
+    <div v-if="titleDate" class="px-3 pt-3 text-base font-medium">
       {{ titleDate }}
     </div>
-    <table class="min-w-full text-sm rounded-lg overflow-hidden">
-      <thead>
-        <tr class="bg-[var(--color-bg-dark)] text-[var(--color-text-light)]">
-          <th class="pl-8 pr-6 py-4 font-semibold text-left">Account</th>
-          <th class="px-6 py-4 font-semibold text-left">{{ detailsHeader }}</th>
-          <th class="px-6 py-4 text-right font-semibold whitespace-nowrap">Amount</th>
-          <th v-if="showDateColumn" class="px-6 py-4 text-right font-semibold whitespace-nowrap">
-            Date
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          v-for="(tx, index) in transactions"
-          :key="tx.transaction_id"
-          :class="[
-            'group transition-colors border-b cursor-pointer',
-            index % 2 === 0 ? 'bg-[var(--table-surface)]' : 'bg-[var(--table-surface-alt)]',
-            'hover:bg-[var(--table-hover)] border-[var(--table-border)]',
-          ]"
-          @click="$emit('row-click', tx)"
-        >
-          <!-- Account column with accent bar and institution badge -->
-          <td class="pl-8 pr-2 py-4 relative min-w-[160px]">
-            <div
-              :class="[
-                'absolute left-0 top-5 bottom-3 w-0.5 rounded-full opacity-90',
-                accentClass(tx),
-              ]"
-            ></div>
-            <div class="pl-4 flex items-center gap-2">
-              <img
-                v-if="tx.institution_icon_url"
-                :src="tx.institution_icon_url"
-                alt="Institution logo"
-                class="h-6 w-6 rounded-full object-contain"
-              />
-              <span
-                v-else
-                class="h-6 w-6 rounded-full bg-[var(--color-accent-purple)] flex items-center justify-center text-xs font-semibold text-[var(--color-text-dark)]"
-              >
-                {{ initials(tx.institution_name) }}
-              </span>
-              <div class="flex flex-col">
-                <div class="font-bold text-[0.95rem]">{{ tx.account_name }}</div>
-                <div class="text-xs text-[var(--color-text-muted)]">{{ tx.institution_name }}</div>
-              </div>
-            </div>
-          </td>
-          <td class="px-6 py-4">
-            <div class="flex items-start gap-2">
-              <img
-                v-if="showCategoryVisuals && tx.category_icon_url"
-                :src="tx.category_icon_url"
-                alt="Category icon"
-                class="h-6 w-6 object-contain filter drop-shadow-sm flex-shrink-0"
-              />
-              <div class="flex flex-col flex-1">
-                <div class="font-semibold truncate">{{ rowPrimaryLabel(tx) }}</div>
-                <div class="text-xs text-[var(--color-text-muted)] truncate">
-                  {{ rowSecondaryLabel(tx) }}
-                </div>
+    <div class="ledger-scroll">
+      <table class="ledger-table">
+        <caption class="ledger-caption--sr">
+          {{
+            titleDate ? `Transactions for ${titleDate}` : 'Transactions'
+          }}
+          ({{
+            transactions.length
+          }}
+          shown)
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Account</th>
+            <th scope="col">{{ detailsHeader }}</th>
+            <th scope="col" class="ledger-num">Amount</th>
+            <th v-if="showDateColumn" scope="col" class="ledger-num">Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="tx in transactions"
+            :key="tx.transaction_id"
+            class="group ledger-row--clickable"
+            tabindex="0"
+            @click="$emit('row-click', tx)"
+            @keydown.enter.prevent="$emit('row-click', tx)"
+            @keydown.space.prevent="$emit('row-click', tx)"
+          >
+            <td class="min-w-[160px]">
+              <div class="flex items-center gap-2">
+                <img
+                  v-if="tx.institution_icon_url"
+                  :src="tx.institution_icon_url"
+                  alt="Institution logo"
+                  class="h-6 w-6 rounded-full object-contain"
+                />
                 <span
-                  v-if="flowChipLabel(tx)"
-                  class="mt-1 inline-flex w-fit items-center rounded border border-[var(--color-text-muted)]/50 px-1.5 text-[0.65rem] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]"
-                  data-testid="flow-chip"
-                  :title="flowTitle(tx)"
-                  :aria-label="flowTitle(tx)"
-                  >{{ flowChipLabel(tx) }}</span
+                  v-else
+                  class="h-6 w-6 rounded-full bg-[var(--color-accent-purple)] flex items-center justify-center text-xs font-semibold text-[var(--color-text-dark)]"
                 >
-                <div
-                  v-if="showCategoryVisuals && getCategoryDisplayName(tx)"
-                  class="text-xs text-[var(--color-accent-purple)] italic mt-1"
-                >
-                  {{ getCategoryDisplayName(tx) }}
+                  {{ initials(tx.institution_name) }}
+                </span>
+                <div class="flex flex-col">
+                  <div class="font-medium">{{ tx.account_name }}</div>
+                  <div class="ledger-secondary">{{ tx.institution_name }}</div>
                 </div>
               </div>
-            </div>
-          </td>
-          <td class="px-6 py-4 text-right whitespace-nowrap">
-            <span :class="['font-bold tracking-tight group-hover:opacity-80', amountClass(tx)]">
-              {{ formatAmount(tx.amount) }}
-            </span>
-          </td>
-          <td
-            v-if="showDateColumn"
-            class="px-6 py-4 text-right text-[var(--color-text-muted)] whitespace-nowrap"
-          >
-            {{ formatDate(tx.date || tx.transaction_date) }}
-          </td>
-        </tr>
-        <tr v-if="!transactions.length">
-          <td
-            :colspan="showDateColumn ? 4 : 3"
-            class="px-6 py-8 italic text-center text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)] rounded-b-xl"
-          >
-            No transactions found.
-          </td>
-        </tr>
-      </tbody>
-    </table>
+            </td>
+            <td>
+              <div class="flex items-start gap-2">
+                <img
+                  v-if="showCategoryVisuals && tx.category_icon_url"
+                  :src="tx.category_icon_url"
+                  alt="Category icon"
+                  class="h-6 w-6 object-contain flex-shrink-0"
+                />
+                <div class="flex flex-col flex-1 min-w-0">
+                  <div class="font-medium truncate">{{ rowPrimaryLabel(tx) }}</div>
+                  <div class="ledger-secondary truncate">
+                    {{ rowSecondaryLabel(tx) }}
+                  </div>
+                  <span
+                    v-if="flowChipLabel(tx)"
+                    class="mt-1 inline-flex w-fit items-center rounded border border-[var(--color-text-muted)]/50 px-1.5 text-[0.65rem] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]"
+                    data-testid="flow-chip"
+                    :title="flowTitle(tx)"
+                    :aria-label="flowTitle(tx)"
+                    >{{ flowChipLabel(tx) }}</span
+                  >
+                  <div
+                    v-if="showCategoryVisuals && getCategoryDisplayName(tx)"
+                    class="ledger-secondary italic mt-1"
+                  >
+                    {{ getCategoryDisplayName(tx) }}
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td class="ledger-num">
+              <span :class="['font-semibold', amountClass(tx)]">
+                {{ formatAmount(tx.amount) }}
+              </span>
+            </td>
+            <td v-if="showDateColumn" class="ledger-num ledger-secondary">
+              {{ formatDate(tx.date || tx.transaction_date) }}
+            </td>
+          </tr>
+          <tr v-if="!transactions.length">
+            <td :colspan="showDateColumn ? 4 : 3" class="ledger-state italic">
+              No transactions found.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
 
@@ -143,14 +135,6 @@ function amountClass(tx) {
   if (tx.amount > 0) return 'text-[var(--color-accent-green)]'
   if (tx.amount < 0) return 'text-[var(--color-accent-red)]'
   return 'text-[var(--color-text-light)]'
-}
-
-/** Accent bar colour matching `amountClass`. */
-function accentClass(tx) {
-  if (hasFlowKind(tx) && !ECONOMIC_KINDS.includes(tx.reporting_flow_kind)) {
-    return 'bg-[var(--color-text-muted)]'
-  }
-  return tx.amount > 0 ? 'bg-[var(--color-accent-green)]' : 'bg-[var(--color-accent-red)]'
 }
 
 /**

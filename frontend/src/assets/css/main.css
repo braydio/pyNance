@@ -906,3 +906,159 @@ tr:nth-child(even) {
 .error-badge {
   background-color: var(--color-bg-error);
 }
+
+/* Ledger table anatomy (TP-20261019-003): one containing surface, one scroll owner,
+   quiet headings, tabular numbers, internal separators only. */
+@layer components {
+  .ledger {
+    min-width: 0;
+    background-color: var(--table-surface);
+    border: 1px solid var(--table-border);
+    border-radius: var(--radius-2, 0.5rem);
+  }
+
+  .ledger-scroll {
+    overflow-x: auto;
+    max-width: 100%;
+  }
+
+  .ledger-scroll--sticky {
+    max-height: var(--ledger-max-height, 32rem);
+    overflow-y: auto;
+  }
+
+  .ledger-scroll--sticky .ledger-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  .ledger-caption {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+  }
+
+  .ledger-caption--sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .ledger-table {
+    width: 100%;
+    min-width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+  }
+
+  .ledger-table thead th {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--color-text-muted);
+    background-color: var(--table-header);
+    border-bottom: 1px solid var(--table-border);
+  }
+
+  .ledger-table tbody td {
+    padding: 0.5rem 0.75rem;
+    min-height: 2.5rem;
+    vertical-align: middle;
+    border-bottom: 1px solid color-mix(in srgb, var(--table-border) 55%, transparent);
+  }
+
+  .ledger-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .ledger-table tbody tr:nth-child(even) {
+    background-color: color-mix(in srgb, var(--table-surface-alt) 45%, transparent);
+  }
+
+  .ledger-table tbody tr:hover,
+  .ledger-row--clickable:focus-visible {
+    background-color: var(--table-hover);
+  }
+
+  .ledger-row--clickable {
+    cursor: pointer;
+  }
+
+  .ledger-row--clickable:focus-visible,
+  .ledger-sort:focus-visible {
+    outline: 2px solid var(--interactive-focus, currentColor);
+    outline-offset: -2px;
+  }
+
+  .ledger-row--selected {
+    background-color: var(--table-hover);
+  }
+
+  .ledger-row--error {
+    box-shadow: inset 2px 0 0 var(--color-accent-red);
+  }
+
+  .ledger-num {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    font-family: var(--font-data, inherit);
+  }
+
+  .ledger-secondary {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+  }
+
+  .ledger-sort {
+    all: unset;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+  }
+
+  .ledger-state {
+    padding: 2rem 1rem;
+    text-align: center;
+    color: var(--color-text-muted);
+    min-height: 8rem;
+  }
+
+  .ledger-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+    align-items: baseline;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    border-bottom: 1px solid var(--table-border);
+    background-color: var(--table-header);
+  }
+
+  .ledger-bar__label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+  }
+
+  .ledger-bar__value {
+    font-variant-numeric: tabular-nums;
+    font-family: var(--font-data, inherit);
+  }
+}

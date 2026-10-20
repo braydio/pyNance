@@ -1,95 +1,112 @@
 <template>
-  <div class="p-4 bg-[var(--color-bg-secondary)] rounded-lg shadow-md institution-table">
+  <div class="institution-table">
     <p v-if="loading" class="text-sm text-muted" role="status">Loading institutions…</p>
     <div v-else-if="loadError" role="alert" class="text-sm">
       <p class="text-negative">Unable to load institutions.</p>
       <button type="button" class="btn btn-sm" @click="fetch">Retry</button>
     </div>
     <p v-else-if="!institutions.length" class="text-sm text-muted">No institutions linked yet.</p>
-    <div v-else class="institution-scroll">
-      <table class="min-w-full divide-y divide-[var(--divider)]">
-        <thead>
-          <tr>
-            <th class="text-left" scope="col">Institution</th>
-            <th class="text-left" scope="col">Provider</th>
-            <th class="text-left" scope="col">Last Refresh</th>
-            <th scope="col"><span class="sr-only">Actions</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          <template v-for="inst in institutions" :key="inst.id">
+    <div v-else class="ledger">
+      <div class="ledger-scroll institution-scroll">
+        <table class="ledger-table">
+          <caption class="ledger-caption--sr">
+            Linked institutions ({{
+              institutions.length
+            }})
+          </caption>
+          <thead>
             <tr>
-              <td>
-                <button
-                  type="button"
-                  class="expand-btn"
-                  :aria-expanded="expanded[inst.id] ? 'true' : 'false'"
-                  :aria-controls="`institution-panel-${inst.id}`"
-                  :data-testid="`institution-toggle-${inst.id}`"
-                  @click="toggle(inst.id)"
-                >
-                  <span aria-hidden="true">{{ expanded[inst.id] ? '▾' : '▸' }}</span>
-                  {{ inst.name }}
-                </button>
-              </td>
-              <td>{{ inst.provider }}</td>
-              <td>{{ formatDate(inst.last_refreshed) }}</td>
-              <td>
-                <button
-                  type="button"
-                  class="btn btn-sm"
-                  :disabled="refreshing[inst.id]"
-                  :aria-label="`Refresh ${inst.name}`"
-                  :data-testid="`institution-refresh-${inst.id}`"
-                  @click.stop="refresh(inst.id)"
-                >
-                  {{ refreshing[inst.id] ? 'Refreshing…' : 'Refresh' }}
-                </button>
-                <p
-                  v-if="refreshErrors[inst.id]"
-                  class="text-sm text-negative"
-                  role="alert"
-                  :data-testid="`institution-refresh-error-${inst.id}`"
-                >
-                  {{ refreshErrors[inst.id] }}
-                </p>
-              </td>
+              <th scope="col">Institution</th>
+              <th scope="col">Provider</th>
+              <th scope="col">Last Refresh</th>
+              <th scope="col"><span class="sr-only">Actions</span></th>
             </tr>
-            <tr v-if="expanded[inst.id]">
-              <td colspan="4" class="p-0">
-                <div :id="`institution-panel-${inst.id}`" class="nested-scroll">
-                  <table class="w-full text-sm divide-y divide-[var(--divider)]">
-                    <thead>
-                      <tr>
-                        <th class="text-left">Account</th>
-                        <th class="text-left">Type</th>
-                        <th class="text-right">Balance</th>
-                        <th class="text-left">Link</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="acc in inst.accounts" :key="acc.account_id">
-                        <td class="wrap-anywhere">{{ acc.name }}</td>
-                        <td>{{ acc.subtype || acc.type }}</td>
-                        <td class="text-right tabular-currency">
-                          {{ formatBalance(acc.balance) }}
-                        </td>
-                        <td>{{ acc.link_type }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </td>
-            </tr>
-          </template>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <template v-for="inst in institutions" :key="inst.id">
+              <tr>
+                <td>
+                  <button
+                    type="button"
+                    class="expand-btn"
+                    :aria-expanded="expanded[inst.id] ? 'true' : 'false'"
+                    :aria-controls="`institution-panel-${inst.id}`"
+                    :data-testid="`institution-toggle-${inst.id}`"
+                    @click="toggle(inst.id)"
+                  >
+                    <span aria-hidden="true">{{ expanded[inst.id] ? '▾' : '▸' }}</span>
+                    {{ inst.name }}
+                  </button>
+                  <div class="ledger-secondary" :data-testid="`institution-summary-${inst.id}`">
+                    {{ summaryLine(inst) }}
+                  </div>
+                </td>
+                <td>{{ inst.provider }}</td>
+                <td>{{ formatDate(inst.last_refreshed) }}</td>
+                <td>
+                  <button
+                    type="button"
+                    class="btn btn-sm"
+                    :disabled="refreshing[inst.id]"
+                    :aria-label="`Refresh ${inst.name}`"
+                    :data-testid="`institution-refresh-${inst.id}`"
+                    @click.stop="refresh(inst.id)"
+                  >
+                    {{ refreshing[inst.id] ? 'Refreshing…' : 'Refresh' }}
+                  </button>
+                  <p
+                    v-if="refreshErrors[inst.id]"
+                    class="text-sm text-negative"
+                    role="alert"
+                    :data-testid="`institution-refresh-error-${inst.id}`"
+                  >
+                    {{ refreshErrors[inst.id] }}
+                  </p>
+                </td>
+              </tr>
+              <tr v-if="expanded[inst.id]">
+                <td colspan="4" class="p-0">
+                  <div :id="`institution-panel-${inst.id}`">
+                    <table class="ledger-table">
+                      <caption class="ledger-caption--sr">
+                        Accounts at
+                        {{
+                          inst.name
+                        }}
+                      </caption>
+                      <thead>
+                        <tr>
+                          <th scope="col">Account</th>
+                          <th scope="col">Type</th>
+                          <th scope="col" class="ledger-num">Balance</th>
+                          <th scope="col">Link</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="acc in inst.accounts" :key="acc.account_id">
+                          <td class="wrap-anywhere">{{ acc.name }}</td>
+                          <td>{{ acc.subtype || acc.type }}</td>
+                          <td class="ledger-num">
+                            {{ formatBalance(acc.balance) }}
+                          </td>
+                          <td>{{ acc.link_type }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
 import api from '@/services/api'
+import { portfolioTotals } from '@/utils/accountPortfolio'
 export default {
   name: 'InstitutionTable',
   data() {
@@ -114,8 +131,21 @@ export default {
       if (!d) return 'N/A'
       return new Date(d).toLocaleString()
     },
+    /** Type-aware one-line summary: counts, assets and liabilities never netted blindly. */
+    summaryLine(inst) {
+      const accounts = inst.accounts || []
+      const totals = portfolioTotals(accounts)
+      const money = (v) => (v === null ? 'Unavailable' : this.formatBalance(v))
+      const parts = [`${totals.accountCount} account${totals.accountCount === 1 ? '' : 's'}`]
+      parts.push(`assets ${money(totals.assets)}`)
+      if (totals.liabilities) parts.push(`owed ${money(totals.liabilities)}`)
+      if (totals.unknownBalances) parts.push(`${totals.unknownBalances} balance unavailable`)
+      if (totals.hiddenCount) parts.push(`${totals.hiddenCount} hidden not counted`)
+      return parts.join(' · ')
+    },
     formatBalance(b) {
-      const num = parseFloat(b || 0)
+      if (b === null || b === undefined || b === '') return 'Unavailable'
+      const num = parseFloat(b)
       return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num)
     },
     async refresh(id) {
@@ -158,18 +188,10 @@ export default {
 
 <style scoped>
 @reference "../../assets/css/main.css";
-th,
-td {
-  @apply p-2;
-}
-
 /* position: relative keeps absolutely positioned helpers (e.g. .sr-only) inside the region
    instead of letting them extend the document's scrollable width. */
-.institution-scroll,
-.nested-scroll {
+.institution-scroll {
   position: relative;
-  overflow-x: auto;
-  max-width: 100%;
 }
 
 .expand-btn {

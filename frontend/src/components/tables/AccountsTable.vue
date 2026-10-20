@@ -105,6 +105,47 @@
         </button>
       </span>
     </div>
+    <div class="ledger-bar" data-testid="accounts-summary" aria-label="Filtered account totals">
+      <span>
+        <span class="ledger-bar__label">Accounts</span>
+        <span class="ledger-bar__value" data-testid="accounts-summary-count">{{
+          portfolioSummary.accountCount
+        }}</span>
+        <span v-if="hiddenExcludedCount" class="ledger-secondary">
+          ({{ hiddenExcludedCount }} hidden not counted)</span
+        >
+      </span>
+      <span>
+        <span class="ledger-bar__label">Assets</span>
+        <span class="ledger-bar__value" data-testid="accounts-summary-assets">{{
+          summaryMoney(portfolioSummary.assets)
+        }}</span>
+      </span>
+      <span>
+        <span class="ledger-bar__label">Liabilities owed</span>
+        <span class="ledger-bar__value" data-testid="accounts-summary-liabilities">{{
+          summaryMoney(portfolioSummary.liabilities)
+        }}</span>
+      </span>
+      <span>
+        <span class="ledger-bar__label">Net</span>
+        <span class="ledger-bar__value" data-testid="accounts-summary-net">{{
+          summaryMoney(portfolioSummary.net)
+        }}</span>
+      </span>
+      <span v-if="portfolioSummary.unknownBalances" class="ledger-secondary">
+        {{ portfolioSummary.unknownBalances }} balance(s) unavailable, not counted as $0
+      </span>
+      <details class="w-full" data-testid="accounts-summary-groups">
+        <summary class="ledger-secondary cursor-pointer">Subtotals by account group</summary>
+        <ul class="ledger-secondary">
+          <li v-for="group in groupSubtotals" :key="group.key">
+            {{ group.label }} · {{ group.count }} · {{ group.liability ? 'owed ' : ''
+            }}{{ summaryMoney(group.total) }}
+          </li>
+        </ul>
+      </details>
+    </div>
     <!-- Table -->
     <div class="table-shell">
       <table class="data-table">
@@ -200,6 +241,15 @@
       class="p-6 text-[color:var(--color-text-muted)]"
     >
       No accounts found.
+      <button
+        v-if="activeFilters.length"
+        type="button"
+        class="btn btn-sm ml-2"
+        data-testid="accounts-reset-filters"
+        @click="resetFilters"
+      >
+        Reset filters
+      </button>
     </div>
     <div v-else-if="loading" class="p-6 text-[color:var(--color-text-muted)]">
       Loading accounts...
@@ -246,6 +296,7 @@
  * Active filters are surfaced as removable tags.
  */
 import api from '@/services/api'
+import { GROUPS, GROUP_LABELS, isLiabilityGroup, portfolioTotals } from '@/utils/accountPortfolio'
 import AccountSparkline from '@/components/widgets/AccountSparkline.vue'
 import Modal from '@/components/ui/Modal.vue'
 import accountLinkApi from '@/api/accounts_link'
@@ -314,6 +365,23 @@ export default {
       }
       return results
     },
+    /** Type-aware totals over the filtered accounts (hidden only when included). */
+    portfolioSummary() {
+      return portfolioTotals(this.filteredAccounts, { includeHidden: this.showHidden })
+    },
+    hiddenExcludedCount() {
+      return this.showHidden ? 0 : this.accounts.filter((acc) => acc.is_hidden).length
+    },
+    groupSubtotals() {
+      const { groups } = this.portfolioSummary
+      return GROUPS.filter((key) => groups[key].count).map((key) => ({
+        key,
+        label: GROUP_LABELS[key],
+        count: groups[key].count,
+        total: this.portfolioSummary.mixedCurrency ? null : groups[key].total,
+        liability: isLiabilityGroup(key),
+      }))
+    },
     sortedAccounts() {
       const sorted = [...this.filteredAccounts]
       if (!this.sortKey) return sorted
@@ -355,6 +423,16 @@ export default {
     },
   },
   methods: {
+    /** Format a summary amount; null (unknown or mixed currency) reads "Unavailable". */
+    summaryMoney(value) {
+      if (value === null || value === undefined) return 'Unavailable'
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
+    },
+    resetFilters() {
+      this.searchQuery = ''
+      this.typeFilters = []
+      this.showHidden = false
+    },
     toggleTypeFilter() {
       this.showTypeFilter = !this.showTypeFilter
     },

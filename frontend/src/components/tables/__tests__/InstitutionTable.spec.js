@@ -39,7 +39,8 @@ describe('InstitutionTable', () => {
     await toggle.trigger('click')
     expect(toggle.attributes('aria-expanded')).toBe('true')
     const panel = wrapper.get(`#${toggle.attributes('aria-controls')}`)
-    expect(panel.classes()).toContain('nested-scroll')
+    expect(panel.find('.nested-scroll').exists()).toBe(false)
+    expect(wrapper.findAll('.ledger-scroll')).toHaveLength(1)
     expect(panel.text()).toContain('Checking')
     expect(panel.text()).toContain('$12.50')
   })
@@ -74,5 +75,32 @@ describe('InstitutionTable', () => {
     await flushPromises()
     expect(wrapper.find('[role="alert"]').exists()).toBe(false)
     expect(wrapper.text()).toContain('First Bank')
+  })
+
+  it('summarises each institution by type, never showing missing balances as $0', async () => {
+    api.getInstitutions.mockResolvedValue({
+      status: 'success',
+      institutions: [
+        {
+          id: 2,
+          name: 'Card Co',
+          provider: 'plaid',
+          accounts: [
+            { account_id: 'c1', name: 'Checking', type: 'depository', balance: 100 },
+            { account_id: 'c2', name: 'Visa', type: 'credit', balance: -40 },
+            { account_id: 'c3', name: 'Mystery', type: 'depository', balance: null },
+            { account_id: 'c4', name: 'Hidden', type: 'depository', balance: 5, is_hidden: true },
+          ],
+        },
+      ],
+    })
+    const wrapper = mount(InstitutionTable)
+    await flushPromises()
+    const line = wrapper.get('[data-testid="institution-summary-2"]').text()
+    expect(line).toContain('3 accounts')
+    expect(line).toContain('assets $100.00')
+    expect(line).toContain('owed $40.00')
+    expect(line).toContain('1 balance unavailable')
+    expect(line).toContain('1 hidden not counted')
   })
 })

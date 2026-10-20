@@ -115,4 +115,37 @@ describe('AccountsTable', () => {
     await flushPromises()
     expect(wrapper.findAll('tbody tr')).toHaveLength(2)
   })
+
+  it('shows assets and liabilities separately, excluding hidden accounts until included', async () => {
+    const wrapper = await mountTable()
+    expect(wrapper.get('[data-testid="accounts-summary-count"]').text()).toBe('2')
+    expect(wrapper.get('[data-testid="accounts-summary-assets"]').text()).toBe('$10.00')
+    expect(wrapper.get('[data-testid="accounts-summary-liabilities"]').text()).toBe('$5.00')
+    expect(wrapper.get('[data-testid="accounts-summary"]').text()).toContain('1 hidden not counted')
+
+    await wrapper.get('[data-testid="toggle-hidden"]').trigger('click')
+    expect(wrapper.get('[data-testid="accounts-summary-count"]').text()).toBe('3')
+    expect(wrapper.get('[data-testid="accounts-summary-assets"]').text()).toBe('$11.00')
+  })
+
+  it('reports unavailable balances instead of counting them as zero', async () => {
+    api.getAccounts.mockResolvedValue({
+      status: 'success',
+      accounts: [
+        { account_id: 'u', name: 'Loan', institution_name: 'B', type: 'loan', balance: null },
+      ],
+    })
+    const wrapper = mount(AccountsTable, { global: { stubs } })
+    await flushPromises()
+    expect(wrapper.get('[data-testid="accounts-summary"]').text()).toContain(
+      '1 balance(s) unavailable',
+    )
+  })
+
+  it('offers Reset filters when a search matches nothing', async () => {
+    const wrapper = await mountTable()
+    await wrapper.get('input[aria-label="Search accounts"]').setValue('zzz')
+    await wrapper.get('[data-testid="accounts-reset-filters"]').trigger('click')
+    expect(wrapper.findAll('tbody tr').length).toBeGreaterThan(0)
+  })
 })

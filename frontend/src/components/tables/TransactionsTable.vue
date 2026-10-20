@@ -87,13 +87,16 @@
     </div>
     <div class="table-shell">
       <table class="data-table">
+        <caption class="ledger-caption--sr">
+          Transactions ({{ transactions.length }} shown; page subtotal only, not an all-matching total)
+        </caption>
         <thead class="table-head">
           <tr>
-            <th class="th-cell text-left">Date</th>
-            <th class="th-cell text-left">Category</th>
-            <th class="th-cell text-left">Merchant: Description</th>
-            <th class="th-cell text-left">Institution / Account</th>
-            <th class="th-cell text-right">Amount</th>
+            <th scope="col" class="th-cell text-left">Date</th>
+            <th scope="col" class="th-cell text-left">Category</th>
+            <th scope="col" class="th-cell text-left">Merchant: Description</th>
+            <th scope="col" class="th-cell text-left">Institution / Account</th>
+            <th scope="col" class="th-cell text-right tabular-nums">Amount</th>
           </tr>
         </thead>
         <tbody>
