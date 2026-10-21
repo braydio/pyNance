@@ -905,7 +905,7 @@ describe('DailyNetChart period buckets', () => {
       props: { startDate: '2026-10-01', endDate: '2026-10-19', timeframe: 'ytd', show7Day: true },
     })
     await settle()
-    expect(wrapper.emitted('summary-change').at(-1)[0]).toEqual({
+    expect(wrapper.emitted('summary-change').at(-1)[0]).toMatchObject({
       totalIncome: 1000,
       totalExpenses: -300,
       totalRefunds: 25,
@@ -923,7 +923,7 @@ describe('DailyNetChart period buckets', () => {
     })
     await settle()
     expect(wrapper.text()).toContain('No activity in this period')
-    expect(wrapper.emitted('summary-change').at(-1)[0]).toEqual({
+    expect(wrapper.emitted('summary-change').at(-1)[0]).toMatchObject({
       totalIncome: 0,
       totalExpenses: 0,
       totalRefunds: 0,
@@ -1185,4 +1185,27 @@ describe('DailyNetChart period buckets', () => {
     expect(lastConfig().data.labels).toHaveLength(2)
     expect(fetchDailyNet).toHaveBeenCalledTimes(1)
   })
+
+  it('plots money in and money out on the cash basis and reports cash totals', async () => {
+    const cash = (out, inn, debt) => ({
+      cash_flow: { money_out: out, money_in: inn, net_cash: inn - out, debt_payment_out: debt },
+    })
+    fetchDailyNet.mockResolvedValue({
+      status: 'success',
+      data: [dayRow('2026-10-05', 0, -400, 0, cash(600, 1000, 600))],
+    })
+    const wrapper = mount(DailyNetChart, {
+      props: { startDate: '2026-10-01', endDate: '2026-10-19', timeframe: 'mtd', basis: 'cash' },
+    })
+    await settle()
+    const config = lastConfig()
+    const byLabel = Object.fromEntries(config.data.datasets.map((d) => [d.label, d.data]))
+    expect(byLabel['Money out'][4]).toBe(-600)
+    expect(byLabel['Money in'][4]).toBe(1000)
+    expect(byLabel.Expenses).toBeUndefined()
+    expect(wrapper.get('[data-testid="daily-net-legend"]').text()).toContain('Net cash movement')
+    const summary = wrapper.emitted('summary-change').at(-1)[0]
+    expect(summary).toMatchObject({ totalExpenses: -400, totalMoneyOut: 600, totalNetCash: 400 })
+  })
 })
+

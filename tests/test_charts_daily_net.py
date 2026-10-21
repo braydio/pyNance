@@ -106,12 +106,14 @@ def test_daily_net_separates_economics_from_account_movement(app):
     assert day["debt_settlement"] == 300.0  # paying the card is not a second spending event
     assert day["transfer_count"] == 2 and day["unclassified_count"] == 1
     assert day["transaction_count"] == 6  # confirmed transfers are not activity rows
-    assert body["coverage"] == {
+    # The economic coverage keys are unchanged; the cash-basis block is additive.
+    assert {k: v for k, v in body["coverage"].items() if k != "cash_flow"} == {
         "classified_count": 7,
         "unclassified_count": 1,
         "needs_review": True,
         "basis": "economic_flow",
     }
+    assert body["coverage"]["cash_flow"]["basis"] == "cash_movement"
 
 
 def test_the_old_shape_is_preserved_for_existing_chart_consumers(app):

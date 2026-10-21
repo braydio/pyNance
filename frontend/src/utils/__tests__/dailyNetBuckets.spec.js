@@ -8,6 +8,7 @@ import {
   resolveComparisonInterval,
   buildComparisonNets,
   sumNetBuckets,
+  sumCashBuckets,
   isoToDay,
   dayToIso,
 } from '../dailyNetBuckets'
@@ -43,7 +44,10 @@ describe('resolveNetGranularity / preset bucket counts (frozen 2026-10-19)', () 
   })
 
   it('uses Monday-anchored weekly buckets for 3M and 6M', () => {
-    for (const [preset, min, max] of [['3m', 13, 15], ['6m', 26, 28]]) {
+    for (const [preset, min, max] of [
+      ['3m', 13, 15],
+      ['6m', 26, 28],
+    ]) {
       const { buckets, granularity } = bucketsFor(preset)
       expect(granularity).toBe('weekly')
       expect(buckets.length).toBeGreaterThanOrEqual(min)
@@ -59,7 +63,11 @@ describe('resolveNetGranularity / preset bucket counts (frozen 2026-10-19)', () 
     expect(granularity).toBe('monthly')
     expect(buckets).toHaveLength(10)
     expect(buckets[0].startDate).toBe('2026-01-01')
-    expect(buckets[9]).toMatchObject({ startDate: '2026-10-01', endDate: '2026-10-19', isPartial: true })
+    expect(buckets[9]).toMatchObject({
+      startDate: '2026-10-01',
+      endDate: '2026-10-19',
+      isPartial: true,
+    })
     expect(buckets[8].isPartial).toBe(false)
   })
 
@@ -76,11 +84,14 @@ describe('resolveNetGranularity / preset bucket counts (frozen 2026-10-19)', () 
   })
 
   it('covers every preset in CHART_RANGE_PRESETS', () => {
-    CHART_RANGE_PRESETS.forEach(({ value }) => expect(bucketsFor(value).buckets.length).toBeGreaterThan(0))
+    CHART_RANGE_PRESETS.forEach(({ value }) =>
+      expect(bucketsFor(value).buckets.length).toBeGreaterThan(0),
+    )
   })
 
   it('scales custom ranges by inclusive day count', () => {
-    const g = (days) => resolveNetGranularity('custom', '2026-01-01', dayToIso(isoToDay('2026-01-01') + days - 1))
+    const g = (days) =>
+      resolveNetGranularity('custom', '2026-01-01', dayToIso(isoToDay('2026-01-01') + days - 1))
     expect(g(40)).toBe('daily')
     expect(g(45)).toBe('daily')
     expect(g(46)).toBe('weekly')
@@ -118,7 +129,15 @@ describe('buildNetBuckets edges', () => {
 
   it('is DST-safe across the March spring-forward weekend', () => {
     const days = buildNetBuckets([], '2026-03-06', '2026-03-12', 'daily').map((b) => b.startDate)
-    expect(days).toEqual(['2026-03-06', '2026-03-07', '2026-03-08', '2026-03-09', '2026-03-10', '2026-03-11', '2026-03-12'])
+    expect(days).toEqual([
+      '2026-03-06',
+      '2026-03-07',
+      '2026-03-08',
+      '2026-03-09',
+      '2026-03-10',
+      '2026-03-11',
+      '2026-03-12',
+    ])
   })
 
   it('does not extend past the selected end into future days', () => {
@@ -128,7 +147,11 @@ describe('buildNetBuckets edges', () => {
   })
 
   it('ignores warmup rows outside the selected window and guards bad values', () => {
-    const rows = [row('2026-09-20', 999, -1), row('2026-10-02', 100, -40), row('2026-10-03', Number.NaN, -10)]
+    const rows = [
+      row('2026-09-20', 999, -1),
+      row('2026-10-02', 100, -40),
+      row('2026-10-03', Number.NaN, -10),
+    ]
     const [bucket] = buildNetBuckets(rows, '2026-10-01', '2026-10-19', 'monthly')
     expect(bucket.income).toBe(100)
     expect(bucket.expenses).toBe(-50)
@@ -152,21 +175,33 @@ describe('economic reconciliation', () => {
     }),
   ]
 
-  it.each(['daily', 'weekly', 'monthly', 'quarterly'])('%s rollup nets +725 without movement', (granularity) => {
-    const buckets = buildNetBuckets(rows, '2026-10-01', '2026-10-19', granularity)
-    const active = buckets.find((b) => b.net !== 0)
-    expect(active).toMatchObject({ income: 1000, expenses: -300, refunds: 25, net: 725 })
-    expect(Math.round((active.income + active.expenses + active.refunds) * 100)).toBe(Math.round(active.net * 100))
-    expect(active.transfer_in).toBe(200)
-    expect(active.debt_settlement).toBe(131.64)
-    expect(active.unclassified_inflows).toBe(100)
-    expect(sumNetBuckets(buckets)).toEqual({ totalIncome: 1000, totalExpenses: -300, totalRefunds: 25, totalNet: 725 })
-  })
+  it.each(['daily', 'weekly', 'monthly', 'quarterly'])(
+    '%s rollup nets +725 without movement',
+    (granularity) => {
+      const buckets = buildNetBuckets(rows, '2026-10-01', '2026-10-19', granularity)
+      const active = buckets.find((b) => b.net !== 0)
+      expect(active).toMatchObject({ income: 1000, expenses: -300, refunds: 25, net: 725 })
+      expect(Math.round((active.income + active.expenses + active.refunds) * 100)).toBe(
+        Math.round(active.net * 100),
+      )
+      expect(active.transfer_in).toBe(200)
+      expect(active.debt_settlement).toBe(131.64)
+      expect(active.unclassified_inflows).toBe(100)
+      expect(sumNetBuckets(buckets)).toEqual({
+        totalIncome: 1000,
+        totalExpenses: -300,
+        totalRefunds: 25,
+        totalNet: 725,
+      })
+    },
+  )
 
   it('keeps totals equal to raw daily sums to the cent for every preset', () => {
     const daily = []
     for (let d = isoToDay('2026-01-01'); d <= isoToDay('2026-10-19'); d += 1) {
-      daily.push(row(dayToIso(d), 10.1 + (d % 7) / 10, -3.3 - (d % 5) / 10, d % 11 === 0 ? 1.07 : 0))
+      daily.push(
+        row(dayToIso(d), 10.1 + (d % 7) / 10, -3.3 - (d % 5) / 10, d % 11 === 0 ? 1.07 : 0),
+      )
     }
     CHART_RANGE_PRESETS.forEach(({ value }) => {
       const { start, end, granularity } = bucketsFor(value)
@@ -243,5 +278,58 @@ describe('comparison intervals', () => {
     expect(nets[2]).toBe(8)
     expect(nets[29]).toBeNull()
     expect(nets[30]).toBeNull()
+  })
+})
+
+describe('cash-basis buckets', () => {
+  const cashRow = (date, out, inn, debt = 0) => ({
+    ...row(date, 0, 0),
+    cash_flow: {
+      money_out: out,
+      money_in: inn,
+      net_cash: Math.round((inn - out) * 100) / 100,
+      debt_payment_out: debt,
+    },
+  })
+
+  it('sums cash fields per bucket without touching economic fields', () => {
+    const rows = [cashRow('2026-10-13', 600, 0, 600), cashRow('2026-10-14', 40, 1000)]
+    const [bucket] = buildNetBuckets(rows, '2026-10-13', '2026-10-14', 'weekly')
+    expect(bucket.money_out).toBe(640)
+    expect(bucket.money_in).toBe(1000)
+    expect(bucket.net_cash).toBe(360)
+    expect(bucket.debt_payment_out).toBe(600)
+    expect(bucket.net).toBe(0)
+  })
+
+  it('totals cash rows separately from the economic totals', () => {
+    const rows = [cashRow('2026-10-13', 600, 0, 600), cashRow('2026-10-14', 40, 1000)]
+    expect(sumNetBuckets(rows)).toEqual({
+      totalIncome: 0,
+      totalExpenses: 0,
+      totalRefunds: 0,
+      totalNet: 0,
+    })
+    const cash = sumCashBuckets(rows)
+    expect(cash.totalMoneyOut).toBe(640)
+    expect(cash.totalNetCash).toBe(360)
+    expect(cash.cashBreakdown.debt_payment_out).toBe(600)
+  })
+
+  it('treats rows without cash_flow as zero, not as errors', () => {
+    expect(sumCashBuckets([row('2026-10-13', 10, -2)]).totalMoneyOut).toBe(0)
+  })
+
+  it('builds the cash comparison series from net_cash', () => {
+    const buckets = buildNetBuckets([], '2026-03-01', '2026-03-03', 'daily')
+    const interval = resolveComparisonInterval('mtd', '2026-03-01', '2026-03-31')
+    const nets = buildComparisonNets(
+      [cashRow('2026-02-01', 30, 100)],
+      buckets,
+      '2026-03-01',
+      interval,
+      'cash',
+    )
+    expect(nets[0]).toBe(70)
   })
 })

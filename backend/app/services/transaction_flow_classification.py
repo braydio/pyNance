@@ -266,7 +266,16 @@ def classify_rows(rows: Iterable[tuple[Any, Any]]) -> list[SimpleNamespace]:
             linked_pair=counterparts.get(tx.internal_match_id) if tx.internal_match_id else None,
             user_decision=user_decision_for(tx),
         )
-        out.append(SimpleNamespace(tx=tx, account=account, day=day, **result))
+        linked = counterparts.get(tx.internal_match_id) if tx.internal_match_id else None
+        out.append(
+            SimpleNamespace(
+                tx=tx,
+                account=account,
+                day=day,
+                linked_account=linked.account if linked else None,
+                **result,
+            )
+        )
     return out
 
 
@@ -326,7 +335,119 @@ def rollup_by_day(flows: Iterable[SimpleNamespace]) -> dict[str, dict[str, Any]]
     return dict(days)
 
 
+# --------------------------------------------------------------------------- cash movement
+
+_P2P_WORDS = ("venmo", "zelle", "cash app", "cashapp", "paypal", "apple cash", "applecash")
+_CASH_OUT_PARTS = (
+    "direct_payment_out",
+    "debt_payment_out",
+    "investment_allocation_out",
+    "external_person_out",
+    "unclassified_out",
+)
+_CASH_IN_PARTS = ("income_in", "refund_in", "financing_in", "investment_in", "unclassified_in")
+_EXCLUDED_PARTS = ("verified_own_transfer_out", "verified_own_transfer_in")
+
+
+def _cents(value: Decimal) -> int:
+    return int((abs(value) * 100).to_integral_value())
+
+
+def _cash_component(flow: SimpleNamespace) -> Optional[str]:
+    """Name the cash-movement component for one funding-account leg, or ``None`` if not a funding leg.
+
+    Only depository (spendable) accounts fund cash movement. Liability and investment account legs
+    are the other side of the same event and never count again. A verified transfer to another of
+    the owner's cash accounts is excluded; one whose counterpart is a card or loan is a debt payment
+    and one whose counterpart is an investment account is an investment allocation.
+    """
+    delta = flow.signed_account_delta
+    if delta is None or classify_account_group(flow.account) != "depository":
+        return None
+    out = delta < 0
+    kind, reasons = flow.flow_kind, set(flow.reason_codes or [])
+    if kind == "transfer":
+        if "unpaired_own_account" in reasons:
+            return "unclassified_out" if out else "unclassified_in"
+        partner = classify_account_group(flow.linked_account) if getattr(flow, "linked_account", None) else None
+        if partner in {"credit", "loan"}:
+            return "debt_payment_out" if out else "financing_in"
+        if partner == "investment":
+            return "investment_allocation_out" if out else "investment_in"
+        return "verified_own_transfer_out" if out else "verified_own_transfer_in"
+    if out:
+        if kind == "debt_settlement":
+            return "debt_payment_out"
+        if kind == "investment_movement":
+            return "investment_allocation_out"
+        if kind == "expense":
+            text = f"{_text(getattr(flow.tx, 'description', None))} {_text(getattr(flow.tx, 'merchant_name', None))}".lower()
+            return "external_person_out" if any(word in text for word in _P2P_WORDS) else "direct_payment_out"
+        return "unclassified_out"
+    if kind == "income":
+        return "income_in"
+    if kind == "refund":
+        return "refund_in"
+    if kind == "investment_movement":
+        return "investment_in"
+    if "loan_proceeds_not_income" in reasons:
+        return "financing_in"
+    return "unclassified_in"
+
+
+def rollup_cash_movement_by_day(flows: Iterable[SimpleNamespace]) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
+    """Aggregate actual cash movement of the owner's funding (depository) accounts per ISO day.
+
+    Money Out and Money In are positive integer cents; ``net_cash = money_in - money_out``. Money Out
+    is the sum of ``direct_payment_out``, ``debt_payment_out``, ``investment_allocation_out``,
+    ``external_person_out`` and ``unclassified_out`` (needs classification). Verified transfers
+    between two of the owner's cash accounts are tracked as ``verified_own_transfer_*`` but excluded
+    from both totals, so a transfer never counts twice. Card and loan payments count once, at the
+    funding leg; the card purchase belongs to the economic view only. This does not replace
+    ``rollup_by_day``: the economic rollup is unchanged.
+
+    Returns:
+        ``(days, coverage)``; ``coverage`` states which accounts funded the figures and how many
+        rows were left out or need review, so an incomplete picture is visible rather than zero.
+    """
+    flows = list(flows)
+    days: dict[str, dict[str, Any]] = defaultdict(
+        lambda: {name: 0 for name in (*_CASH_OUT_PARTS, *_CASH_IN_PARTS, *_EXCLUDED_PARTS)}
+    )
+    funding_accounts: set[str] = set()
+    non_funding_legs = funding_legs = 0
+    unverified_internal = {"count": 0, "cents": 0}
+    for flow in flows:
+        component = _cash_component(flow)
+        if component is None:
+            non_funding_legs += 1
+            continue
+        funding_legs += 1
+        funding_accounts.add(str(getattr(flow.account, "account_id", "")))
+        cents = _cents(flow.signed_account_delta)
+        days[flow.day.isoformat()][component] += cents
+        if "unpaired_own_account" in (flow.reason_codes or []):
+            unverified_internal["count"] += 1
+            unverified_internal["cents"] += cents
+    for bucket in days.values():
+        bucket["money_out"] = sum(bucket[name] for name in _CASH_OUT_PARTS)
+        bucket["money_in"] = sum(bucket[name] for name in _CASH_IN_PARTS)
+        bucket["net_cash"] = bucket["money_in"] - bucket["money_out"]
+    coverage = {
+        "basis": "cash_movement",
+        "scope": "funding_accounts_depository",
+        "funding_account_count": len(funding_accounts),
+        "funding_leg_count": funding_legs,
+        "non_funding_leg_count": non_funding_legs,
+        "unverified_internal": unverified_internal,
+        "complete": bool(funding_accounts),
+        "needs_review": any(b["unclassified_out"] or b["unclassified_in"] for b in days.values()),
+    }
+    return dict(days), coverage
+
+
 __all__ = [
+    "rollup_cash_movement_by_day",
     "FLOW_KINDS",
     "LinkedPair",
     "classify_reporting_flow",

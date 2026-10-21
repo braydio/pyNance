@@ -1,12 +1,12 @@
 # TP-20261020-001: Daily Net: Debt Payments, Missing Outflows and Cash-Basis Reconciliation
 
 **Packet ID:** TP-20261020-001  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-20  
 **Last updated:** 2026-10-20  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261020-001-daily-net-cash-basis-debt-payment-reconciliation.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261020-001-daily-net-cash-basis-debt-payment-reconciliation.md`  
 **Priority:** P0  
 **Workstream size:** One independently testable implementation packet  
 **Depends on:** None; completed TP-20261017-003/004 and TP-20261019-001/002  

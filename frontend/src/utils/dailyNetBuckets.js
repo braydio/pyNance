@@ -38,6 +38,33 @@ const MOVEMENT_FIELDS = [
 ]
 
 /**
+ * Cash-basis fields of `row.cash_flow` (funding-account legs, dollars) summed per bucket. They
+ * describe actual money moving through cash accounts and are never mixed into economic net.
+ */
+export const CASH_FIELDS = [
+  'money_out',
+  'money_in',
+  'net_cash',
+  'direct_payment_out',
+  'debt_payment_out',
+  'investment_allocation_out',
+  'external_person_out',
+  'unclassified_out',
+  'income_in',
+  'refund_in',
+  'financing_in',
+  'investment_in',
+  'unclassified_in',
+  'verified_own_transfer_out',
+  'verified_own_transfer_in',
+]
+
+/** Cash value (in cents) of a daily row or bucket; supports the API's nested `cash_flow`. */
+function cashCents(source, field) {
+  return toCents(source?.[field] ?? source?.cash_flow?.[field])
+}
+
+/**
  * Whole UTC day number for an ISO date; DST cannot add or drop a day.
  *
  * @param {string} iso - `YYYY-MM-DD`.
@@ -71,7 +98,12 @@ export function dayToIso(dayNumber) {
 
 function utcParts(dayNumber) {
   const d = new Date(dayNumber * MS_PER_DAY)
-  return { year: d.getUTCFullYear(), month: d.getUTCMonth(), date: d.getUTCDate(), dow: d.getUTCDay() }
+  return {
+    year: d.getUTCFullYear(),
+    month: d.getUTCMonth(),
+    date: d.getUTCDate(),
+    dow: d.getUTCDay(),
+  }
 }
 
 function utcDay(year, month, date) {
@@ -125,6 +157,9 @@ function emptyTotals() {
   MOVEMENT_FIELDS.forEach((field) => {
     totals[field] = 0
   })
+  CASH_FIELDS.forEach((field) => {
+    totals[field] = 0
+  })
   return totals
 }
 
@@ -174,6 +209,9 @@ export function buildNetBuckets(dailyRows, startDate, endDate, granularity = 'da
     MOVEMENT_FIELDS.forEach((field) => {
       totals[field] += toCents(row[field])
     })
+    CASH_FIELDS.forEach((field) => {
+      totals[field] += cashCents(row, field)
+    })
   })
 
   return periods.map(({ periodStart, periodEnd, start, end, totals }) => {
@@ -190,9 +228,11 @@ export function buildNetBuckets(dailyRows, startDate, endDate, granularity = 'da
       dayCount: end - start + 1,
       transaction_count: totals.transaction_count,
     }
-    ;['income', 'expenses', 'refunds', 'net', ...MOVEMENT_FIELDS].forEach((field) => {
-      bucket[field] = totals[field] / 100
-    })
+    ;['income', 'expenses', 'refunds', 'net', ...MOVEMENT_FIELDS, ...CASH_FIELDS].forEach(
+      (field) => {
+        bucket[field] = totals[field] / 100
+      },
+    )
     return bucket
   })
 }
@@ -210,6 +250,25 @@ export function sumNetBuckets(buckets) {
     totalExpenses: cents.expenses / 100,
     totalRefunds: cents.refunds / 100,
     totalNet: cents.net / 100,
+  }
+}
+
+/**
+ * Cash-basis totals (funding accounts) for daily rows or buckets. A separate measure from
+ * {@link sumNetBuckets}: it is never added to economic income, expenses or net.
+ */
+export function sumCashBuckets(buckets) {
+  const cash = Object.fromEntries(CASH_FIELDS.map((field) => [field, 0]))
+  ;(buckets || []).forEach((bucket) => {
+    CASH_FIELDS.forEach((field) => {
+      cash[field] += cashCents(bucket, field)
+    })
+  })
+  return {
+    totalMoneyOut: cash.money_out / 100,
+    totalMoneyIn: cash.money_in / 100,
+    totalNetCash: cash.net_cash / 100,
+    cashBreakdown: Object.fromEntries(CASH_FIELDS.map((field) => [field, cash[field] / 100])),
   }
 }
 
@@ -252,7 +311,8 @@ export function formatNetBucketLabel(bucket, options = {}) {
 
   if (bucket.granularity === 'weekly') {
     if (!long && !bucket.isPartial) return dayLabel(bucket.startDate, withYear)
-    if (s.year !== e.year) return `${dayLabel(bucket.startDate, true)} – ${dayLabel(bucket.endDate, true)}`
+    if (s.year !== e.year)
+      return `${dayLabel(bucket.startDate, true)} – ${dayLabel(bucket.endDate, true)}`
     const range =
       s.month === e.month
         ? `${monthName(s.month)} ${s.date}–${e.date}`
@@ -262,11 +322,15 @@ export function formatNetBucketLabel(bucket, options = {}) {
 
   if (bucket.granularity === 'monthly') {
     const base = long || withYear ? `${monthName(s.month)} ${s.year}` : monthName(s.month)
-    return long && bucket.isPartial ? `${base} (${dayLabel(bucket.startDate, false)}–${e.date})` : base
+    return long && bucket.isPartial
+      ? `${base} (${dayLabel(bucket.startDate, false)}–${e.date})`
+      : base
   }
 
   const quarter = `Q${Math.floor(s.month / 3) + 1} ${s.year}`
-  return long && bucket.isPartial ? `${quarter} (${dayLabel(bucket.startDate, false)} – ${dayLabel(bucket.endDate, false)})` : quarter
+  return long && bucket.isPartial
+    ? `${quarter} (${dayLabel(bucket.startDate, false)} – ${dayLabel(bucket.endDate, false)})`
+    : quarter
 }
 
 /**
@@ -349,7 +413,13 @@ export function resolveComparisonInterval(timeframe, startDate, endDate) {
  * @param {{ start: string, end: string }} interval - From {@link resolveComparisonInterval}.
  * @returns {Array<number|null>} Prior net per current bucket (dollars).
  */
-export function buildComparisonNets(priorRows, buckets, currentStart, interval) {
+export function buildComparisonNets(
+  priorRows,
+  buckets,
+  currentStart,
+  interval,
+  basis = 'economic',
+) {
   const base = isoToDay(currentStart)
   const priorStart = isoToDay(interval?.start)
   const priorEnd = isoToDay(interval?.end)
@@ -358,7 +428,10 @@ export function buildComparisonNets(priorRows, buckets, currentStart, interval) 
   const netByDay = new Map()
   ;(priorRows || []).forEach((row) => {
     const day = isoToDay(row?.date)
-    if (day != null) netByDay.set(day, (netByDay.get(day) || 0) + toCents(row.net))
+    if (day != null) {
+      const cents = basis === 'cash' ? cashCents(row, 'net_cash') : toCents(row.net)
+      netByDay.set(day, (netByDay.get(day) || 0) + cents)
+    }
   })
 
   return (buckets || []).map((bucket) => {

@@ -70,3 +70,23 @@ When `hasError` or `isEmpty` is active, chart rendering is deferred and the canv
 ## Economic activity vs cash movement (TP-20261017-004)
 
 The chart's `income`, `expenses` and `net` are **economic**: income + expenses + refunds as classified by `transaction_flow_classification`. Own-account transfers, card/loan payments, investment deposits and unresolved credits are cash movement and never count as income. The same buckets expose `transfer_in/out`, `debt_settlement`, `investment_movement` and `unclassified_*` so a day's bank movement can be reconciled. Labels read "Economic Net"; never "savings", "bank balance change" or "cash on hand".
+
+
+## Cash movement vs economic activity (TP-20261020-001)
+
+`GET /api/charts/daily_net` now carries two separate measures per day. Never add them together.
+
+| Measure | Fields | Meaning |
+| --- | --- | --- |
+| Economic activity | `income`, `expenses` (negative), `refunds`, `net` | Purchase-time view. A later card or loan payment is not a second expense. Unchanged. |
+| Cash movement (new, additive) | `cash_flow.money_out`, `money_in`, `net_cash` (USD, positive magnitudes; `net_cash = money_in - money_out`) | Actual posted movement of the owner's funding (depository) accounts. |
+
+Money Out components: `direct_payment_out`, `debt_payment_out` (card and loan payments), `investment_allocation_out`, `external_person_out` (P2P wording), `unclassified_out` ("Needs classification"). Money In components: `income_in`, `refund_in`, `financing_in` (loan proceeds, never income), `investment_in`, `unclassified_in`. `verified_own_transfer_out/in` are reported but excluded from both totals.
+
+Rules: only depository legs fund cash movement; card, loan and investment account legs are the other side of the same event and are not counted again. A verified transfer whose counterpart is a card or loan is a debt payment; to an investment account it is an investment allocation; between two cash accounts it is excluded. A transfer flagged `is_internal` with no verified pair stays in `unclassified_*` and is counted in `coverage.cash_flow.unverified_internal`.
+
+`coverage.cash_flow` reports `funding_account_count`, `funding_leg_count`, `non_funding_leg_count`, `complete` (false when no cash account contributed, so the UI shows an incomplete state rather than a fabricated 0) and `needs_review`. Hidden accounts, pending rows and other owners are never loaded.
+
+`GET /api/charts/cash_flow_diagnostic?start_date&end_date` (owner-bound, read only) explains why Money Out differs from economic expenses: counts and amounts by component, excluded non-funding legs, internal flags without a pair, and per-account, per-month totals. It returns no merchant names, memos or transaction ids.
+
+UI: `DailyNetChart` takes `basis` (`economic` default, `cash`). The dashboard and chart route default to **Cash Movement** with an explicit **Economic Activity** toggle; the first viewport shows "Money out $X" with what it includes. Bucketing, zoom and day drilldown are unchanged.

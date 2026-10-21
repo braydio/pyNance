@@ -26,6 +26,7 @@ const DailyNetChartStub = {
     startDate: { type: String, required: true },
     endDate: { type: String, required: true },
     zoomedOut: { type: Boolean, default: false },
+    basis: { type: String, default: 'economic' },
   },
   emits: ['summary-change', 'data-change', 'bar-click'],
   template:
@@ -303,28 +304,35 @@ describe('Dashboard section components', () => {
     expect(custom.get('[data-testid="daily-net-timeframe-custom"]').text()).toBe('Custom')
   })
 
-  it('titles the chart with the bucket granularity and passes it to the overlay controls', () => {
+  it('titles the chart with the bucket granularity and passes it to the overlay controls', async () => {
     const wrapper = shallowMount(NetOverviewSection, {
       props: { ...baseSectionProps, netTimeframe: 'ytd' },
       global: { stubs: sectionStubs },
     })
+    // Cash movement is the default measure; economic activity is an explicit choice.
+    expect(wrapper.get('.daily-net-chart-title').text()).toContain('Cash Movement')
+    expect(wrapper.findComponent(DailyNetChartStub).props('basis')).toBe('cash')
+    await wrapper.get('[data-testid="net-basis-economic"]').trigger('click')
+    expect(wrapper.findComponent(DailyNetChartStub).props('basis')).toBe('economic')
     expect(wrapper.get('.daily-net-chart-title').text()).toContain('Economic Net')
     expect(wrapper.get('[data-testid="net-granularity"]').text()).toBe('· Monthly')
     expect(wrapper.findComponent(ChartDetailsSidebarStub).props('granularity')).toBe('monthly')
     expect(wrapper.html()).not.toContain('comparison-mode')
   })
 
-  it('discloses refund adjustments only when the period has refunds', () => {
+  it('discloses refund adjustments only when the period has refunds', async () => {
     const none = shallowMount(NetOverviewSection, {
       props: { ...baseSectionProps, netSummary: { totalIncome: 1000, totalExpenses: -300, totalRefunds: 0, totalNet: 700 } },
       global: { stubs: sectionStubs },
     })
+    await none.get('[data-testid="net-basis-economic"]').trigger('click')
     expect(none.get('[data-testid="net-chart-totals"]').text()).toBe('Income $1,000.00 · Expenses ($300.00)')
 
     const refunded = shallowMount(NetOverviewSection, {
       props: { ...baseSectionProps, netSummary: { totalIncome: 1000, totalExpenses: -300, totalRefunds: 25, totalNet: 725 } },
       global: { stubs: sectionStubs },
     })
+    await refunded.get('[data-testid="net-basis-economic"]').trigger('click')
     const text = refunded.get('[data-testid="net-chart-totals"]').text()
     expect(text).toContain('Economic income $1,000.00')
     expect(text).toContain('Refunds $25.00')
@@ -450,4 +458,38 @@ describe('Dashboard section components', () => {
     expect(wrapper.find('.primary').exists()).toBe(true)
     expect(wrapper.findComponent(SpendingInsightsStub).exists()).toBe(true)
   })
+
+  it('shows cash money out with its debt-payment inclusion on the first viewport', () => {
+    const wrapper = shallowMount(NetOverviewSection, {
+      props: {
+        ...baseSectionProps,
+        netSummary: {
+          totalIncome: 1000,
+          totalExpenses: -300,
+          totalRefunds: 0,
+          totalNet: 700,
+          totalMoneyIn: 1000,
+          totalMoneyOut: 900,
+          totalNetCash: 100,
+          cashBreakdown: { debt_payment_out: 600, investment_allocation_out: 0, unclassified_out: 75 },
+        },
+      },
+      global: { stubs: sectionStubs },
+    })
+    expect(wrapper.get('[data-testid="cash-out-amount"]').text()).toBe('$900.00')
+    const includes = wrapper.get('[data-testid="cash-out-includes"]').text()
+    expect(includes).toContain('$600.00 card and loan payments')
+    expect(includes).toContain('$75.00 needs classification')
+    expect(wrapper.get('[data-testid="net-chart-totals"]').text()).toContain('Money out $900.00')
+  })
+
+  it('says unavailable instead of $0 when cash movement was not supplied', () => {
+    const wrapper = shallowMount(NetOverviewSection, {
+      props: baseSectionProps,
+      global: { stubs: sectionStubs },
+    })
+    expect(wrapper.find('[data-testid="cash-out-amount"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="cash-out-unavailable"]').text()).toBe('Unavailable')
+  })
 })
+

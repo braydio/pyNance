@@ -41,9 +41,15 @@ def fetch_transaction_data(start_date: datetime, end_date: datetime, owner_id: s
     transfers, card and loan payments, investment movements and unclassified credits are not income
     or spending.
     """
-    from app.services.transaction_flow_classification import load_classified_flows, rollup_by_day
+    from app.services.transaction_flow_classification import (
+        load_classified_flows,
+        rollup_by_day,
+        rollup_cash_movement_by_day,
+    )
 
-    days = rollup_by_day(load_classified_flows(owner_id, start_date, end_date))
+    flows = load_classified_flows(owner_id, start_date, end_date)
+    days = rollup_by_day(flows)
+    cash_days, _ = rollup_cash_movement_by_day(flows)
     return [
         SimpleNamespace(
             date=date.fromisoformat(day),
@@ -51,6 +57,10 @@ def fetch_transaction_data(start_date: datetime, end_date: datetime, owner_id: s
             expenses=float(-v["expenses"]),
             refunds=float(v["refunds"]),
             net=float(v["net"]),
+            # Additive cash-basis fields (funding-account legs); the economic fields are unchanged.
+            money_out=cash_days.get(day, {}).get("money_out", 0) / 100,
+            money_in=cash_days.get(day, {}).get("money_in", 0) / 100,
+            net_cash=cash_days.get(day, {}).get("net_cash", 0) / 100,
         )
         for day, v in sorted(days.items())
     ]

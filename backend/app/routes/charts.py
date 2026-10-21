@@ -426,7 +426,11 @@ def get_daily_net() -> Dict[str, Dict[str, Any]]:
     with 503 rather than aggregating other users' data.
     """
     from app.services import recurring_repository
-    from app.services.transaction_flow_classification import load_classified_flows, rollup_by_day
+    from app.services.transaction_flow_classification import (
+        load_classified_flows,
+        rollup_by_day,
+        rollup_cash_movement_by_day,
+    )
 
     start_date_str = request.args.get("start_date")
     end_date_str = request.args.get("end_date")
@@ -450,16 +454,38 @@ def get_daily_net() -> Dict[str, Dict[str, Any]]:
     logger.info("[daily_net] start_date=%s, end_date=%s", start_date, end_date)
     flows = load_classified_flows(owner_id, start_date, end_date)
     days = rollup_by_day(flows)
+    cash_days, cash_coverage = rollup_cash_movement_by_day(flows)
 
     def money(value) -> Dict[str, Any]:
         rounded = round(float(value), 2)
         return {"source": str(rounded), "parsedValue": rounded}
 
+    def dollars(cents: int) -> float:
+        return round(cents / 100, 2)
+
     data = []
     for day in sorted(days):
         v = days[day]
+        cash = cash_days.get(day, {})
         data.append(
             {
+                "cash_flow": {
+                    "money_out": dollars(cash.get("money_out", 0)),
+                    "money_in": dollars(cash.get("money_in", 0)),
+                    "net_cash": dollars(cash.get("net_cash", 0)),
+                    "direct_payment_out": dollars(cash.get("direct_payment_out", 0)),
+                    "debt_payment_out": dollars(cash.get("debt_payment_out", 0)),
+                    "investment_allocation_out": dollars(cash.get("investment_allocation_out", 0)),
+                    "external_person_out": dollars(cash.get("external_person_out", 0)),
+                    "unclassified_out": dollars(cash.get("unclassified_out", 0)),
+                    "income_in": dollars(cash.get("income_in", 0)),
+                    "refund_in": dollars(cash.get("refund_in", 0)),
+                    "financing_in": dollars(cash.get("financing_in", 0)),
+                    "investment_in": dollars(cash.get("investment_in", 0)),
+                    "unclassified_in": dollars(cash.get("unclassified_in", 0)),
+                    "verified_own_transfer_out": dollars(cash.get("verified_own_transfer_out", 0)),
+                    "verified_own_transfer_in": dollars(cash.get("verified_own_transfer_in", 0)),
+                },
                 "date": day,
                 "income": money(v["income"]),
                 "expenses": money(v["expenses"]),
@@ -482,10 +508,36 @@ def get_daily_net() -> Dict[str, Dict[str, Any]]:
         "unclassified_count": unclassified,
         "needs_review": unclassified > 0,
         "basis": "economic_flow",
+        "cash_flow": cash_coverage,
     }
     logger.info("[daily_net] Returning %d day buckets", len(data))
     # Return a consistent payload for frontend consumption
     return jsonify({"status": "success", "data": data, "coverage": coverage}), 200
+
+
+@charts.route("/cash_flow_diagnostic", methods=["GET"])
+def get_cash_flow_diagnostic():
+    """Explain Money Out versus economic expenses for the trusted owner and a date range.
+
+    Read-only: counts and amounts by component, source account and month. No merchant or memo text.
+    """
+    from app.services import recurring_repository
+    from app.services.cash_flow_diagnostic import build_cash_flow_diagnostic
+    from app.services.transaction_flow_classification import load_classified_flows
+
+    try:
+        start_date = datetime.strptime(request.args["start_date"], "%Y-%m-%d").date()
+        end_date = datetime.strptime(request.args["end_date"], "%Y-%m-%d").date()
+    except (KeyError, ValueError):
+        return jsonify({"status": "error", "message": "start_date and end_date (YYYY-MM-DD) are required"}), 400
+    if start_date > end_date:
+        return jsonify({"status": "error", "message": "start_date must not be after end_date"}), 400
+    try:
+        owner_id = recurring_repository.trusted_owner_id()
+    except recurring_repository.OwnerNotConfigured as exc:
+        return jsonify({"status": "error", "code": exc.code, "message": str(exc)}), exc.status
+    flows = load_classified_flows(owner_id, start_date, end_date)
+    return jsonify({"status": "success", "data": build_cash_flow_diagnostic(flows)}), 200
 
 
 @charts.route("/accounts-snapshot", methods=["GET"])

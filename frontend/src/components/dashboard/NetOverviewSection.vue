@@ -55,50 +55,65 @@
         </p>
       </div>
       <div class="now-rail flex flex-col min-w-0" data-testid="now-rail">
-      <div class="now-rail__item flex flex-col gap-1" data-testid="cash-direction">
-        <h3 class="text-sm font-semibold">Economic net</h3>
-        <p class="text-sm text-muted" data-testid="cash-direction-period">{{ periodText }}</p>
-        <p
-          class="net-overview-net"
-          :class="netSummary.totalNet < 0 ? 'is-negative' : 'is-positive'"
-        >
-          {{ netSummary.totalNet < 0 ? '▼' : '▲' }} {{ formatAmount(netSummary.totalNet) }}
-          <span class="net-overview-net__label">net in selected period</span>
-        </p>
-        <p class="text-sm text-muted" data-testid="cash-direction-totals">{{ totalsText }}</p>
-      </div>
-      <div class="now-rail__item flex flex-col gap-2" data-testid="transactions-card">
-        <h3 class="text-sm font-semibold">Transactions</h3>
-        <p class="net-overview-review-status-text" role="status">{{ transactionCountLabel }}</p>
-        <div class="flex flex-wrap items-center gap-2 mt-auto">
-          <button
-            class="btn btn-outline net-overview-review-status"
-            type="button"
-            :disabled="periodTransactionCountLoading"
-            :aria-label="transactionCountAriaLabel"
-            @click="emit('open-review')"
-          >
-            Review transactions
-          </button>
-          <button
-            class="net-overview-refine-toggle"
-            type="button"
-            :aria-expanded="showTagFilter"
-            @click="showTagFilter = !showTagFilter"
-          >
-            {{ showTagFilter ? 'Hide filter' : 'Filter by tag' }}
-          </button>
+        <div class="now-rail__item flex flex-col gap-1" data-testid="cash-out-summary">
+          <h3 class="text-sm font-semibold">Money out</h3>
+          <p class="text-sm text-muted" data-testid="cash-out-period">{{ periodText }}</p>
+          <p v-if="cashOutAvailable" class="net-overview-net" data-testid="cash-out-amount">
+            {{ formatAmount(netSummary.totalMoneyOut) }}
+          </p>
+          <p v-else class="text-sm text-muted" data-testid="cash-out-unavailable">Unavailable</p>
+          <p v-if="cashOutAvailable" class="text-sm text-muted" data-testid="cash-out-includes">
+            {{ cashOutIncludes }}
+          </p>
+          <p class="text-sm text-muted">
+            Cash paid from your checking and savings accounts. Card purchases count when the card is
+            paid, not twice.
+          </p>
         </div>
-        <input
-          v-if="showTagFilter"
-          :value="reviewTagFilter"
-          class="input review-filter-input"
-          type="text"
-          aria-label="Transaction tag filter"
-          placeholder="Optional tag (e.g., #groceries)"
-          @input="emit('update:review-tag-filter', $event.target.value)"
-        />
-      </div>
+        <div class="now-rail__item flex flex-col gap-1" data-testid="cash-direction">
+          <h3 class="text-sm font-semibold">Economic net</h3>
+          <p class="text-sm text-muted" data-testid="cash-direction-period">{{ periodText }}</p>
+          <p
+            class="net-overview-net"
+            :class="netSummary.totalNet < 0 ? 'is-negative' : 'is-positive'"
+          >
+            {{ netSummary.totalNet < 0 ? '▼' : '▲' }} {{ formatAmount(netSummary.totalNet) }}
+            <span class="net-overview-net__label">net in selected period</span>
+          </p>
+          <p class="text-sm text-muted" data-testid="cash-direction-totals">{{ totalsText }}</p>
+        </div>
+        <div class="now-rail__item flex flex-col gap-2" data-testid="transactions-card">
+          <h3 class="text-sm font-semibold">Transactions</h3>
+          <p class="net-overview-review-status-text" role="status">{{ transactionCountLabel }}</p>
+          <div class="flex flex-wrap items-center gap-2 mt-auto">
+            <button
+              class="btn btn-outline net-overview-review-status"
+              type="button"
+              :disabled="periodTransactionCountLoading"
+              :aria-label="transactionCountAriaLabel"
+              @click="emit('open-review')"
+            >
+              Review transactions
+            </button>
+            <button
+              class="net-overview-refine-toggle"
+              type="button"
+              :aria-expanded="showTagFilter"
+              @click="showTagFilter = !showTagFilter"
+            >
+              {{ showTagFilter ? 'Hide filter' : 'Filter by tag' }}
+            </button>
+          </div>
+          <input
+            v-if="showTagFilter"
+            :value="reviewTagFilter"
+            class="input review-filter-input"
+            type="text"
+            aria-label="Transaction tag filter"
+            placeholder="Optional tag (e.g., #groceries)"
+            @input="emit('update:review-tag-filter', $event.target.value)"
+          />
+        </div>
       </div>
     </div>
 
@@ -118,11 +133,16 @@
         />
         <router-link
           class="accent-toggle-btn daily-net-timeframe-btn"
-          :to="{ path: '/charts/cashflow', query: { start_date: activeRange.start, end_date: activeRange.end } }"
+          :to="{
+            path: '/charts/cashflow',
+            query: { start_date: activeRange.start, end_date: activeRange.end },
+          }"
           aria-label="Expand net income chart"
-        >Expand chart</router-link>
+          >Expand chart</router-link
+        >
       </div>
       <DailyNetChart
+        :basis="netBasis"
         :start-date="activeRange.start"
         :end-date="activeRange.end"
         :zoomed-out="zoomedOut"
@@ -138,12 +158,30 @@
       >
         <template #title="{ granularityTitle }">
           <div class="daily-net-chart-title-block">
+            <div class="net-basis-toggle" role="group" aria-label="Chart measure">
+              <button
+                v-for="option in NET_BASIS_OPTIONS"
+                :key="option.value"
+                type="button"
+                class="net-basis-btn"
+                :class="{ 'is-selected': netBasis === option.value }"
+                :aria-pressed="netBasis === option.value"
+                :data-testid="`net-basis-${option.value}`"
+                @click="netBasis = option.value"
+              >
+                {{ option.label }}
+              </button>
+            </div>
             <h2 class="daily-net-chart-title">
-              <span class="title-text">Economic Net</span>
-              <span class="title-subtitle" data-testid="net-granularity">· {{ granularityTitle }}</span>
+              <span class="title-text">{{
+                netBasis === 'cash' ? 'Cash Movement' : 'Economic Net'
+              }}</span>
+              <span class="title-subtitle" data-testid="net-granularity"
+                >· {{ granularityTitle }}</span
+              >
             </h2>
             <p class="daily-net-chart-totals" data-testid="net-chart-totals">
-              {{ totalsText }}
+              {{ netBasis === 'cash' ? cashTotalsText : totalsText }}
             </p>
           </div>
         </template>
@@ -164,7 +202,10 @@
                   v-for="option in CHART_RANGE_PRESETS"
                   :key="option.value"
                   class="accent-toggle-btn angular-chart-chip daily-net-timeframe-btn"
-                  :class="{ 'accent-toggle-btn--active angular-chart-chip--active': netTimeframe === option.value }"
+                  :class="{
+                    'accent-toggle-btn--active angular-chart-chip--active':
+                      netTimeframe === option.value,
+                  }"
                   type="button"
                   :aria-pressed="netTimeframe === option.value"
                   @click="emit('update:net-timeframe', option.value)"
@@ -229,7 +270,8 @@ const props = defineProps({
   netTimeframe: {
     type: String,
     default: 'mtd',
-    validator: (value) => CHART_RANGE_PRESETS.some((option) => option.value === value) || value === 'custom',
+    validator: (value) =>
+      CHART_RANGE_PRESETS.some((option) => option.value === value) || value === 'custom',
   },
   zoomedOut: { type: Boolean, default: false },
   netSummary: { type: Object, required: true },
@@ -270,9 +312,47 @@ const emit = defineEmits([
 
 const showTagFilter = ref(false)
 
+const NET_BASIS_OPTIONS = [
+  { value: 'cash', label: 'Cash Movement' },
+  { value: 'economic', label: 'Economic Activity' },
+]
+/** Cash movement (money through checking and savings) is the default; economic is opt-in. */
+const netBasis = ref('cash')
+
+const cashOutAvailable = computed(() => Number.isFinite(props.netSummary?.totalMoneyOut))
+const cashOutIncludes = computed(() => {
+  const parts = props.netSummary?.cashBreakdown || {}
+  const lines = []
+  if (parts.debt_payment_out)
+    lines.push(`${formatAmount(parts.debt_payment_out)} card and loan payments`)
+  if (parts.investment_allocation_out)
+    lines.push(`${formatAmount(parts.investment_allocation_out)} allocated to investments`)
+  if (parts.external_person_out)
+    lines.push(`${formatAmount(parts.external_person_out)} sent to people`)
+  if (parts.unclassified_out)
+    lines.push(`${formatAmount(parts.unclassified_out)} needs classification`)
+  return lines.length
+    ? `Includes ${lines.join(' · ')}`
+    : 'No card, loan or investment payments in this period'
+})
+const cashTotalsText = computed(() => {
+  const { totalMoneyIn, totalMoneyOut, totalNetCash } = props.netSummary || {}
+  if (![totalMoneyIn, totalMoneyOut, totalNetCash].every(Number.isFinite))
+    return 'Cash movement unavailable'
+  return (
+    `Money in ${formatAmount(totalMoneyIn)} · Money out ${formatAmount(totalMoneyOut)} · ` +
+    `Net cash ${formatAmount(totalNetCash)}, funding accounts only`
+  )
+})
+
 /** Refunds are an economic adjustment: disclose them only when the period has any. */
 const totalsText = computed(() => {
-  const { totalIncome = 0, totalExpenses = 0, totalRefunds = 0, totalNet = 0 } = props.netSummary || {}
+  const {
+    totalIncome = 0,
+    totalExpenses = 0,
+    totalRefunds = 0,
+    totalNet = 0,
+  } = props.netSummary || {}
   if (!totalRefunds) {
     return `Income ${formatAmount(totalIncome)} · Expenses ${formatAmount(totalExpenses)}`
   }
@@ -350,6 +430,26 @@ const periodText = computed(() => {
 </script>
 
 <style scoped>
+.net-basis-btn {
+  font-size: 0.8125rem;
+  padding: 0.2rem 0.6rem;
+  line-height: 1;
+  border-radius: var(--chart-shell-radius-tight);
+  color: var(--color-text-muted);
+  border: 1px solid transparent;
+}
+
+.net-basis-btn.is-selected {
+  color: var(--color-text-light);
+  border-color: var(--color-accent-cyan);
+}
+
+.net-basis-toggle {
+  display: inline-flex;
+  gap: 0.25rem;
+  margin-bottom: 0.35rem;
+}
+
 .net-overview-context__status {
   font-size: 0.8125rem;
   color: var(--color-text-muted);

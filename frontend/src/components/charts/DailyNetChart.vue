@@ -52,7 +52,10 @@
           class="daily-net-chart__legend-item angular-chart-chip"
           :style="{ '--legend-color': item.color }"
         >
-          <span class="daily-net-chart__swatch daily-net-chart__swatch--dashed" aria-hidden="true" />
+          <span
+            class="daily-net-chart__swatch daily-net-chart__swatch--dashed"
+            aria-hidden="true"
+          />
           <span class="daily-net-chart__legend-label">{{ item.label }}</span>
         </li>
       </ul>
@@ -77,10 +80,37 @@
             class="daily-net-chart__details-net"
             :class="activeDetails.net < 0 ? 'is-negative' : 'is-positive'"
           >
-            Economic Net: {{ formatAmount(activeDetails.net) }}
+            {{ isCash ? 'Net cash movement' : 'Economic Net' }}:
+            {{ formatAmount(activeDetails.net) }}
           </p>
         </div>
-        <dl class="daily-net-chart__details-metrics">
+        <dl v-if="isCash" class="daily-net-chart__details-metrics" data-testid="cash-details">
+          <div>
+            <dt>Money in</dt>
+            <dd>{{ formatAmount(activeDetails.cash.moneyIn) }}</dd>
+          </div>
+          <div>
+            <dt>Money out</dt>
+            <dd>{{ formatAmount(activeDetails.cash.moneyOut) }}</dd>
+          </div>
+          <div>
+            <dt>Card and loan payments</dt>
+            <dd>{{ formatAmount(activeDetails.cash.debtPayments) }}</dd>
+          </div>
+          <div>
+            <dt>Allocated to investments</dt>
+            <dd>{{ formatAmount(activeDetails.cash.investments) }}</dd>
+          </div>
+          <div>
+            <dt>Needs classification</dt>
+            <dd>{{ formatAmount(activeDetails.cash.unclassified) }}</dd>
+          </div>
+          <div>
+            <dt>Transactions</dt>
+            <dd>{{ activeDetails.transactions }}</dd>
+          </div>
+        </dl>
+        <dl v-else class="daily-net-chart__details-metrics">
           <div>
             <dt>Income</dt>
             <dd>{{ formatAmount(activeDetails.income) }}</dd>
@@ -141,14 +171,30 @@
       </div>
 
       <details class="daily-net-chart__table-disclosure">
-        <summary>{{ granularityTitle }} economic net table</summary>
+        <summary>
+          {{ granularityTitle }} {{ isCash ? 'cash movement' : 'economic net' }} table
+        </summary>
         <div class="daily-net-chart__table-scroll">
           <table class="daily-net-chart__table">
             <caption class="sr-only">
-              Economic net by {{ granularityTitle.toLowerCase() }} period
+              {{
+                isCash ? 'Cash movement' : 'Economic net'
+              }}
+              by
+              {{
+                granularityTitle.toLowerCase()
+              }}
+              period
             </caption>
             <thead>
-              <tr>
+              <tr v-if="isCash">
+                <th scope="col">Period</th>
+                <th scope="col">Money in</th>
+                <th scope="col">Money out</th>
+                <th scope="col">Card and loan payments</th>
+                <th scope="col">Net cash</th>
+              </tr>
+              <tr v-else>
                 <th scope="col">Period</th>
                 <th scope="col">Income</th>
                 <th scope="col">Expenses</th>
@@ -163,14 +209,26 @@
                 :class="{ 'is-active': bucket.key === activeBucket?.key }"
               >
                 <th scope="row">
-                  <button type="button" class="daily-net-chart__row-btn" @click="activateBucket(bucket)">
+                  <button
+                    type="button"
+                    class="daily-net-chart__row-btn"
+                    @click="activateBucket(bucket)"
+                  >
                     {{ bucketLabel(bucket, 'long') }}
                   </button>
                 </th>
-                <td>{{ formatAmount(bucket.income) }}</td>
-                <td>{{ formatAmount(bucket.expenses) }}</td>
-                <td>{{ formatAmount(bucket.refunds) }}</td>
-                <td>{{ formatAmount(bucket.net) }}</td>
+                <template v-if="isCash">
+                  <td>{{ formatAmount(bucket.money_in) }}</td>
+                  <td>{{ formatAmount(bucket.money_out) }}</td>
+                  <td>{{ formatAmount(bucket.debt_payment_out) }}</td>
+                  <td>{{ formatAmount(bucket.net_cash) }}</td>
+                </template>
+                <template v-else>
+                  <td>{{ formatAmount(bucket.income) }}</td>
+                  <td>{{ formatAmount(bucket.expenses) }}</td>
+                  <td>{{ formatAmount(bucket.refunds) }}</td>
+                  <td>{{ formatAmount(bucket.net) }}</td>
+                </template>
               </tr>
             </tbody>
           </table>
@@ -204,6 +262,7 @@ import {
   resolveComparisonInterval,
   buildComparisonNets,
   sumNetBuckets,
+  sumCashBuckets,
   isoToDay,
   dayToIso,
 } from '@/utils/dailyNetBuckets'
@@ -224,6 +283,11 @@ const props = defineProps({
   showAvgIncome: { type: Boolean, default: false },
   showAvgExpenses: { type: Boolean, default: false },
   showComparisonOverlay: { type: Boolean, default: false },
+  /**
+   * `economic`: purchase-time income / expenses / refunds / net.
+   * `cash`: actual money in and out of funding (cash) accounts, incl. card and loan payments.
+   */
+  basis: { type: String, default: 'economic', validator: (v) => ['economic', 'cash'].includes(v) },
   timeframe: {
     type: String,
     default: 'mtd',
@@ -292,10 +356,17 @@ const requestRange = computed(() => {
   }
 })
 
-const multiYear = computed(() => displayRange.value.start.slice(0, 4) !== displayRange.value.end.slice(0, 4))
+const multiYear = computed(
+  () => displayRange.value.start.slice(0, 4) !== displayRange.value.end.slice(0, 4),
+)
 
 const buckets = computed(() =>
-  buildNetBuckets(chartData.value, displayRange.value.start, displayRange.value.end, granularity.value),
+  buildNetBuckets(
+    chartData.value,
+    displayRange.value.start,
+    displayRange.value.end,
+    granularity.value,
+  ),
 )
 
 const comparisonInterval = computed(() =>
@@ -307,17 +378,29 @@ const comparisonLabel = computed(() => {
   return 'Previous period'
 })
 const comparisonNets = computed(() => {
-  if (!showComparisonOverlay.value || !comparisonReady.value || !comparisonInterval.value) return null
+  if (!showComparisonOverlay.value || !comparisonReady.value || !comparisonInterval.value)
+    return null
   return buildComparisonNets(
     comparisonData.value,
     buckets.value,
     props.startDate,
     comparisonInterval.value,
+    props.basis,
   )
 })
 
 const hasRefunds = computed(() => buckets.value.some((bucket) => bucket.refunds !== 0))
-const baseLegend = computed(() => [
+const isCash = computed(() => props.basis === 'cash')
+const baseLegend = computed(() =>
+  isCash.value
+    ? [
+        { label: 'Money in', kind: 'bar', color: 'var(--color-accent-green)' },
+        { label: 'Money out', kind: 'bar', color: 'var(--color-accent-red)' },
+        { label: 'Net cash movement', kind: 'dash', color: 'var(--color-accent-yellow)' },
+      ]
+    : economicLegend.value,
+)
+const economicLegend = computed(() => [
   { label: 'Income', kind: 'bar', color: 'var(--color-accent-green)' },
   { label: 'Expenses', kind: 'bar', color: 'var(--color-accent-red)' },
   ...(hasRefunds.value
@@ -336,6 +419,8 @@ function isActiveBucket(bucket) {
     bucket.expenses !== 0 ||
     bucket.refunds !== 0 ||
     bucket.net !== 0 ||
+    bucket.money_out !== 0 ||
+    bucket.money_in !== 0 ||
     bucket.transaction_count > 0
   )
 }
@@ -378,14 +463,21 @@ const activeDetails = computed(() => {
     key: bucket.key,
     date: bucketLabel(bucket, 'long'),
     isPartial: bucket.isPartial && bucket.granularity !== 'daily',
-    net: bucket.net,
+    net: isCash.value ? bucket.net_cash : bucket.net,
     income: bucket.income,
     expenses: bucket.expenses,
     refunds: bucket.refunds,
+    cash: {
+      moneyIn: bucket.money_in,
+      moneyOut: bucket.money_out,
+      debtPayments: bucket.debt_payment_out,
+      investments: bucket.investment_allocation_out,
+      unclassified: bucket.unclassified_out,
+    },
     transactions: bucket.transaction_count,
     canDrill: bucket.granularity !== 'daily',
     comparison: buildComparisonDetails(
-      bucket.net,
+      isCash.value ? bucket.net_cash : bucket.net,
       comparisonLabel.value,
       comparisonNets.value?.[index] ?? null,
     ),
@@ -394,7 +486,7 @@ const activeDetails = computed(() => {
 
 const canvasLabel = computed(
   () =>
-    `Economic net bar chart, ${granularityTitle.value.toLowerCase()}, ${buckets.value.length} periods. ` +
+    `${isCash.value ? 'Cash movement' : 'Economic net'} bar chart, ${granularityTitle.value.toLowerCase()}, ${buckets.value.length} periods. ` +
     'Use left and right arrow keys to move between periods and Enter to open one.',
 )
 
@@ -461,6 +553,7 @@ function padDailyRows(rows, startDate, endDate) {
         expenses: { parsedValue: 0 },
         net: { parsedValue: 0 },
         refunds: 0,
+        cash_flow: {},
         transaction_count: 0,
       },
     )
@@ -594,10 +687,14 @@ async function renderChart() {
 
   const labels = list.map((bucket) => bucket.startDate)
   const tickLabels = list.map((bucket) => bucketLabel(bucket))
-  const income = list.map((bucket) => normalizeZero(bucket.income))
-  const expenses = list.map((bucket) => normalizeZero(bucket.expenses))
-  const refunds = list.map((bucket) => normalizeZero(bucket.refunds))
-  const net = list.map((bucket) => bucket.net)
+  const cashBasis = isCash.value
+  // Cash basis plots money in and money out (negative) of funding accounts; there is no refund bar.
+  const income = list.map((bucket) => normalizeZero(cashBasis ? bucket.money_in : bucket.income))
+  const expenses = list.map((bucket) =>
+    normalizeZero(cashBasis ? -bucket.money_out : bucket.expenses),
+  )
+  const refunds = list.map((bucket) => (cashBasis ? 0 : normalizeZero(bucket.refunds)))
+  const net = list.map((bucket) => (cashBasis ? bucket.net_cash : bucket.net))
   const sizing = getBarSizing(list.length)
 
   const incomeColor = getStyle('--color-accent-green') || '#22c55e'
@@ -622,9 +719,9 @@ async function renderChart() {
     order,
   })
   const datasets = [
-    bar('Expenses', expenses, expenseColor, 1),
-    bar('Income', income, incomeColor, 2),
-    bar('Refunds', refunds, refundColor, 3),
+    bar(cashBasis ? 'Money out' : 'Expenses', expenses, expenseColor, 1),
+    bar(cashBasis ? 'Money in' : 'Income', income, incomeColor, 2),
+    ...(cashBasis ? [] : [bar('Refunds', refunds, refundColor, 3)]),
   ]
 
   const overlayLabels = []
@@ -639,7 +736,12 @@ async function renderChart() {
     const label = avgLabel('Avg Income')
     const value = mean(income)
     datasets.push(
-      buildLineDataset(label, labels.map(() => value), incomeColor, { borderDash: [6, 6], order: 4 }),
+      buildLineDataset(
+        label,
+        labels.map(() => value),
+        incomeColor,
+        { borderDash: [6, 6], order: 4 },
+      ),
     )
     overlayLabels.push(label)
   }
@@ -648,10 +750,15 @@ async function renderChart() {
     const label = avgLabel('Avg Expenses')
     const value = mean(expenses)
     datasets.push(
-      buildLineDataset(label, labels.map(() => value), expenseColor, {
-        borderDash: [4, 8],
-        order: 5,
-      }),
+      buildLineDataset(
+        label,
+        labels.map(() => value),
+        expenseColor,
+        {
+          borderDash: [4, 8],
+          order: 5,
+        },
+      ),
     )
     overlayLabels.push(label)
   }
@@ -669,8 +776,14 @@ async function renderChart() {
 
   // 7/30-day moving averages are daily-net windows: only meaningful against daily bars.
   if (isDaily && (show7Day.value || show30Day.value)) {
-    const full = padDailyRows(chartData.value, requestRange.value.startDate, requestRange.value.endDate)
-    const fullNet = full.map((row) => toParsedValue(row.net))
+    const full = padDailyRows(
+      chartData.value,
+      requestRange.value.startDate,
+      requestRange.value.endDate,
+    )
+    const fullNet = full.map((row) =>
+      cashBasis ? Number(row.cash_flow?.net_cash) || 0 : toParsedValue(row.net),
+    )
     const indexByDate = new Map(full.map((row, i) => [row.date, i]))
     const mapToDisplay = (series) =>
       labels.map((label) => {
@@ -775,12 +888,21 @@ let comparisonSeq = 0
 /** Emit the daily rows and totals for the selected (global) period, never the drilled one. */
 function emitPeriod() {
   if (isEmpty.value) {
-    emit('summary-change', { totalIncome: 0, totalExpenses: 0, totalRefunds: 0, totalNet: 0 })
+    emit('summary-change', {
+      totalIncome: 0,
+      totalExpenses: 0,
+      totalRefunds: 0,
+      totalNet: 0,
+      totalMoneyOut: 0,
+      totalMoneyIn: 0,
+      totalNetCash: 0,
+      cashBreakdown: {},
+    })
     emit('data-change', [])
     return
   }
   const daily = padDailyRows(chartData.value, props.startDate, props.endDate)
-  emit('summary-change', sumNetBuckets(daily))
+  emit('summary-change', { ...sumNetBuckets(daily), ...sumCashBuckets(daily) })
   emit('data-change', daily)
 }
 
@@ -862,6 +984,7 @@ watch(
     showAvgIncome,
     showAvgExpenses,
     showComparisonOverlay,
+    () => props.basis,
   ],
   renderChart,
 )

@@ -87,3 +87,8 @@ confirming/unmarking a transfer refreshes the totals.
 `useTransactions` keeps server pages by number (`currentPageRows`), so jumping to page 5 does not depend on pages 2-4
 being loaded. Search and filters are applied by the server; the loaded-page client sort only orders the visible page.
 Use the Sort select for an order across all matching rows.
+
+
+## Daily Net cash basis (TP-20261020-001)
+
+The all-matching Transactions summary (`/api/transactions/summary`) stays an **economic** measure (income, expenses, refunds, movement kept apart). Daily Net's `cash_flow` is a separate funding-account measure; the two use the same owner, hidden/pending exclusions and date range but are never summed. Labels must say "Money out" for cash and "Expenses" for economic.

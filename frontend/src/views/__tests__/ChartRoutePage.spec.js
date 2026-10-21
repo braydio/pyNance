@@ -116,4 +116,12 @@ describe('ChartRoutePage', () => {
     expect(byPath['/charts/category'].props.default).toEqual({ variant: 'category' })
     expect(byPath['/charts/assets/year-comparison'].props.default).toEqual({ variant: 'year' })
   })
+
+  it('defaults the cash flow chart to cash movement and lets the user pick economic activity', async () => {
+    const wrapper = mountPage('cashflow')
+    expect(wrapper.getComponent(DailyNetChart).props('basis')).toBe('cash')
+    await wrapper.get('[data-testid="chart-route-basis-economic"]').trigger('click')
+    expect(wrapper.getComponent(DailyNetChart).props('basis')).toBe('economic')
+  })
 })
+
