@@ -9,11 +9,11 @@ See [README.md](README.md) for naming, lifecycle, execution, and authoring rules
 
 | Packet ID | Title | Status | Created | Canonical packet |
 | --- | --- | --- | --- | --- |
-| TP-20261020-002 | Transactions Page Redesign, Scrolling and Responsive Navigation QA | Ready | 2026-10-20 | [active/TP-20261020-002-transactions-page-redesign-scroll-and-navigation-qa.md](active/TP-20261020-002-transactions-page-redesign-scroll-and-navigation-qa.md) |
 | TP-20261019-002 | Filter-Aware Financial Table Totals and Scope Contract | Complete | 2026-10-19 | [completed/TP-20261019-002-filter-aware-table-summary-contract.md](completed/TP-20261019-002-filter-aware-table-summary-contract.md) |
 | TP-20261019-003 | Professional Table System, Totals and Drilldowns | Complete | 2026-10-19 | [completed/TP-20261019-003-professional-tables-and-total-bars.md](completed/TP-20261019-003-professional-tables-and-total-bars.md) |
 | TP-20261019-004 | Dashboard Glanceability, Panel Hierarchy and Overflow | Complete | 2026-10-19 | [completed/TP-20261019-004-dashboard-glanceability-and-surface-hierarchy.md](completed/TP-20261019-004-dashboard-glanceability-and-surface-hierarchy.md) |
 | TP-20261019-005 | Investment, Planning and Recurring Ledger Summaries | Complete | 2026-10-19 | [completed/TP-20261019-005-domain-ledger-breakdowns-and-qa.md](completed/TP-20261019-005-domain-ledger-breakdowns-and-qa.md) |
+| TP-20261020-002 | Transactions Page Redesign, Scrolling and Responsive Navigation QA | Complete | 2026-10-20 | [completed/TP-20261020-002-transactions-page-redesign-scroll-and-navigation-qa.md](completed/TP-20261020-002-transactions-page-redesign-scroll-and-navigation-qa.md) |
 | TP-20261020-001 | Daily Net: Debt Payments, Missing Outflows and Cash-Basis Reconciliation | Complete | 2026-10-20 | [completed/TP-20261020-001-daily-net-cash-basis-debt-payment-reconciliation.md](completed/TP-20261020-001-daily-net-cash-basis-debt-payment-reconciliation.md) |
 | TP-20261016-001 | Forecast Transaction Sign Contract and Reconciliation | Complete | 2026-10-17 | [completed/TP-20261016-001-forecast-transaction-sign-contract.md](completed/TP-20261016-001-forecast-transaction-sign-contract.md) |
 | TP-20261016-002 | Recurring Stream Persistence, Account Scope and Legacy API Repair | Complete | 2026-10-17 | [completed/TP-20261016-002-recurring-schema-api-integrity.md](completed/TP-20261016-002-recurring-schema-api-integrity.md) |

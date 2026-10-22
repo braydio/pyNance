@@ -107,6 +107,7 @@
     </div>
 
     <!-- Transactions Table -->
+    <p id="ledger-scroll-hint" class="sr-only">Scroll horizontally to see more columns.</p>
     <div class="table-shell">
       <div
         ref="tableScrollRef"
@@ -119,6 +120,7 @@
         tabindex="0"
         role="region"
         aria-label="Transactions table"
+        aria-describedby="ledger-scroll-hint"
       >
         <table class="transactions-grid min-w-full border-separate border-spacing-0 mt-2">
           <caption class="ledger-caption--sr">
@@ -514,7 +516,6 @@ const props = defineProps({
   },
 })
 
-const MIN_ROW_COUNT = 12
 const VIRTUALIZATION_ROW_THRESHOLD = 80
 const VIRTUAL_ROW_HEIGHT_PX = 56
 const VIRTUAL_OVERSCAN = 8
@@ -1253,23 +1254,8 @@ const paginatedFilteredTransactions = computed(() => {
   return filteredTransactions.value.slice(start, start + props.pageSize)
 })
 
-// Maintain a steady table height even when searches return few results.
-const baseRowCount = computed(() =>
-  Math.max(MIN_ROW_COUNT, props.pageSize, paginatedFilteredTransactions.value.length),
-)
-
-const displayTransactions = computed(() => {
-  // Pad to preserve table height for small datasets.
-  const padded = paginatedFilteredTransactions.value.slice(
-    0,
-    paginatedFilteredTransactions.value.length,
-  )
-  const targetLength = Math.max(baseRowCount.value, padded.length)
-  while (padded.length < targetLength) {
-    padded.push({ _placeholder: true, transaction_id: `placeholder-${padded.length}` })
-  }
-  return padded
-})
+// Render only real rows: empty padded rows made short results look like a half-filled grid.
+const displayTransactions = computed(() => paginatedFilteredTransactions.value.slice())
 
 const useVirtualization = computed(
   () => paginatedFilteredTransactions.value.length > VIRTUALIZATION_ROW_THRESHOLD,

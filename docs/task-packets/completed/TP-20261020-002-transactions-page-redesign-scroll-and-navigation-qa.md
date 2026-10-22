@@ -1,12 +1,12 @@
 # TP-20261020-002: Transactions Page Redesign, Scrolling and Responsive Navigation QA
 
 **Packet ID:** TP-20261020-002  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-20  
-**Last updated:** 2026-10-20  
+**Last updated:** 2026-10-22  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261020-002-transactions-page-redesign-scroll-and-navigation-qa.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261020-002-transactions-page-redesign-scroll-and-navigation-qa.md`  
 **Priority:** P1  
 **Workstream size:** One independently testable implementation packet  
 **Depends on:** TP-20261020-001 only for cash/expense terminology; UI independent  
