@@ -1,6 +1,6 @@
 ---
 Owner: Brayden
-Last Updated: 2026-03-01
+Last Updated: 2026-11-05
 Status: Brainstorming
 ---
 
@@ -191,7 +191,6 @@ Add AI-powered features to pyNance that provide intelligent financial insights, 
 
 | Option | Provider | Cost | Complexity |
 |--------|----------|------|------------|
-| OpenAI API | OpenAI | Pay per token | Low |
 | Anthropic API | Anthropic | Pay per token | Low |
 | Ollama (local) | Self-hosted | Free (GPU needed) | Medium |
 | LLM + RAG | Any | Higher | High |

@@ -182,9 +182,11 @@ From the repository root:
 | Variable | Purpose |
 |---|---|
 | `ENABLE_ARBIT_DASHBOARD` | Enables experimental arbitrage dashboard |
-| `OPENAI_API_KEY` | Optional LLM-generated dashboard activity summaries |
+| `LOCAL_LLM_MODEL` | Optional installed model for a locally configured dashboard model server (default: `llama3.2`) |
 
-If no OpenAI key is configured, deterministic fallback messaging is used.
+Dashboard guidance is rule-based by default. To opt into locally generated messages, configure
+a local or private-network model server URL in Settings. No hosted-model API credentials are
+needed or read, and blank URLs never make a model request.
 
 ---
 
