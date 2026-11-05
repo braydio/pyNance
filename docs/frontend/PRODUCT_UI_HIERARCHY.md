@@ -61,3 +61,7 @@ Hierarchy comes from tone, elevation and spacing; repeated identical outlines ar
 **Dashboard Now tier** (`NetOverviewSection.vue`): a 2/3 Safe to Spend lead (`surface-primary`) and a 1/3 open rail with **Economic net** (exact selected range) and the period transaction link, separated by a divider. The rail and the lead cover different horizons: Safe to Spend is current guidance and is not filtered by the chart dates.
 
 **Safe to Spend card:** first view shows one amount, its mode-specific caption ("not your cash balance"), status and confidence, the protected-through date and any warnings (warnings are never collapsed). Windows, component math, the allocation strip and reserved obligations sit under one "How calculated / Upcoming obligations" disclosure. The allocation strip is drawn only when `spendable - bills - buffer = protected room` holds exactly.
+
+## Settings: local dashboard guidance
+
+`frontend/src/views/Settings.vue` exposes the optional dashboard AI message setting. The URL field is explicitly for a local or private-network model server; leaving it blank keeps the dashboard on deterministic rule-based financial guidance, without making model requests. Previously stored public provider URLs cannot be used for model calls. The settings form preserves the existing toggle, save feedback, and Advanced disclosure order.

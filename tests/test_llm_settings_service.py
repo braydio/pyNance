@@ -51,6 +51,7 @@ def test_update_accepts_ollama_host(monkeypatch):
         "https://example.com/v1",
         "https://8.8.8.8/v1",
         "http://0.0.0.0:11434",
+        "http://169.254.169.254/",
     ],
 )
 def test_update_rejects_invalid_or_credentialed_urls(monkeypatch, url):
