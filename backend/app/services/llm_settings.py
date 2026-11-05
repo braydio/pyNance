@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from ipaddress import ip_address
 from urllib.parse import urlparse
 
 from app.extensions import db
@@ -46,6 +47,23 @@ def _validate_base_url(value: object) -> str | None:
         raise ValueError("base_url must be a valid http or https URL")
     if parsed.username or parsed.password:
         raise ValueError("base_url must not contain credentials")
+    if parsed.query or parsed.fragment:
+        raise ValueError("base_url must not contain query strings or fragments")
+
+    # Financial context must only be sent to locally reachable model servers.
+    hostname = parsed.hostname or ""
+    try:
+        address = ip_address(hostname)
+    except ValueError:
+        local_host = (
+            hostname == "localhost"
+            or hostname.endswith((".localhost", ".local", ".internal"))
+            or "." not in hostname
+        )
+    else:
+        local_host = not (address.is_global or address.is_unspecified or address.is_multicast)
+    if not local_host:
+        raise ValueError("base_url must point to a local or private-network model server")
     return cleaned
 
 

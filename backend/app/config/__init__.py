@@ -17,7 +17,6 @@ from .environment import (
     ENV,
     IS_DEV,
     IS_TEST,
-    OPENAI_API_KEY_PYNANCE,
     PLAID_CLIENT_ID,
     PLAID_CLIENT_NAME,
     PLAID_ENV,
@@ -35,7 +34,6 @@ __all__ = [
     "DB_SCHEMA",
     "IS_DEV",
     "IS_TEST",
-    "OPENAI_API_KEY_PYNANCE",
     # database
     "DATABASE_NAME",
     "SQLALCHEMY_DATABASE_URI",
