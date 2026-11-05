@@ -42,8 +42,28 @@ def test_update_accepts_ollama_host(monkeypatch):
     assert commits
 
 
-@pytest.mark.parametrize("url", ["localhost:11434", "file:///tmp/socket", "https://user:pass@example.com"])
+@pytest.mark.parametrize(
+    "url",
+    [
+        "localhost:11434",
+        "file:///tmp/socket",
+        "https://user:pass@example.com",
+        "https://example.com/v1",
+        "https://8.8.8.8/v1",
+        "http://0.0.0.0:11434",
+    ],
+)
 def test_update_rejects_invalid_or_credentialed_urls(monkeypatch, url):
     _configure_existing(monkeypatch)
     with pytest.raises(ValueError, match="base_url"):
         llm_settings_service.update_llm_settings({"base_url": url})
+
+
+@pytest.mark.parametrize(
+    "url",
+    ["http://localhost:11434", "http://192.168.1.10:11434", "http://100.64.0.2:11434"],
+)
+def test_update_accepts_local_and_private_network_urls(monkeypatch, url):
+    _configure_existing(monkeypatch)
+    result = llm_settings_service.update_llm_settings({"base_url": url})
+    assert result["base_url"] == url

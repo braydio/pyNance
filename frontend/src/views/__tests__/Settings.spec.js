@@ -205,5 +205,6 @@ describe('Settings.vue', () => {
     const url = wrapper.get('[data-testid="llm-base-url"]')
     expect(url.classes()).toContain('settings-input--wide')
     expect(wrapper.find('#llm-base-url-help').exists()).toBe(true)
+    expect(wrapper.find('#llm-base-url-help').text()).toContain('Blank uses rule-based guidance')
   })
 })
