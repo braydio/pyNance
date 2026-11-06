@@ -52,6 +52,7 @@ pyNance is a self-hosted full-stack personal finance platform built with Flask, 
 ## Scenario Planning
 
 Experimental financial planning features including:
+
 - planned bills
 - allocations
 - budgeting goals
@@ -76,6 +77,7 @@ exists for targeted/manual refresh workflows.
 ## Raw Payload Storage
 
 Full Plaid payloads are persisted for:
+
 - auditing
 - reconciliation
 - rehydration
@@ -127,6 +129,7 @@ bash scripts/setup.sh
 ```
 
 This will:
+
 - create `backend/.env`
 - start PostgreSQL
 - wait for readiness
@@ -179,12 +182,14 @@ From the repository root:
 
 # Configuration
 
-| Variable | Purpose |
-|---|---|
-| `ENABLE_ARBIT_DASHBOARD` | Enables experimental arbitrage dashboard |
-| `OPENAI_API_KEY` | Optional LLM-generated dashboard activity summaries |
+| Variable                 | Purpose                                                                                        |
+| ------------------------ | ---------------------------------------------------------------------------------------------- |
+| `ENABLE_ARBIT_DASHBOARD` | Enables experimental arbitrage dashboard                                                       |
+| `LOCAL_LLM_MODEL`        | Optional installed model for a locally configured dashboard model server (default: `llama3.2`) |
 
-If no OpenAI key is configured, deterministic fallback messaging is used.
+Dashboard guidance is rule-based by default. To opt into locally generated messages, configure
+a local or private-network model server URL in Settings. No hosted-model API credentials are
+needed or read, and blank URLs never make a model request.
 
 ---
 
@@ -244,6 +249,7 @@ Static analysis configuration lives in:
 ```
 
 Enabled analyzers:
+
 - Python
 - JavaScript (Vue)
 - SQL
@@ -263,6 +269,7 @@ docs/index/INDEX.md
 ```
 
 Additional references:
+
 - `docs/roadmaps/`
 - `docs/backend/forecast/models.md`
 - `docs/backend/forecast/engine.md`

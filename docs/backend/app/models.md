@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-09-30
+Last Updated: 2026-11-05
 Status: Active
 ---
 
@@ -12,7 +12,7 @@ This document defines the core database models for the pyNance application, incl
 
 Defines the SQLAlchemy models for the application including `Account`, `PlaidAccount`, `AccountHistory`, `Transaction`, and related entities. Mixes in timestamp columns and sets up relationships used throughout services and routes.
 
-`LlmSettings` stores the application-wide dashboard custom-message toggle and optional OpenAI-compatible base URL. Its singleton row defaults to custom messages enabled and the standard OpenAI endpoint selected by an empty URL.
+`LlmSettings` stores the application-wide dashboard custom-message toggle and optional local model server URL. An empty URL always produces deterministic guidance without contacting a model server.
 
 ### Dependencies
 

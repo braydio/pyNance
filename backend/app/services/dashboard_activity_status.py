@@ -9,14 +9,12 @@ from decimal import Decimal
 from typing import Any
 
 import requests
-from sqlalchemy import or_
-
 from app.config import logger
 from app.models import Account, Transaction
-from app.services.llm_settings import get_llm_settings
+from app.services.llm_settings import _validate_base_url, get_llm_settings
+from sqlalchemy import or_
 
-OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
-DEFAULT_OPENAI_MODEL = "gpt-4.1-mini"
+DEFAULT_LOCAL_MODEL = "llama3.2"
 MAX_ACCOUNTS_IN_PROMPT = 12
 MAX_TRANSACTIONS_IN_PROMPT = 25
 
@@ -106,11 +104,11 @@ def _build_fallback_message(accounts: list[dict[str, Any]], transactions: list[d
 
 
 def _chat_completions_url(base_url: str | None) -> str:
-    """Resolve an OpenAI-compatible base URL to the chat completions endpoint."""
+    """Resolve an explicitly configured local model server endpoint."""
 
-    if not base_url:
-        return OPENAI_API_URL
-    cleaned = base_url.rstrip("/")
+    cleaned = _validate_base_url(base_url)
+    if not cleaned:
+        raise ValueError("A local model server URL is required")
     if cleaned.endswith("/chat/completions"):
         return cleaned
     if cleaned.endswith("/v1"):
@@ -118,21 +116,17 @@ def _chat_completions_url(base_url: str | None) -> str:
     return f"{cleaned}/v1/chat/completions"
 
 
-def _call_openai_for_status(payload: dict[str, Any], base_url: str | None = None) -> dict[str, str]:
-    """Request a status message from an OpenAI-compatible provider."""
+def _call_local_model_for_status(payload: dict[str, Any], base_url: str) -> dict[str, str]:
+    """Request a status message from the configured local model server."""
 
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key and not base_url:
-        raise RuntimeError("OPENAI_API_KEY is not configured")
-
-    model = os.getenv("OPENAI_DASHBOARD_MODEL") or ("llama3.2" if base_url else DEFAULT_OPENAI_MODEL)
-    headers = {"Content-Type": "application/json"}
-    if api_key and not base_url:
-        headers["Authorization"] = f"Bearer {api_key}"
+    # Validate again at the transport boundary: persisted URLs may predate validation.
+    url = _chat_completions_url(base_url)
+    model = os.getenv("LOCAL_LLM_MODEL") or DEFAULT_LOCAL_MODEL
     response = requests.post(
-        _chat_completions_url(base_url),
-        headers=headers,
+        url,
+        headers={"Content-Type": "application/json"},
         timeout=15,
+        allow_redirects=False,
         json={
             "model": model,
             "temperature": 0.2,
@@ -197,9 +191,9 @@ def generate_activity_status(
 
     try:
         llm_settings = get_llm_settings()
-        if not llm_settings.custom_message_enabled:
+        if not llm_settings.custom_message_enabled or not llm_settings.base_url:
             return {**_build_fallback_message(accounts, transactions), "source": "fallback"}
-        generated = _call_openai_for_status(payload, base_url=llm_settings.base_url)
+        generated = _call_local_model_for_status(payload, base_url=llm_settings.base_url)
         if generated.get("message"):
             return {**generated, "source": "llm"}
     except Exception as exc:  # pragma: no cover - network + provider fallback

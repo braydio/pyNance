@@ -1,6 +1,6 @@
 ---
 Owner: Brayden
-Last Updated: 2026-03-01
+Last Updated: 2026-11-05
 Status: Brainstorming
 ---
 
@@ -19,9 +19,11 @@ Add AI-powered features to pyNance that provide intelligent financial insights, 
 **Description:** Generate a natural language summary of spending patterns, trends, and anomalies.
 
 **Example Output:**
+
 > "You spent $1,234 on dining this month, which is 15% less than last month. Your top spending category was groceries at $450. Consider setting a budget limit for entertainment."
 
 **Implementation:**
+
 - Use LLM to analyze transaction categories, amounts, and trends
 - Generate paragraph summaries
 - No persistent AI state needed
@@ -37,12 +39,15 @@ Add AI-powered features to pyNance that provide intelligent financial insights, 
 **Description:** AI analyzes spending history and recommends budget limits for each category.
 
 **Example:**
+
 > "Based on your last 3 months of spending, I recommend:
+>
 > - Groceries: $600/month (you typically spend $550)
 > - Dining: $300/month (you tend to overspend here)
 > - Entertainment: $150/month"
 
 **Implementation:**
+
 - Analyze historical transaction data by category
 - Calculate averages, variances, trends
 - Generate budget recommendations with rationale
@@ -58,12 +63,14 @@ Add AI-powered features to pyNance that provide intelligent financial insights, 
 **Description:** Detect unusual spending patterns and alert users.
 
 **Examples:**
+
 - Unusually large transaction
 - Spending spike in a category
 - Recurring charge user didn't recognize
 - New merchant transaction
 
 **Implementation:**
+
 - Rule-based + AI hybrid
 - Flag transactions exceeding threshold
 - Use AI to categorize/describe anomalies
@@ -79,11 +86,13 @@ Add AI-powered features to pyNance that provide intelligent financial insights, 
 **Description:** Generate a "financial personality" profile based on spending behavior.
 
 **Examples:**
+
 - "You are a **Balanced Saver** - You maintain steady spending across categories with moderate savings."
 - "You are a **Foodie Optimizer** - You prioritize dining experiences but cut costs elsewhere."
 - "You are a **Smart Planner** - You consistently budget and track expenses."
 
 **Implementation:**
+
 - Analyze spending patterns over time
 - Classify into persona categories
 - Generate descriptive profile with AI
@@ -99,12 +108,14 @@ Add AI-powered features to pyNance that provide intelligent financial insights, 
 **Description:** Chatbot that answers financial questions in plain language.
 
 **Example Questions:**
+
 - "How much did I spend on travel last quarter?"
 - "What's my biggest expense category this year?"
 - "Should I pay off my credit card or save more?"
 - "Show me all transactions over $100"
 
 **Implementation:**
+
 - LLM with RAG (Retrieval Augmented Generation)
 - Embed transaction data, categories, accounts
 - Natural language queries → SQL/API calls
@@ -120,13 +131,16 @@ Add AI-powered features to pyNance that provide intelligent financial insights, 
 **Description:** Automatically detect recurring charges and summarize them.
 
 **Example:**
+
 > "You have 12 recurring subscriptions totaling $245/month:
+>
 > - Netflix: $15.99
 > - Spotify: $9.99
 > - Gym: $50.00
-> ..."
+>   ..."
 
 **Implementation:**
+
 - Analyze transaction descriptions over time
 - Detect patterns (same merchant, similar amount, regular interval)
 - Summarize for user
@@ -142,6 +156,7 @@ Add AI-powered features to pyNance that provide intelligent financial insights, 
 **Description:** Use AI to automatically categorize uncategorized transactions.
 
 **Implementation:**
+
 - Send transaction description to LLM
 - Map to existing categories
 - Suggest category to user or auto-apply
@@ -157,13 +172,16 @@ Add AI-powered features to pyNance that provide intelligent financial insights, 
 **Description:** Generate tax-related summary of deductible expenses.
 
 **Example:**
+
 > "Tax Summary 2025:
+>
 > - Charitable donations: $1,200
 > - Business expenses: $3,400
 > - Medical expenses: $2,100
-> ..."
+>   ..."
 
 **Implementation:**
+
 - Filter transactions by tax-relevant categories
 - Use AI to identify potentially deductible items
 - Generate summary report
@@ -177,24 +195,25 @@ Add AI-powered features to pyNance that provide intelligent financial insights, 
 ### Start With: Financial Summary Generator
 
 **Why:**
+
 1. **Lowest barrier to entry** - No new UI components, just add a card to Dashboard
 2. **Immediate value** - Users get insights right away
 3. **Easy to iterate** - Refine prompts without major code changes
 4. **Impressive demo** - Shows AI capability quickly
 
 **Placement Options:**
+
 1. **New card on Dashboard** - Next to Net Worth, Category Breakdown
 2. **Expand existing Financial Summary** - Add AI-generated insights
 3. **Dedicated "Insights" page** - Full page of AI analysis
 
 **Tech Stack Options:**
 
-| Option | Provider | Cost | Complexity |
-|--------|----------|------|------------|
-| OpenAI API | OpenAI | Pay per token | Low |
-| Anthropic API | Anthropic | Pay per token | Low |
-| Ollama (local) | Self-hosted | Free (GPU needed) | Medium |
-| LLM + RAG | Any | Higher | High |
+| Option         | Provider    | Cost              | Complexity |
+| -------------- | ----------- | ----------------- | ---------- |
+| Anthropic API  | Anthropic   | Pay per token     | Low        |
+| Ollama (local) | Self-hosted | Free (GPU needed) | Medium     |
+| LLM + RAG      | Any         | Higher            | High       |
 
 ---
 

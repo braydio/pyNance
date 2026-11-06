@@ -8,7 +8,13 @@ Flask-specific environment variables and relies solely on ENV.
 
 import logging
 
-from .constants import DATABASE_NAME, DB_IDENTITY, FILES, SQLALCHEMY_DATABASE_URI, SQLALCHEMY_ENGINE_OPTIONS
+from .constants import (
+    DATABASE_NAME,
+    DB_IDENTITY,
+    FILES,
+    SQLALCHEMY_DATABASE_URI,
+    SQLALCHEMY_ENGINE_OPTIONS,
+)
 from .environment import (
     ARBIT_EXPORTER_URL,
     CLIENT_NAME,
@@ -17,7 +23,6 @@ from .environment import (
     ENV,
     IS_DEV,
     IS_TEST,
-    OPENAI_API_KEY_PYNANCE,
     PLAID_CLIENT_ID,
     PLAID_CLIENT_NAME,
     PLAID_ENV,
@@ -35,7 +40,6 @@ __all__ = [
     "DB_SCHEMA",
     "IS_DEV",
     "IS_TEST",
-    "OPENAI_API_KEY_PYNANCE",
     # database
     "DATABASE_NAME",
     "SQLALCHEMY_DATABASE_URI",

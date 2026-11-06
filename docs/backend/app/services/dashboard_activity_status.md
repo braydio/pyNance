@@ -2,26 +2,23 @@
 
 ## Purpose
 
-Build the dashboard greeting/status payload from account balances and recent transactions, then request one parseable suggestion from an LLM when configured.
+Build the dashboard greeting/status payload from visible account balances and recent transactions. Return deterministic guidance unless an optional local model server is explicitly configured.
 
 ## Key behaviors
 
 - Loads visible accounts and recent non-internal transactions for a configurable date range (default: trailing 30 days).
-- Sends compact JSON context to an OpenAI-compatible Chat Completions endpoint when the dashboard LLM message setting is enabled.
-- Uses OpenAI by default when `OPENAI_API_KEY` is present. A custom base URL can target Ollama; bare hosts are expanded to `/v1/chat/completions`, and the default local model is `llama3.2` unless `OPENAI_DASHBOARD_MODEL` is set.
-- Returns the deterministic fallback without making an LLM request when the setting is disabled.
-- Enforces a strict parseable response contract:
-  - `status_key` (stable machine-friendly key)
-  - `message` (single user-facing actionable sentence)
-- Falls back to deterministic local guidance when API credentials are missing or the provider call fails.
+- Always produces rule-based guidance without model network access when the dashboard LLM message setting is disabled or its server URL is blank.
+- When enabled with an explicit local/private-network URL, sends compact JSON context to that server's chat-completions endpoint.
+- Accepts an Ollama host, `/v1` base URL, or complete `/chat/completions` endpoint. Public internet destinations and HTTP redirects are rejected to prevent accidental hosted-model requests.
+- Enforces a parseable response contract: `status_key` and a short `message`.
+- Falls back to deterministic guidance on configuration or model server errors.
 
 ## Public API
 
-- `generate_activity_status(start_date=None, end_date=None, user_id=None) -> dict`
-  - Returns `{ status_key, message, source }` where `source` is `llm` or `fallback`.
+- `generate_activity_status(start_date=None, end_date=None, user_id=None) -> dict`: returns `{ status_key, message, source }` where `source` is `llm` or `fallback`.
 
 ## Operational notes
 
-- Optional model override: `OPENAI_DASHBOARD_MODEL` (default `gpt-4.1-mini`).
-- Provider timeout is short (15s) so dashboard rendering can recover quickly.
-- Route consumers should treat the payload as best-effort and preserve existing fallback copy.
+- Optional installed model: `LOCAL_LLM_MODEL` (default `llama3.2`).
+- Model timeout is 15 seconds; provider failures never block dashboard status.
+- The route payload and database settings contract are unchanged; no migration is needed.

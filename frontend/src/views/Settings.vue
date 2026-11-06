@@ -42,7 +42,7 @@
     <section class="settings-panel">
       <h2 class="settings-panel-title">Dashboard AI message</h2>
       <p class="settings-panel-copy">
-        Control the LLM-generated dashboard header and optionally use an Ollama-compatible server.
+        Use a local model for dashboard guidance, or keep the built-in rule-based message.
       </p>
       <div class="settings-command-fields">
         <label class="settings-checkbox-label">
@@ -55,7 +55,7 @@
           Enable custom LLM message header
         </label>
 
-        <label for="llm-base-url" class="settings-label">Custom LLM URL</label>
+        <label for="llm-base-url" class="settings-label">Local model URL</label>
         <BaseInput
           id="llm-base-url"
           v-model="llmSettings.base_url"
@@ -69,8 +69,8 @@
           @enter="saveLlmSettings"
         />
         <p id="llm-base-url-help" class="settings-field-help">
-          Leave blank for OpenAI, or enter an Ollama host, /v1 base URL, or full chat-completions
-          URL.
+          Blank uses rule-based guidance without contacting a model. Enter a local or
+          private-network Ollama host, /v1 base URL, or chat-completions URL to enable local AI.
         </p>
         <BaseButton
           data-testid="llm-settings-save"
@@ -157,8 +157,7 @@
             class="settings-command-output"
             tabindex="0"
             aria-label="Command output"
-            >{{ commandOutput }}</pre
-          >
+            >{{ commandOutput }}</pre>
           <BaseButton
             data-testid="command-copy"
             variant="outline"
