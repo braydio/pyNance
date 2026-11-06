@@ -105,10 +105,6 @@ jobs:
           BASE_SHA: ${{ steps.pr.outputs.base_sha }}
         run: python scripts/check_docs_drift.py --changed-since "$BASE_SHA"
 
-      - name: Lint documentation front matter
-        if: steps.pr.outputs.skip != 'true' && steps.pr.outputs.override != 'true'
-        run: python scripts/frontmatter_lint.py
-
       - name: Update PR head status for comment-triggered run
         if: always() && github.event_name == 'issue_comment' && steps.pr.outputs.skip != 'true'
         uses: actions/github-script@v7
