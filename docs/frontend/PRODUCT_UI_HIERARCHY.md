@@ -20,14 +20,15 @@ The UI contract for pyNance views (TP-20261007-002). Later view packets reuse th
 - **Typography:** `--font-sans` is a system sans stack for body, labels, nav, forms and tables. `--font-display` (headings/technical accents) and `--font-data` (IDs, figures that benefit from mono) are the monospace faces. Use uppercase + wide tracking only for small eyebrow/status labels.
 - **Surface roles** (`main.css`):
 
-  | Class | Use |
-  | --- | --- |
-  | `.surface-primary` | The single dominant panel of a view |
-  | `.surface-normal` | Default content panel |
-  | `.surface-quiet` | Utility/secondary panel, no fill |
+  | Class                | Use                                                                  |
+  | -------------------- | -------------------------------------------------------------------- |
+  | `.surface-primary`   | The single dominant panel of a view                                  |
+  | `.surface-normal`    | Default content panel                                                |
+  | `.surface-quiet`     | Utility/secondary panel, no fill                                     |
   | `.surface-attention` | Needs-attention state; always pair with text/icon, never color alone |
 
   `Card` (`.card .glass`) remains for existing consumers; migrate to the roles per view packet, not wholesale.
+
 - **Navigation:** six primary destinations (Dashboard, Accounts, Transactions, Forecast, Planning, Investments) scroll horizontally on narrow screens rather than wrapping; Settings and the theme toggle are low-emphasis and collapse to icons on mobile.
 
 ## Canonical table anatomy (TP-20261019-003)
@@ -48,13 +49,13 @@ Ledger tables use the shared `.ledger-*` classes in `frontend/src/assets/css/mai
 
 Hierarchy comes from tone, elevation and spacing; repeated identical outlines are avoided.
 
-| Role | Treatment |
-| --- | --- |
-| `.surface-primary` | The one raised focal area per view: filled, elevated, with an accent **rail** (left) instead of a full outline |
-| `.surface-normal` | Tonal fill with resting elevation, no perimeter border |
-| `.surface-quiet` | Open region: transparent, no border; use dividers only between sibling content |
-| `.surface-attention` | Status rail (left) plus text/icon; never colour alone |
-| `.surface-outlined` | Opt-in 1px boundary for form controls and anything needing an explicit edge |
+| Role                 | Treatment                                                                                                      |
+| -------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `.surface-primary`   | The one raised focal area per view: filled, elevated, with an accent **rail** (left) instead of a full outline |
+| `.surface-normal`    | Tonal fill with resting elevation, no perimeter border                                                         |
+| `.surface-quiet`     | Open region: transparent, no border; use dividers only between sibling content                                 |
+| `.surface-attention` | Status rail (left) plus text/icon; never colour alone                                                          |
+| `.surface-outlined`  | Opt-in 1px boundary for form controls and anything needing an explicit edge                                    |
 
 `BasePanel` now defaults `borderTone` to `none`; pass `subtle`/`strong`/accent tones where a boundary is wanted. `.dashboard-panel` no longer adds a border. This supersedes the earlier "every surface has a 1px border" wording; the "one dominant surface per view" rule still applies.
 

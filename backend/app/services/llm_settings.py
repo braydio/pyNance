@@ -70,9 +70,7 @@ def _validate_base_url(value: object) -> str | None:
         address = ip_address(hostname)
     except ValueError:
         local_host = (
-            hostname == "localhost"
-            or hostname.endswith((".localhost", ".local", ".internal"))
-            or "." not in hostname
+            hostname == "localhost" or hostname.endswith((".localhost", ".local", ".internal")) or "." not in hostname
         )
     else:
         local_host = any(address in network for network in LOCAL_MODEL_NETWORKS if address.version == network.version)

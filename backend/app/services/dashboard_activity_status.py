@@ -9,11 +9,10 @@ from decimal import Decimal
 from typing import Any
 
 import requests
-from sqlalchemy import or_
-
 from app.config import logger
 from app.models import Account, Transaction
 from app.services.llm_settings import _validate_base_url, get_llm_settings
+from sqlalchemy import or_
 
 DEFAULT_LOCAL_MODEL = "llama3.2"
 MAX_ACCOUNTS_IN_PROMPT = 12

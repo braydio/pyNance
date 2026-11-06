@@ -69,8 +69,8 @@
           @enter="saveLlmSettings"
         />
         <p id="llm-base-url-help" class="settings-field-help">
-          Blank uses rule-based guidance without contacting a model. Enter a local or private-network
-          Ollama host, /v1 base URL, or chat-completions URL to enable local AI.
+          Blank uses rule-based guidance without contacting a model. Enter a local or
+          private-network Ollama host, /v1 base URL, or chat-completions URL to enable local AI.
         </p>
         <BaseButton
           data-testid="llm-settings-save"
@@ -157,8 +157,7 @@
             class="settings-command-output"
             tabindex="0"
             aria-label="Command output"
-            >{{ commandOutput }}</pre
-          >
+            >{{ commandOutput }}</pre>
           <BaseButton
             data-testid="command-copy"
             variant="outline"
